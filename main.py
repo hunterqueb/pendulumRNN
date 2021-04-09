@@ -8,6 +8,7 @@ import random
 
 random.seed(123)
 
+# data size set that define amount of data sets we will generate to train the network
 DATA_SET_SIZE = 100
 
 # torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
@@ -39,6 +40,7 @@ def pendulumODEFriction(t, theta):
     dtheta2 = -b/m*theta[1]-g/L*math.sin(theta[0])
     return dtheta1, dtheta2
 
+# sim time
 t0, tf = 0, 10
 t = np.linspace(t0, tf, 100)
 
@@ -49,7 +51,7 @@ output_seq = [[0 for i in range(2)] for j in range(DATA_SET_SIZE)]
 numericResult = [0 for i in range(DATA_SET_SIZE)]
 
 
-# generate randome data set of input thetas and output thetas and theta dots over a time series 
+# generate random data set of input thetas and output thetas and theta dots over a time series 
 for i in range(DATA_SET_SIZE):
     theta = [(math.pi/180) * random.randint(-90,90), (math.pi/180) * random.randint(-5,5)]
     numericResult[i] = integrate.solve_ivp(pendulumODEFriction, (t0, tf), theta, "LSODA")
@@ -58,20 +60,39 @@ for i in range(DATA_SET_SIZE):
     # print(numericResult[i].y)
     output_seq[i][:] = numericResult[i].y
 
+# now we should take only a certain amount of data as to reduce times and reduce overfitting data
+
+
+
+
+
+
+
+# -----------------------------------------
+trainingDataInput = [[0.0 for i in range(2)] for j in range(20)]
+trainingDataOutput = [[0.0 for i in range(2)] for j in range(20)]
+
+
+for i in range(DATA_SET_SIZE):
+    trainingData = input_seq
+
 for i in range(DATA_SET_SIZE):
     input_seq[i][:] = torch.Tensor(input_seq[i][:])
     output_seq[i][:] = torch.Tensor(output_seq[i][:])
 
 
+
+
 # hyperparameters
-n_epochs = 2
-lr = 0.01
+# from stanford poster example (https://web.stanford.edu/class/archive/cs/cs221/cs221.1196/posters/18560035.pdf)
+n_epochs = 30
+lr = 5*(10**-5)
 input_size = 2
 output_size = 2
 sequence_length = max(input_seq)
 num_layers = 2
-hidden_size = 200
-
+hidden_size = 10
+# batch size of 4
 
 
 class pendulumRNN(nn.Module):
