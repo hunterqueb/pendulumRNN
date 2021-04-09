@@ -20,7 +20,7 @@ def pendulumODEFriction(t, theta):
     dtheta2 = -b/m*theta[1]-g/L*math.sin(theta[0])
     return dtheta1, dtheta2
 
-t0,tf = 0,20
+t0,tf = 0,10
 t = np.linspace(t0, tf, 100)
 
 theta0 = [(math.pi/180) * 80, (math.pi/180) * 0]
