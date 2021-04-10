@@ -5,7 +5,15 @@ import math
 from torch import nn
 import torch
 import random
+from scipy.interpolate import interp1d
 
+# https://www.youtube.com/watch?v=AvKSPZ7oyVg
+
+# GOAL OF THIS CODE
+# TRAIN A RNN TO PREDICT THE FUTURE TIME SERIES DATA OF A PENDULUM
+# GIVEN A SERIES OF 100 PENDULUM PROBLEMS WITH RANDOM INITIAL CONDITIONS, PREDICT HOW THE PENDULUM WITH BEHAVE IN THE FUTURE
+
+# seed the random functions
 random.seed(123)
 
 # data size set that define amount of data sets we will generate to train the network
@@ -27,7 +35,7 @@ else:
 L = 0.5
 g = 9.81
 
-b = 1
+b = 0.3
 m = 1
 
 def pendulumODE(t, theta):
@@ -44,43 +52,55 @@ def pendulumODEFriction(t, theta):
 t0, tf = 0, 10
 t = np.linspace(t0, tf, 100)
 
-
-theta = [[0 for i in range(2)] for j in range(DATA_SET_SIZE)]
-input_seq = [[0 for i in range(2)] for j in range(DATA_SET_SIZE)]
-output_seq = [[0 for i in range(2)] for j in range(DATA_SET_SIZE)]
+# initilize the arrays used to store the info from the numerical solution
+theta = [0 for j in range(DATA_SET_SIZE)]
 numericResult = [0 for i in range(DATA_SET_SIZE)]
+input_seq = [0 for j in range(DATA_SET_SIZE)]
+output_seq = [0 for j in range(DATA_SET_SIZE)]
 
 
 # generate random data set of input thetas and output thetas and theta dots over a time series 
 for i in range(DATA_SET_SIZE):
     theta = [(math.pi/180) * random.randint(-90,90), (math.pi/180) * random.randint(-5,5)]
     numericResult[i] = integrate.solve_ivp(pendulumODEFriction, (t0, tf), theta, "LSODA")
-    for j in range(2):
-        input_seq[i][j] = theta[j]
     # print(numericResult[i].y)
-    output_seq[i][:] = numericResult[i].y
+    input_seq[i] = numericResult[i].t
+    output_seq[i] = numericResult[i].y[:][0]
+
+plt.plot(numericResult[0].t, numericResult[0].y[0])
+# plt.show()
 
 # now we should take only a certain amount of data as to reduce times and reduce overfitting data
+# first we initilize the 2d arrays to store the information
+InputSeqNP = [[0 for j in range(300)] for i in range(DATA_SET_SIZE)]
+OutputSeqNP = [[0 for j in range(300)] for i in range(DATA_SET_SIZE)]
 
 
+# convert the regular arrays to numpy arrays
+for i in range(DATA_SET_SIZE):
+    InputSeqNP[i] = np.asfarray(input_seq[i])
+for i in range(DATA_SET_SIZE):
+    OutputSeqNP[i] = np.asfarray(output_seq[i])
 
 
+# now we downsample the array so the NN gets the same amount of info at all time steps
+def downsample(array, npts):
+    interpolated = interp1d(np.arange(len(array)), array,
+                            axis=0, fill_value='extrapolate')
+    downsampled = interpolated(np.linspace(0, len(array), npts))
+    return downsampled
 
-
-
-# -----------------------------------------
-trainingDataInput = [[0.0 for i in range(2)] for j in range(20)]
-trainingDataOutput = [[0.0 for i in range(2)] for j in range(20)]
-
+downsampledInputSeq = [[0 for j in range(100)] for i in range(DATA_SET_SIZE)]
+downsampledOutputSeq = [[0 for j in range(100)] for i in range(DATA_SET_SIZE)]
 
 for i in range(DATA_SET_SIZE):
-    trainingData = input_seq
-
+    downsampledInputSeq[i] = downsample(InputSeqNP[i], 200)
 for i in range(DATA_SET_SIZE):
-    input_seq[i][:] = torch.Tensor(input_seq[i][:])
-    output_seq[i][:] = torch.Tensor(output_seq[i][:])
+    downsampledOutputSeq[i] = downsample(OutputSeqNP[i], 200)
 
-
+# convert the training data to tensors
+trainingDataInput = torch.Tensor(downsampledInputSeq)
+trainingDataOutput = torch.Tensor(downsampledOutputSeq)
 
 
 # hyperparameters
@@ -89,66 +109,59 @@ n_epochs = 30
 lr = 5*(10**-5)
 input_size = 2
 output_size = 2
-sequence_length = max(input_seq)
 num_layers = 2
 hidden_size = 10
-# batch size of 4
 
-
+# defining the model class
 class pendulumRNN(nn.Module):
-    def __init__(self, input_size, output_size, hidden_dim, n_layers):
+    def __init__(self, hidden_dim):
         super(pendulumRNN, self).__init__()
 
         self.hidden_dim = hidden_dim
-        self.n_layers = n_layers
 
-        self.rnn = nn.RNN(input_size, hidden_dim, n_layers, batch_first=True)
+        self.lstm1 = nn.LSTMCell(1,self.hidden_dim)
+        self.lstm2 = nn.LSTMCell(self.hidden_dim,self.hidden_dim)
+        self.linear = nn.Linear(self.hidden_dim,1)
 
-        self.fc = nn.Linear(hidden_dim*sequence_length, output_size)
+    def forward(self,x,future=0):
+        outputs=[]
+        n_samples = x.size(0)
+        h_t = torch.zeros(n_samples,self.hidden_dim, dtype=torch.float32)
+        c_t = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32)
+        h_t2 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32)
+        c_t2 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32)
 
-    def forward(self, x):
-        batch_size = x.size(0)
+        for input_t in x.split(1, dim = 1):
+            h_t, c_t = self.lstm1(input_t,(h_t,c_t))
+            h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
+            output = self.linear(h_t2)
+            outputs.append(output)
 
-        hidden = self.init_hidden(batch_size)
+        for i in range(future):
+            h_t, c_t = self.lstm1(output, (h_t, c_t))
+            h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
+            output = self.linear(h_t2)
+            outputs.append(output)
 
-        out, hidden = self.rnn(x, hidden)
+        outputs = torch.cat(outputs, dim = 1)
+        return outputs
 
-        out = out.contiguous().view(-1, self.hidden_dim)
-        out = self.fc(out)
+# initilizing the model, criterion, and optimizer for the data
+model = pendulumRNN(hidden_size)
+criterion = nn.MSELoss()
+optimizer = torch.optim.LBFGS(model.parameters(), lr=lr)
 
-        return out, hidden
+# defining the back prop function
+def closure():
+    optimizer.zero_grad()
+    out = model(trainingDataInput)
+    loss = criterion(out, trainingDataOutput)
+    print("loss", loss.item())
+    loss.backward()
+    return loss
 
-    def init_hidden(self, batch_size):
-
-        hidden = torch.zeros(self.n_layers, batch_size,
-                             self.hidden_dim).to(device)
-
-        return hidden
-
-
-model = pendulumRNN(input_size=input_size, output_size=output_size,
-              hidden_dim=hidden_size, n_layers=num_layers)
-# We'll also set the model to the device that we defined earlier (default is CPU)
-model = model.to(device)
-
-# Define Loss, Optimizer
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-
+# training loop
 for epoch in range(n_epochs):
-    for batch in range(input_seq[:][1]):
-        data = data.to(device=device)
-        targets = targets.to(device=device)
-
-        # forward
-        scores = model(data)
-        loss = criterion(scores, targets)
-
-        # backwards
-        optimizer.zero_grad()
-        loss.backward()
-
-        optimizer.step()
-
-
+    print("Step",epoch)
+    optimizer.step(closure)
 
