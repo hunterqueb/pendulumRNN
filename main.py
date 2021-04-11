@@ -7,6 +7,18 @@ import torch
 import random
 from scipy.interpolate import interp1d
 
+# TODO
+# current blocker right now
+#   input and output training data occurs with a 200x200 tensor while testing data is a single 200 array, need to
+#   fix this. dont know how to yet
+#   what would happen if i were to make the test a 200x200 / 200 of the same input vector. what would happen?
+# 
+# 
+# 
+
+
+
+
 # https://www.youtube.com/watch?v=AvKSPZ7oyVg
 
 # GOAL OF THIS CODE
