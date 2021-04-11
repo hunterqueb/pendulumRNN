@@ -17,7 +17,7 @@ from scipy.interpolate import interp1d
 random.seed(123)
 
 # data size set that define amount of data sets we will generate to train the network
-DATA_SET_SIZE = 100
+DATA_SET_SIZE = 200
 
 # torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
 is_cuda = torch.cuda.is_available()
@@ -30,7 +30,7 @@ else:
     device = torch.device("cpu")
     print("GPU not available, CPU used")
 
-
+# ------------------------------------------------------------------------
 ## NUMERICAL SOLUTION
 L = 0.5
 g = 9.81
@@ -66,6 +66,7 @@ for i in range(DATA_SET_SIZE):
     # print(numericResult[i].y)
     input_seq[i] = numericResult[i].t
     output_seq[i] = numericResult[i].y[:][0]
+
 
 plt.plot(numericResult[0].t, numericResult[0].y[0])
 # plt.show()
@@ -144,15 +145,15 @@ class pendulumRNN(nn.Module):
         self.lstm2 = nn.LSTMCell(self.hidden_dim,self.hidden_dim)
         self.linear = nn.Linear(self.hidden_dim,1)
 
-    def forward(self,x,future=0):
+    def forward(self,input,future=0):
         outputs=[]
-        n_samples = x.size(0)
+        n_samples = input.size(0)
         h_t = torch.zeros(n_samples,self.hidden_dim, dtype=torch.float32)
         c_t = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32)
         h_t2 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32)
         c_t2 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32)
 
-        for input_t in x.split(1, dim = 1):
+        for input_t in input.split(1, dim=1):
             h_t, c_t = self.lstm1(input_t,(h_t,c_t))
             h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
             output = self.linear(h_t2)
@@ -185,4 +186,11 @@ def closure():
 for epoch in range(n_epochs):
     print("Step",epoch)
     optimizer.step(closure)
+
+with torch.no_grad():
+    future = 100
+    pred = model(testingDataInput, future=future)
+    loss = criterion(pred[:, :-future], testingDataOutput)
+    print("test loss", loss.item())
+    pendulumPrediction = pred.detach().numpy()
 
