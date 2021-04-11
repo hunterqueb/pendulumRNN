@@ -103,10 +103,31 @@ trainingDataInput = torch.Tensor(downsampledInputSeq)
 trainingDataOutput = torch.Tensor(downsampledOutputSeq)
 
 
+# generate the test function that will be used to test the NN
+thetaTest = [(math.pi/180) * random.randint(-90,90), (math.pi/180) * random.randint(-5,5)]
+testNumericalResult = integrate.solve_ivp(pendulumODEFriction, (t0, tf/2), thetaTest, "LSODA")
+testInnputSeq = testNumericalResult.t
+testOutputSeq = testNumericalResult.y[0]
+
+testInputSeqNP = np.asfarray(testInnputSeq)
+testOutputSeqNP = np.asfarray(testOutputSeq)
+
+downsampledTestInputSeq = downsample(testInputSeqNP, 200)
+downsampledTestOutputSeq = downsample(testOutputSeqNP, 200)
+
+testingDataInput = torch.Tensor(downsampledTestInputSeq)
+testingDataOutput = torch.Tensor(downsampledTestOutputSeq)
+
+
+# ------------------------------------------------------------------------
+## RNN
+
 # hyperparameters
 # from stanford poster example (https://web.stanford.edu/class/archive/cs/cs221/cs221.1196/posters/18560035.pdf)
 n_epochs = 30
-lr = 5*(10**-5)
+n_epochs = 2
+# lr = 5*(10**-5)
+lr = 0.08
 input_size = 2
 output_size = 2
 num_layers = 2
