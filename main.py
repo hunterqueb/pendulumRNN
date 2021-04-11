@@ -29,7 +29,7 @@ from scipy.interpolate import interp1d
 random.seed(123)
 
 # data size set that define amount of data sets we will generate to train the network
-DATA_SET_SIZE = 200
+DATA_SET_SIZE = 100
 
 # torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
 is_cuda = torch.cuda.is_available()
@@ -61,7 +61,7 @@ def pendulumODEFriction(t, theta):
     return dtheta1, dtheta2
 
 # sim time
-t0, tf = 0, 10
+t0, tf = 0, 20
 t = np.linspace(t0, tf, 100)
 
 # initilize the arrays used to store the info from the numerical solution
@@ -85,8 +85,8 @@ plt.plot(numericResult[0].t, numericResult[0].y[0])
 
 # now we should take only a certain amount of data as to reduce times and reduce overfitting data
 # first we initilize the 2d arrays to store the information
-InputSeqNP = [[0 for j in range(300)] for i in range(DATA_SET_SIZE)]
-OutputSeqNP = [[0 for j in range(300)] for i in range(DATA_SET_SIZE)]
+InputSeqNP = [0 for i in range(DATA_SET_SIZE)]
+OutputSeqNP = [0 for i in range(DATA_SET_SIZE)]
 
 
 # convert the regular arrays to numpy arrays
@@ -103,8 +103,9 @@ def downsample(array, npts):
     downsampled = interpolated(np.linspace(0, len(array), npts))
     return downsampled
 
-downsampledInputSeq = [[0 for j in range(100)] for i in range(DATA_SET_SIZE)]
-downsampledOutputSeq = [[0 for j in range(100)] for i in range(DATA_SET_SIZE)]
+downsampledInputSeq = [[0 for j in range(DATA_SET_SIZE)] for i in range(DATA_SET_SIZE)]
+downsampledOutputSeq = [
+    [0 for j in range(DATA_SET_SIZE)] for i in range(DATA_SET_SIZE)]
 
 for i in range(DATA_SET_SIZE):
     downsampledInputSeq[i] = downsample(InputSeqNP[i], 200)
@@ -117,12 +118,15 @@ trainingDataOutput = torch.Tensor(downsampledOutputSeq)
 
 
 # generate the test function that will be used to test the NN
+
+
+
 thetaTest = [(math.pi/180) * random.randint(-90,90), (math.pi/180) * random.randint(-5,5)]
 testNumericalResult = integrate.solve_ivp(pendulumODEFriction, (t0, tf/2), thetaTest, "LSODA")
-testInnputSeq = testNumericalResult.t
+testInputSeq = testNumericalResult.t
 testOutputSeq = testNumericalResult.y[0]
 
-testInputSeqNP = np.asfarray(testInnputSeq)
+testInputSeqNP = np.asfarray(testInputSeq)
 testOutputSeqNP = np.asfarray(testOutputSeq)
 
 downsampledTestInputSeq = downsample(testInputSeqNP, 200)
@@ -185,24 +189,25 @@ model = pendulumRNN(hidden_size)
 criterion = nn.MSELoss()
 optimizer = torch.optim.LBFGS(model.parameters(), lr=lr)
 
+
 # defining the back prop function
-def closure():
-    optimizer.zero_grad()
-    out = model(trainingDataInput)
-    loss = criterion(out, trainingDataOutput)
-    print("loss", loss.item())
-    loss.backward()
-    return loss
 
 # training loop
 for epoch in range(n_epochs):
     print("Step",epoch)
+    def closure():
+        optimizer.zero_grad()
+        out = model(trainingDataInput)
+        loss = criterion(out, trainingDataOutput)
+        print("loss", loss.item())
+        loss.backward()
+        return loss
     optimizer.step(closure)
 
-with torch.no_grad():
-    future = 100
-    pred = model(testingDataInput, future=future)
-    loss = criterion(pred[:, :-future], testingDataOutput)
-    print("test loss", loss.item())
-    pendulumPrediction = pred.detach().numpy()
+    with torch.no_grad():
+        future = 100
+        pred = model(testingDataInput, future=future)
+        loss = criterion(pred[:, :-future], testingDataOutput)
+        print("test loss", loss.item())
+        pendulumPrediction = pred.detach().numpy()
 
