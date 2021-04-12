@@ -11,15 +11,11 @@ from scipy.interpolate import interp1d
 
 # TODO
 # current blocker right now
-#   input and output training data occurs with a 200x200 tensor while testing data is a single 200 array, need to
-#   fix this. dont know how to yet
-#   what would happen if i were to make the test a 200x200 / 200 of the same input vector. what would happen?
-# 
-# 
-# 
-
-
-
+#    can currently train the network, but the output plot looks nothing like what its supposed to look like
+#    this is due to the loss not converging fast over the epochs
+#   currently change in loss is very low, i need to find a better way to train this, improve lr, lr scheduling, perhaps more layers 
+#   consider overfitting model to test if it will converge at all
+#   https://www.kdnuggets.com/2017/08/37-reasons-neural-network-not-working.html
 
 # https://www.youtube.com/watch?v=AvKSPZ7oyVg
 
