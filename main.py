@@ -126,7 +126,7 @@ testingDataOutput = testingDataOutput.float()
 
 
 
-
+# SIMPLE SINISOID TESTING
 T = 20
 L = 1000
 N = 100
