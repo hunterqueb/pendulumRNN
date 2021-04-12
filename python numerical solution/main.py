@@ -6,7 +6,7 @@ import math
 L = 0.5
 g = 9.81
 
-b = 1
+b = 0.1
 m = 1
 
 def pendulumODE(t,theta):
