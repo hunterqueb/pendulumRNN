@@ -56,15 +56,15 @@ if __name__ == '__main__':
     # use LBFGS as optimizer since we can load the whole data to train
     optimizer = optim.LBFGS(seq.parameters(), lr=0.8)
     #begin to train
-    def closure():
-        optimizer.zero_grad()
-        out = seq(input)
-        loss = criterion(out, target)
-        print('loss:', loss.item())
-        loss.backward()
-        return loss
     for i in range(opt.steps):
         print('STEP: ', i)
+        def closure():
+            optimizer.zero_grad()
+            out = seq(input)
+            loss = criterion(out, target)
+            print('loss:', loss.item())
+            loss.backward()
+            return loss
         optimizer.step(closure)
         # begin to predict, no need to track gradient here
         with torch.no_grad():
