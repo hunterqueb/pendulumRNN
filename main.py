@@ -28,6 +28,7 @@ random.seed(123)
 
 # data size set that define amount of data sets we will generate to train the network
 DATA_SET_SIZE = 100
+DOWNSAMPLE_SIZE = 500
 
 # torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
 is_cuda = torch.cuda.is_available()
@@ -59,19 +60,18 @@ def pendulumODEFriction(t, theta):
     return dtheta1, dtheta2
 
 # sim time
-t0, tf = 0, 20
-t = np.linspace(t0, tf, 100)
+t0, tf = 0, 30
 
 # initilize the arrays used to store the info from the numerical solution
-theta = [0 for j in range(DATA_SET_SIZE)]
+theta = [0 for i in range(DATA_SET_SIZE)]
 numericResult = [0 for i in range(DATA_SET_SIZE)]
-input_seq = [0 for j in range(DATA_SET_SIZE)]
-output_seq = [0 for j in range(DATA_SET_SIZE)]
+input_seq = [0 for i in range(DATA_SET_SIZE)]
+output_seq = [0 for i in range(DATA_SET_SIZE)]
 
 
 # generate random data set of input thetas and output thetas and theta dots over a time series 
 for i in range(DATA_SET_SIZE):
-    theta = [(math.pi/180) * random.randint(-90,90), (math.pi/180) * random.randint(-5,5)]
+    theta = [(math.pi/180) * random.randint(-90,90), (math.pi/180) * 0]
     numericResult[i] = integrate.solve_ivp(pendulumODE, (t0, tf), theta, "LSODA")
     # print(numericResult[i].y)
     input_seq[i] = numericResult[i].t
@@ -90,14 +90,12 @@ OutputSeqNP = [0 for i in range(DATA_SET_SIZE)]
 # convert the regular arrays to numpy arrays
 for i in range(DATA_SET_SIZE):
     InputSeqNP[i] = np.asfarray(input_seq[i])
-for i in range(DATA_SET_SIZE):
     OutputSeqNP[i] = np.asfarray(output_seq[i])
 
 
 # now we downsample the array so the NN gets the same amount of info at all time steps
 def downsample(array, npts):
-    interpolated = interp1d(np.arange(len(array)), array,
-                            axis=0, fill_value='extrapolate')
+    interpolated = interp1d(np.arange(len(array)), array, axis=0, fill_value='extrapolate')
     downsampled = interpolated(np.linspace(0, len(array), npts))
     return downsampled
 
@@ -105,52 +103,49 @@ downsampledInputSeq = [[0 for j in range(DATA_SET_SIZE)] for i in range(DATA_SET
 downsampledOutputSeq = [[0 for j in range(DATA_SET_SIZE)] for i in range(DATA_SET_SIZE)]
 
 for i in range(DATA_SET_SIZE):
-    downsampledInputSeq[i] = downsample(InputSeqNP[i], 200)
-for i in range(DATA_SET_SIZE):
-    downsampledOutputSeq[i] = downsample(OutputSeqNP[i], 200)
+    downsampledInputSeq[i] = downsample(InputSeqNP[i], DOWNSAMPLE_SIZE)
+    downsampledOutputSeq[i] = downsample(OutputSeqNP[i], DOWNSAMPLE_SIZE)
+
+downsampledInputSeq = np.asfarray(downsampledInputSeq)
+downsampledOutputSeq = np.asfarray(downsampledOutputSeq)
+
 
 # convert the training data to tensors
-trainingDataInput = torch.Tensor(downsampledInputSeq)
-trainingDataOutput = torch.Tensor(downsampledOutputSeq)
+trainingDataInput = torch.from_numpy(downsampledInputSeq[3:, :-1])
+trainingDataOutput = torch.from_numpy(downsampledOutputSeq[3:, 1:])
+
+testingDataInput = torch.from_numpy(downsampledInputSeq[:3, :-1])
+testingDataOutput = torch.from_numpy(downsampledOutputSeq[:3, 1:])
 
 
-# generate the test function that will be used to test the NN
-DATA_SET_SIZE_TEST = 3
-testInputSeq = [0 for i in range(DATA_SET_SIZE_TEST)]
-testOutputSeq = [0 for i in range(DATA_SET_SIZE_TEST)]
+trainingDataInput = trainingDataInput.float()
+trainingDataOutput = trainingDataOutput.float()
 
-for i in range(DATA_SET_SIZE_TEST):
-    theta = [(math.pi/180) * random.randint(-90,90), (math.pi/180) * random.randint(-5,5)]
-    numericResult[i] = integrate.solve_ivp(pendulumODE, (t0, tf), theta, "LSODA")
-    # print(numericResult[i].y)
-    testInputSeq[i] = numericResult[i].t
-    testOutputSeq[i] = numericResult[i].y[:][0]
+testingDataInput = testingDataInput.float()
+testingDataOutput = testingDataOutput.float()
 
 
-testInputSeqNP = [[0 for j in range(DATA_SET_SIZE_TEST)]
-                  for i in range(DATA_SET_SIZE_TEST)]
-testOutputSeqNP = [[0 for j in range(DATA_SET_SIZE_TEST)]
-                   for i in range(DATA_SET_SIZE_TEST)]
-
-for i in range(DATA_SET_SIZE_TEST):
-    testInputSeqNP[i] = np.asfarray(testInputSeq[i])
-for i in range(DATA_SET_SIZE_TEST):
-    testOutputSeqNP[i] = np.asfarray(testOutputSeq[i])
 
 
-downsampledTestInputSeq = [
-    [0 for j in range(DATA_SET_SIZE_TEST)] for i in range(DATA_SET_SIZE_TEST)]
-downsampledTestOutputSeq = [
-    [0 for j in range(DATA_SET_SIZE_TEST)] for i in range(DATA_SET_SIZE_TEST)]
+T = 20
+L = 1000
+N = 100
 
-for i in range(DATA_SET_SIZE_TEST):
-    downsampledTestInputSeq[i] = downsample(InputSeqNP[i], 200)
-for i in range(DATA_SET_SIZE_TEST):
-    downsampledTestOutputSeq[i] = downsample(OutputSeqNP[i], 200)
+x = np.empty((N, L), 'int64')
+x[:] = np.array(range(L)) + np.random.randint(-4 * T, 4 * T, N).reshape(N, 1)
+data = np.sin(x / 1.0 / T).astype('float64')
 
-testingDataInput = torch.Tensor(downsampledTestInputSeq)
-testingDataOutput = torch.Tensor(downsampledTestOutputSeq)
+trainingDataInput = torch.from_numpy(data[3:, :-1])
+trainingDataOutput = torch.from_numpy(data[3:, 1:])
 
+testingDataInput = torch.from_numpy(data[:3, :-1])
+testingDataOutput = torch.from_numpy(data[:3, 1:])
+
+trainingDataInput = trainingDataInput.float()
+trainingDataOutput = trainingDataOutput.float()
+
+testingDataInput = testingDataInput.float()
+testingDataOutput = testingDataOutput.float()
 
 # ------------------------------------------------------------------------
 ## RNN
@@ -158,13 +153,14 @@ testingDataOutput = torch.Tensor(downsampledTestOutputSeq)
 # hyperparameters
 # from stanford poster example (https://web.stanford.edu/class/archive/cs/cs221/cs221.1196/posters/18560035.pdf)
 n_epochs = 10
-n_epochs = 2
+n_epochs = 100
+# lr = 0.45
 lr = 5*(10**-5)
 lr = 0.08
 input_size = 2
 output_size = 2
 num_layers = 2
-hidden_size = 100
+hidden_size = 70
 
 # defining the model class
 class pendulumRNN(nn.Module):
@@ -221,25 +217,26 @@ for epoch in range(n_epochs):
     optimizer.step(closure)
 
     with torch.no_grad():
-        future = 100
+        future = 1000
         pred = model(testingDataInput, future=future)
         loss = criterion(pred[:, :-future], testingDataOutput)
         print("test loss", loss.item())
         pendulumPrediction = pred.detach().numpy()
     # draw the result
-    plt.figure(figsize=(30, 10))
-    plt.title(
-        'Predict future values for time sequences\n(Dashlines are predicted values)', fontsize=30)
-    plt.xlabel('time', fontsize=20)
-    plt.ylabel('theta', fontsize=20)
-    plt.xticks(fontsize=20)
-    plt.yticks(fontsize=20)
+    if (epoch == 1) or (epoch > 94) or (epoch % 13 == 0):
+        plt.figure(figsize=(30, 10))
+        plt.title(
+            'Predict future values for time sequences\n(Dashlines are predicted values)', fontsize=30)
+        plt.xlabel('time', fontsize=20)
+        plt.ylabel('theta', fontsize=20)
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
 
-    def draw(yi, color):
-        plt.plot(np.arange(trainingDataInput.size(1)), yi[:trainingDataInput.size(1)], color, linewidth=2.0)
-        plt.plot(np.arange(trainingDataInput.size(1), trainingDataInput.size(1) + future), yi[trainingDataInput.size(1):], color + ':', linewidth=2.0)
-    draw(pendulumPrediction[0], 'r')
-    # draw(pendulumPrediction[1], 'g')
-    # draw(pendulumPrediction[2], 'b')
-    plt.savefig('predict%d.pdf' % epoch)
-    plt.close()
+        def draw(yi, color):
+            plt.plot(np.arange(trainingDataInput.size(1)), yi[:trainingDataInput.size(1)], color, linewidth=2.0)
+            plt.plot(np.arange(trainingDataInput.size(1), trainingDataInput.size(1) + future), yi[trainingDataInput.size(1):], color + ':', linewidth=2.0)
+        draw(pendulumPrediction[0], 'r')
+        # draw(pendulumPrediction[1], 'g')
+        # draw(pendulumPrediction[2], 'b')
+        plt.savefig('predict%d.pdf' % epoch)
+        plt.close()
