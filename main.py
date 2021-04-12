@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from scipy import integrate
 import math
@@ -74,7 +76,7 @@ output_seq = [0 for j in range(DATA_SET_SIZE)]
 # generate random data set of input thetas and output thetas and theta dots over a time series 
 for i in range(DATA_SET_SIZE):
     theta = [(math.pi/180) * random.randint(-90,90), (math.pi/180) * random.randint(-5,5)]
-    numericResult[i] = integrate.solve_ivp(pendulumODEFriction, (t0, tf), theta, "LSODA")
+    numericResult[i] = integrate.solve_ivp(pendulumODE, (t0, tf), theta, "LSODA")
     # print(numericResult[i].y)
     input_seq[i] = numericResult[i].t
     output_seq[i] = numericResult[i].y[:][0]
@@ -104,8 +106,7 @@ def downsample(array, npts):
     return downsampled
 
 downsampledInputSeq = [[0 for j in range(DATA_SET_SIZE)] for i in range(DATA_SET_SIZE)]
-downsampledOutputSeq = [
-    [0 for j in range(DATA_SET_SIZE)] for i in range(DATA_SET_SIZE)]
+downsampledOutputSeq = [[0 for j in range(DATA_SET_SIZE)] for i in range(DATA_SET_SIZE)]
 
 for i in range(DATA_SET_SIZE):
     downsampledInputSeq[i] = downsample(InputSeqNP[i], 200)
@@ -118,19 +119,38 @@ trainingDataOutput = torch.Tensor(downsampledOutputSeq)
 
 
 # generate the test function that will be used to test the NN
+DATA_SET_SIZE_TEST = 3
+testInputSeq = [0 for i in range(DATA_SET_SIZE_TEST)]
+testOutputSeq = [0 for i in range(DATA_SET_SIZE_TEST)]
+
+for i in range(DATA_SET_SIZE_TEST):
+    theta = [(math.pi/180) * random.randint(-90,90), (math.pi/180) * random.randint(-5,5)]
+    numericResult[i] = integrate.solve_ivp(pendulumODE, (t0, tf), theta, "LSODA")
+    # print(numericResult[i].y)
+    testInputSeq[i] = numericResult[i].t
+    testOutputSeq[i] = numericResult[i].y[:][0]
 
 
+testInputSeqNP = [[0 for j in range(DATA_SET_SIZE_TEST)]
+                  for i in range(DATA_SET_SIZE_TEST)]
+testOutputSeqNP = [[0 for j in range(DATA_SET_SIZE_TEST)]
+                   for i in range(DATA_SET_SIZE_TEST)]
 
-thetaTest = [(math.pi/180) * random.randint(-90,90), (math.pi/180) * random.randint(-5,5)]
-testNumericalResult = integrate.solve_ivp(pendulumODEFriction, (t0, tf/2), thetaTest, "LSODA")
-testInputSeq = testNumericalResult.t
-testOutputSeq = testNumericalResult.y[0]
+for i in range(DATA_SET_SIZE_TEST):
+    testInputSeqNP[i] = np.asfarray(testInputSeq[i])
+for i in range(DATA_SET_SIZE_TEST):
+    testOutputSeqNP[i] = np.asfarray(testOutputSeq[i])
 
-testInputSeqNP = np.asfarray(testInputSeq)
-testOutputSeqNP = np.asfarray(testOutputSeq)
 
-downsampledTestInputSeq = downsample(testInputSeqNP, 200)
-downsampledTestOutputSeq = downsample(testOutputSeqNP, 200)
+downsampledTestInputSeq = [
+    [0 for j in range(DATA_SET_SIZE_TEST)] for i in range(DATA_SET_SIZE_TEST)]
+downsampledTestOutputSeq = [
+    [0 for j in range(DATA_SET_SIZE_TEST)] for i in range(DATA_SET_SIZE_TEST)]
+
+for i in range(DATA_SET_SIZE_TEST):
+    downsampledTestInputSeq[i] = downsample(InputSeqNP[i], 200)
+for i in range(DATA_SET_SIZE_TEST):
+    downsampledTestOutputSeq[i] = downsample(OutputSeqNP[i], 200)
 
 testingDataInput = torch.Tensor(downsampledTestInputSeq)
 testingDataOutput = torch.Tensor(downsampledTestOutputSeq)
@@ -141,14 +161,14 @@ testingDataOutput = torch.Tensor(downsampledTestOutputSeq)
 
 # hyperparameters
 # from stanford poster example (https://web.stanford.edu/class/archive/cs/cs221/cs221.1196/posters/18560035.pdf)
-n_epochs = 30
+n_epochs = 10
 n_epochs = 2
-# lr = 5*(10**-5)
+lr = 5*(10**-5)
 lr = 0.08
 input_size = 2
 output_size = 2
 num_layers = 2
-hidden_size = 10
+hidden_size = 100
 
 # defining the model class
 class pendulumRNN(nn.Module):
@@ -210,4 +230,20 @@ for epoch in range(n_epochs):
         loss = criterion(pred[:, :-future], testingDataOutput)
         print("test loss", loss.item())
         pendulumPrediction = pred.detach().numpy()
+    # draw the result
+    plt.figure(figsize=(30, 10))
+    plt.title(
+        'Predict future values for time sequences\n(Dashlines are predicted values)', fontsize=30)
+    plt.xlabel('time', fontsize=20)
+    plt.ylabel('theta', fontsize=20)
+    plt.xticks(fontsize=20)
+    plt.yticks(fontsize=20)
 
+    def draw(yi, color):
+        plt.plot(np.arange(trainingDataInput.size(1)), yi[:trainingDataInput.size(1)], color, linewidth=2.0)
+        plt.plot(np.arange(trainingDataInput.size(1), trainingDataInput.size(1) + future), yi[trainingDataInput.size(1):], color + ':', linewidth=2.0)
+    draw(pendulumPrediction[0], 'r')
+    # draw(pendulumPrediction[1], 'g')
+    # draw(pendulumPrediction[2], 'b')
+    plt.savefig('predict%d.pdf' % epoch)
+    plt.close()
