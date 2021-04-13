@@ -109,6 +109,9 @@ for i in range(DATA_SET_SIZE):
 downsampledInputSeq = np.asfarray(downsampledInputSeq)
 downsampledOutputSeq = np.asfarray(downsampledOutputSeq)
 
+downsampledInputSeq = np.around(downsampledInputSeq,4)
+downsampledOutputSeq = np.around(downsampledOutputSeq, 4)
+
 
 # convert the training data to tensors
 trainingDataInput = torch.from_numpy(downsampledInputSeq[3:, :-1])
