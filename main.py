@@ -130,40 +130,40 @@ testingDataOutput = testingDataOutput.float()
 
 
 # SIMPLE SINISOID TESTING
-T = 20
-L = 1000
-N = 100
+# T = 20
+# L = 1000
+# N = 100
 
-x = np.empty((N, L), 'int64')
-x[:] = np.array(range(L)) + np.random.randint(-4 * T, 4 * T, N).reshape(N, 1)
-data = np.sin(x / 1.0 / T).astype('float64')
+# x = np.empty((N, L), 'int64')
+# x[:] = np.array(range(L)) + np.random.randint(-4 * T, 4 * T, N).reshape(N, 1)
+# data = np.sin(x / 1.0 / T).astype('float64')
 
-trainingDataInput = torch.from_numpy(data[3:, :-1])
-trainingDataOutput = torch.from_numpy(data[3:, 1:])
+# trainingDataInput = torch.from_numpy(data[3:, :-1])
+# trainingDataOutput = torch.from_numpy(data[3:, 1:])
 
-testingDataInput = torch.from_numpy(data[:3, :-1])
-testingDataOutput = torch.from_numpy(data[:3, 1:])
+# testingDataInput = torch.from_numpy(data[:3, :-1])
+# testingDataOutput = torch.from_numpy(data[:3, 1:])
 
-trainingDataInput = trainingDataInput.float()
-trainingDataOutput = trainingDataOutput.float()
+# trainingDataInput = trainingDataInput.float()
+# trainingDataOutput = trainingDataOutput.float()
 
-testingDataInput = testingDataInput.float()
-testingDataOutput = testingDataOutput.float()
+# testingDataInput = testingDataInput.float()
+# testingDataOutput = testingDataOutput.float()
 
 # ------------------------------------------------------------------------
 ## RNN
 
 # hyperparameters
 # from stanford poster example (https://web.stanford.edu/class/archive/cs/cs221/cs221.1196/posters/18560035.pdf)
-n_epochs = 10
+n_epochs = 15
 n_epochs = 100
-# lr = 0.45
+lr = 0.45
+lr = 0.1
 lr = 5*(10**-5)
-lr = 0.08
 input_size = 2
 output_size = 2
 num_layers = 2
-hidden_size = 70
+hidden_size = 51
 
 # defining the model class
 class pendulumRNN(nn.Module):
@@ -202,7 +202,9 @@ class pendulumRNN(nn.Module):
 # initilizing the model, criterion, and optimizer for the data
 model = pendulumRNN(hidden_size)
 criterion = nn.MSELoss()
-optimizer = torch.optim.LBFGS(model.parameters(), lr=lr)
+# optimizer = torch.optim.LBFGS(model.parameters(), lr=lr)
+optimizer = torch.optim.Adadelta(model.parameters(),lr=lr)
+
 
 
 # defining the back prop function
@@ -226,20 +228,20 @@ for epoch in range(n_epochs):
         print("test loss", loss.item())
         pendulumPrediction = pred.detach().numpy()
     # draw the result
-    if (epoch == 1) or (epoch > 94) or (epoch % 13 == 0):
-        plt.figure(figsize=(30, 10))
-        plt.title(
-            'Predict future values for time sequences\n(Dashlines are predicted values)', fontsize=30)
-        plt.xlabel('time', fontsize=20)
-        plt.ylabel('theta', fontsize=20)
-        plt.xticks(fontsize=20)
-        plt.yticks(fontsize=20)
+    # if (epoch == 1) or (epoch > int(n_epochs*0.94)) or (epoch % 13 == 0):
+    plt.figure(figsize=(30, 10))
+    plt.title(
+        'Predict future values for time sequences\n(Dashlines are predicted values)', fontsize=30)
+    plt.xlabel('time', fontsize=20)
+    plt.ylabel('theta', fontsize=20)
+    plt.xticks(fontsize=20)
+    plt.yticks(fontsize=20)
 
-        def draw(yi, color):
-            plt.plot(np.arange(trainingDataInput.size(1)), yi[:trainingDataInput.size(1)], color, linewidth=2.0)
-            plt.plot(np.arange(trainingDataInput.size(1), trainingDataInput.size(1) + future), yi[trainingDataInput.size(1):], color + ':', linewidth=2.0)
-        draw(pendulumPrediction[0], 'r')
-        # draw(pendulumPrediction[1], 'g')
-        # draw(pendulumPrediction[2], 'b')
-        plt.savefig('predict%d.pdf' % epoch)
-        plt.close()
+    def draw(yi, color):
+        plt.plot(np.arange(trainingDataInput.size(1)), yi[:trainingDataInput.size(1)], color, linewidth=2.0)
+        plt.plot(np.arange(trainingDataInput.size(1), trainingDataInput.size(1) + future), yi[trainingDataInput.size(1):], color + ':', linewidth=2.0)
+    draw(pendulumPrediction[0], 'r')
+    # draw(pendulumPrediction[1], 'g')
+    # draw(pendulumPrediction[2], 'b')
+    plt.savefig('predict%d.pdf' % epoch)
+    plt.close()
