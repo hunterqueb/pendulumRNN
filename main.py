@@ -27,8 +27,10 @@ from scipy.interpolate import interp1d
 random.seed(123)
 
 # data size set that define amount of data sets we will generate to train the network
-DATA_SET_SIZE = 100
-DOWNSAMPLE_SIZE = 500
+NUM_TEST_SIZE = 1
+DATA_SET_SIZE = 20
+DATA_SET_SIZE = DATA_SET_SIZE + NUM_TEST_SIZE
+DOWNSAMPLE_SIZE = 200
 
 # torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
 is_cuda = torch.cuda.is_available()
@@ -60,7 +62,7 @@ def pendulumODEFriction(t, theta):
     return dtheta1, dtheta2
 
 # sim time
-t0, tf = 0, 30
+t0, tf = 0, 10
 
 # initilize the arrays used to store the info from the numerical solution
 theta = [0 for i in range(DATA_SET_SIZE)]
@@ -71,8 +73,8 @@ output_seq = [0 for i in range(DATA_SET_SIZE)]
 
 # generate random data set of input thetas and output thetas and theta dots over a time series 
 for i in range(DATA_SET_SIZE):
-    theta = [(math.pi/180) * random.randint(-90,90), (math.pi/180) * 0]
-    numericResult[i] = integrate.solve_ivp(pendulumODE, (t0, tf), theta, "LSODA")
+    theta = [(math.pi/180) * random.randint(70,90), (math.pi/180) * 0]
+    numericResult[i] = integrate.solve_ivp(pendulumODEFriction, (t0, tf), theta, "LSODA")
     # print(numericResult[i].y)
     input_seq[i] = numericResult[i].t
     output_seq[i] = numericResult[i].y[:][0]
@@ -114,11 +116,11 @@ downsampledOutputSeq = np.around(downsampledOutputSeq, 4)
 
 
 # convert the training data to tensors
-trainingDataInput = torch.from_numpy(downsampledInputSeq[3:, :-1])
-trainingDataOutput = torch.from_numpy(downsampledOutputSeq[3:, 1:])
+trainingDataInput = torch.from_numpy(downsampledInputSeq[NUM_TEST_SIZE:, :-1])
+trainingDataOutput = torch.from_numpy(downsampledOutputSeq[NUM_TEST_SIZE:, 1:])
 
-testingDataInput = torch.from_numpy(downsampledInputSeq[:3, :-1])
-testingDataOutput = torch.from_numpy(downsampledOutputSeq[:3, 1:])
+testingDataInput = torch.from_numpy(downsampledInputSeq[:NUM_TEST_SIZE, :-1])
+testingDataOutput = torch.from_numpy(downsampledOutputSeq[:NUM_TEST_SIZE, 1:])
 
 
 trainingDataInput = trainingDataInput.float()
@@ -155,18 +157,21 @@ testingDataOutput = testingDataOutput.float()
 
 # hyperparameters
 # from stanford poster example (https://web.stanford.edu/class/archive/cs/cs221/cs221.1196/posters/18560035.pdf)
-n_epochs = 15
+n_epochs = 30
 n_epochs = 100
-lr = 0.45
-lr = 0.1
 lr = 5*(10**-5)
-input_size = 2
-output_size = 2
-num_layers = 2
-hidden_size = 51
+lr = 0.004
+lr = 0.08
+lr = 0.1
+input_size = 1
+output_size = 1
+num_layers = 3
+hidden_size = 50
+momentum = 0.9
 
 # defining the model class
 class pendulumRNN(nn.Module):
+    
     def __init__(self, hidden_dim):
         super(pendulumRNN, self).__init__()
 
@@ -199,11 +204,51 @@ class pendulumRNN(nn.Module):
         outputs = torch.cat(outputs, dim = 1)
         return outputs
 
+
+class pendulumRNN3(nn.Module):
+    def __init__(self, hidden_dim):
+        super(pendulumRNN3, self).__init__()
+
+        self.hidden_dim = hidden_dim
+
+        self.lstm1 = nn.LSTMCell(1, self.hidden_dim)
+        self.lstm2 = nn.LSTMCell(self.hidden_dim, self.hidden_dim)
+        self.lstm3 = nn.LSTMCell(self.hidden_dim, self.hidden_dim)
+        self.linear = nn.Linear(self.hidden_dim, 1)
+
+    def forward(self, input, future=0):
+        outputs = []
+        n_samples = input.size(0)
+        h_t = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32)
+        c_t = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32)
+        h_t2 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32)
+        c_t2 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32)
+        h_t3 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32)
+        c_t3 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32)
+
+        for input_t in input.split(1, dim=1):
+            h_t, c_t = self.lstm1(input_t, (h_t, c_t))
+            h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
+            h_t3, c_t3 = self.lstm3(h_t2, (h_t3, c_t3))
+            output = self.linear(h_t3)
+            outputs.append(output)
+
+        for i in range(future):
+            h_t, c_t = self.lstm1(output, (h_t, c_t))
+            h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
+            h_t3, c_t3 = self.lstm3(h_t2, (h_t3, c_t3))
+            output = self.linear(h_t3)
+            outputs.append(output)
+
+        outputs = torch.cat(outputs, dim=1)
+        return outputs
+
 # initilizing the model, criterion, and optimizer for the data
-model = pendulumRNN(hidden_size)
+model = pendulumRNN3(hidden_size)
 criterion = nn.MSELoss()
-# optimizer = torch.optim.LBFGS(model.parameters(), lr=lr)
-optimizer = torch.optim.Adadelta(model.parameters(),lr=lr)
+optimizer = torch.optim.LBFGS(model.parameters(), lr=lr)
+# optimizer = torch.optim.Adadelta(model.parameters(),lr=lr)
+# optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum)
 
 
 
@@ -222,7 +267,7 @@ for epoch in range(n_epochs):
     optimizer.step(closure)
 
     with torch.no_grad():
-        future = 1000
+        future = DOWNSAMPLE_SIZE
         pred = model(testingDataInput, future=future)
         loss = criterion(pred[:, :-future], testingDataOutput)
         print("test loss", loss.item())
