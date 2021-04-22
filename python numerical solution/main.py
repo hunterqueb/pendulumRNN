@@ -6,7 +6,7 @@ import math
 L = 0.5
 g = 9.81
 
-b = 0.1
+b = 0.3
 m = 1
 
 def pendulumODE(t,theta):
@@ -20,7 +20,7 @@ def pendulumODEFriction(t, theta):
     dtheta2 = -b/m*theta[1]-g/L*math.sin(theta[0])
     return dtheta1, dtheta2
 
-t0,tf = 0,10
+t0,tf = 0,20
 t = np.linspace(t0, tf, 100)
 
 theta0 = [(math.pi/180) * 80, (math.pi/180) * 0]
