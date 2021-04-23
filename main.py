@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib
-# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from scipy import integrate
 import math
@@ -8,14 +7,6 @@ from torch import nn
 import torch
 import random
 from scipy.interpolate import interp1d
-
-# TODO
-# current blocker right now
-#    can currently train the network, but the output plot looks nothing like what its supposed to look like
-#    this is due to the loss not converging fast over the epochs
-#   currently change in loss is very low, i need to find a better way to train this, improve lr, lr scheduling, perhaps more layers 
-#   consider overfitting model to test if it will converge at all
-#   https://www.kdnuggets.com/2017/08/37-reasons-neural-network-not-working.html
 
 # https://www.youtube.com/watch?v=AvKSPZ7oyVg
 
@@ -28,7 +19,7 @@ random.seed(123)
 
 # data size set that define amount of data sets we will generate to train the network
 DATA_SET_SIZE = 20
-NUM_TEST_SIZE = DATA_SET_SIZE // 10
+NUM_TEST_SIZE = 1
 DATA_SET_SIZE = DATA_SET_SIZE + NUM_TEST_SIZE
 TIME_STEP = 0.01
 
@@ -71,34 +62,30 @@ t = np.arange(t0, tf, TIME_STEP)
 # initilize the arrays used to store the info from the numerical solution
 theta = [0 for i in range(DATA_SET_SIZE)]
 numericResult = [0 for i in range(DATA_SET_SIZE)]
-input_seq = [0 for i in range(DATA_SET_SIZE)]
 output_seq = [0 for i in range(DATA_SET_SIZE)]
 # generate random data set of input thetas and output thetas and theta dots over a time series 
 for i in range(DATA_SET_SIZE):
     theta = [(math.pi/180) * random.randint(70,90), (math.pi/180) * 0]
     # numericResult[i] = integrate.solve_ivp(pendulumODEFriction, (t0, tf), theta, "LSODA")
     numericResult = integrate.odeint(pendulumODEFriction, theta, t)
-    # print(numericResult[i].y)
-    # input_seq[i] = numericResult[i].t
     output_seq[i] = numericResult[:,0]
 
-
+# convert the python list to numpy array
 output_seq = np.asfarray(output_seq)
-# convert the training data to tensors
+
+
+# now convert the training data to tensors
 trainingDataInput = torch.from_numpy(output_seq[NUM_TEST_SIZE:, :-1])
 trainingDataOutput = torch.from_numpy(output_seq[NUM_TEST_SIZE:, 1:])
 
 testingDataInput = torch.from_numpy(output_seq[:NUM_TEST_SIZE, :-1])
 testingDataOutput = torch.from_numpy(output_seq[:NUM_TEST_SIZE, 1:])
 
-
 trainingDataInput = trainingDataInput.float()
 trainingDataOutput = trainingDataOutput.float()
 
 testingDataInput = testingDataInput.float()
 testingDataOutput = testingDataOutput.float()
-
-
 
 # SIMPLE SINISOID TESTING
 # T = 20
@@ -121,13 +108,15 @@ testingDataOutput = testingDataOutput.float()
 # testingDataInput = testingDataInput.float()
 # testingDataOutput = testingDataOutput.float()
 
+
+
 # ------------------------------------------------------------------------
 ## RNN
 
 # hyperparameters
 # from stanford poster example (https://web.stanford.edu/class/archive/cs/cs221/cs221.1196/posters/18560035.pdf)
-n_epochs = 30
 n_epochs = 100
+n_epochs = 30
 lr = 5*(10**-5)
 lr = 0.004
 lr = 0.08
@@ -216,17 +205,13 @@ class pendulumRNN3(nn.Module):
 model = pendulumRNN3(hidden_size)
 criterion = nn.MSELoss()
 optimizer = torch.optim.LBFGS(model.parameters(), lr=lr)
-# optimizer = torch.optim.Adadelta(model.parameters(),lr=lr)
-# optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum)
 
-
-
-# defining the back prop function
 
 # training loop
 for epoch in range(n_epochs):
     print("Step",epoch)
     def closure():
+        # defining the back prop function
         optimizer.zero_grad()
         out = model(trainingDataInput)
         loss = criterion(out, trainingDataOutput)
@@ -241,8 +226,9 @@ for epoch in range(n_epochs):
         loss = criterion(pred[:, :-future], testingDataOutput)
         print("test loss", loss.item())
         pendulumPrediction = pred.detach().numpy()
+        # this is our prediction array
+    
     # draw the result
-    # if (epoch == 1) or (epoch > int(n_epochs*0.94)) or (epoch % 13 == 0):
     plt.figure(figsize=(30, 10))
     plt.title(
         'Predict future values for time sequences\n(Dashlines are predicted values)', fontsize=30)
