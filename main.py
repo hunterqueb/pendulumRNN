@@ -27,10 +27,10 @@ from scipy.interpolate import interp1d
 random.seed(123)
 
 # data size set that define amount of data sets we will generate to train the network
-NUM_TEST_SIZE = 1
 DATA_SET_SIZE = 20
+NUM_TEST_SIZE = DATA_SET_SIZE // 10
 DATA_SET_SIZE = DATA_SET_SIZE + NUM_TEST_SIZE
-DOWNSAMPLE_SIZE = 200
+TIME_STEP = 0.01
 
 # torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
 is_cuda = torch.cuda.is_available()
@@ -48,79 +48,48 @@ else:
 L = 0.5
 g = 9.81
 
-b = 0.3
+b = 0.1
 m = 1
 
-def pendulumODE(t, theta):
+def pendulumODE(theta, t):
     dtheta1 = theta[1]
     dtheta2 = -g/L*math.sin(theta[0])
-    return dtheta1, dtheta2
+    return [dtheta1, dtheta2]
 
-def pendulumODEFriction(t, theta):
+def pendulumODEFriction(theta, t):
     dtheta1 = theta[1]
     dtheta2 = -b/m*theta[1]-g/L*math.sin(theta[0])
-    return dtheta1, dtheta2
+    return [dtheta1, dtheta2]
 
 # sim time
 t0, tf = 0, 10
+
+SAMPLE_SIZE = tf/TIME_STEP
+
+t = np.arange(t0, tf, TIME_STEP)
 
 # initilize the arrays used to store the info from the numerical solution
 theta = [0 for i in range(DATA_SET_SIZE)]
 numericResult = [0 for i in range(DATA_SET_SIZE)]
 input_seq = [0 for i in range(DATA_SET_SIZE)]
 output_seq = [0 for i in range(DATA_SET_SIZE)]
-
-
 # generate random data set of input thetas and output thetas and theta dots over a time series 
 for i in range(DATA_SET_SIZE):
     theta = [(math.pi/180) * random.randint(70,90), (math.pi/180) * 0]
-    numericResult[i] = integrate.solve_ivp(pendulumODEFriction, (t0, tf), theta, "LSODA")
+    # numericResult[i] = integrate.solve_ivp(pendulumODEFriction, (t0, tf), theta, "LSODA")
+    numericResult = integrate.odeint(pendulumODEFriction, theta, t)
     # print(numericResult[i].y)
-    input_seq[i] = numericResult[i].t
-    output_seq[i] = numericResult[i].y[:][0]
+    # input_seq[i] = numericResult[i].t
+    output_seq[i] = numericResult[:,0]
 
 
-plt.plot(numericResult[0].t, numericResult[0].y[0])
-# plt.show()
-
-# now we should take only a certain amount of data as to reduce times and reduce overfitting data
-# first we initilize the 2d arrays to store the information
-InputSeqNP = [0 for i in range(DATA_SET_SIZE)]
-OutputSeqNP = [0 for i in range(DATA_SET_SIZE)]
-
-
-# convert the regular arrays to numpy arrays
-for i in range(DATA_SET_SIZE):
-    InputSeqNP[i] = np.asfarray(input_seq[i])
-    OutputSeqNP[i] = np.asfarray(output_seq[i])
-
-
-# now we downsample the array so the NN gets the same amount of info at all time steps
-def downsample(array, npts):
-    interpolated = interp1d(np.arange(len(array)), array, axis=0, fill_value='extrapolate')
-    downsampled = interpolated(np.linspace(0, len(array), npts))
-    return downsampled
-
-downsampledInputSeq = [[0 for j in range(DATA_SET_SIZE)] for i in range(DATA_SET_SIZE)]
-downsampledOutputSeq = [[0 for j in range(DATA_SET_SIZE)] for i in range(DATA_SET_SIZE)]
-
-for i in range(DATA_SET_SIZE):
-    downsampledInputSeq[i] = downsample(InputSeqNP[i], DOWNSAMPLE_SIZE)
-    downsampledOutputSeq[i] = downsample(OutputSeqNP[i], DOWNSAMPLE_SIZE)
-
-downsampledInputSeq = np.asfarray(downsampledInputSeq)
-downsampledOutputSeq = np.asfarray(downsampledOutputSeq)
-
-downsampledInputSeq = np.around(downsampledInputSeq,4)
-downsampledOutputSeq = np.around(downsampledOutputSeq, 4)
-
-
+output_seq = np.asfarray(output_seq)
 # convert the training data to tensors
-trainingDataInput = torch.from_numpy(downsampledInputSeq[NUM_TEST_SIZE:, :-1])
-trainingDataOutput = torch.from_numpy(downsampledOutputSeq[NUM_TEST_SIZE:, 1:])
+trainingDataInput = torch.from_numpy(output_seq[NUM_TEST_SIZE:, :-1])
+trainingDataOutput = torch.from_numpy(output_seq[NUM_TEST_SIZE:, 1:])
 
-testingDataInput = torch.from_numpy(downsampledInputSeq[:NUM_TEST_SIZE, :-1])
-testingDataOutput = torch.from_numpy(downsampledOutputSeq[:NUM_TEST_SIZE, 1:])
+testingDataInput = torch.from_numpy(output_seq[:NUM_TEST_SIZE, :-1])
+testingDataOutput = torch.from_numpy(output_seq[:NUM_TEST_SIZE, 1:])
 
 
 trainingDataInput = trainingDataInput.float()
@@ -267,7 +236,7 @@ for epoch in range(n_epochs):
     optimizer.step(closure)
 
     with torch.no_grad():
-        future = DOWNSAMPLE_SIZE
+        future = int(SAMPLE_SIZE)
         pred = model(testingDataInput, future=future)
         loss = criterion(pred[:, :-future], testingDataOutput)
         print("test loss", loss.item())
