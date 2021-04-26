@@ -1,0 +1,8 @@
+overfitting the model using an IC condition of 70 to 90 degrees and 20 train sets, this model convergered at around 32 epochs, with
+
+TIME_STEP = 0.01
+n_epochs = 33
+lr = 0.1
+hiddenSize = 50
+hiddenLayer = 3
+optimizer = torch.optim.LBFGS(model.parameters(), lr=lr)
