@@ -273,3 +273,4 @@ for epoch in range(n_epochs):
     plt.close()
 
 file.close()
+torch.save(model.state_dict(), open('trainedModel'+str(reportNum)+'.pt', 'wb'))
