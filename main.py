@@ -18,7 +18,7 @@ from scipy.interpolate import interp1d
 random.seed(123)
 
 # data size set that define amount of data sets we will generate to train the network
-DATA_SET_SIZE = 20
+DATA_SET_SIZE = 100
 NUM_TEST_SIZE = 1
 DATA_SET_SIZE = DATA_SET_SIZE + NUM_TEST_SIZE
 TIME_STEP = 0.01
