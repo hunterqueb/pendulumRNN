@@ -140,8 +140,8 @@ while(not reportCreated):
 
 # hyperparameters
 # from stanford poster example (https://web.stanford.edu/class/archive/cs/cs221/cs221.1196/posters/18560035.pdf)
-n_epochs = 100
 n_epochs = 30
+n_epochs = 100
 lr = 5*(10**-5)
 lr = 0.004
 lr = 0.08
