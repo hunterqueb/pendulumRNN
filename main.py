@@ -69,6 +69,10 @@ for i in range(DATA_SET_SIZE):
     # numericResult[i] = integrate.solve_ivp(pendulumODEFriction, (t0, tf), theta, "LSODA")
     numericResult = integrate.odeint(pendulumODEFriction, theta, t)
     output_seq[i] = numericResult[:,0]
+    if i == DATA_SET_SIZE-1:
+        actualResultFull = integrate.odeint(pendulumODEFriction, theta, np.arange(t0, 2*tf, TIME_STEP))
+        actualResult = actualResultFull[:, 0]
+
 
 # convert the python list to numpy array
 output_seq = np.asfarray(output_seq)
@@ -107,6 +111,14 @@ testingDataOutput = testingDataOutput.float()
 
 # testingDataInput = testingDataInput.float()
 # testingDataOutput = testingDataOutput.float()
+
+
+def drawPrediction(yi, color):
+    plt.plot(np.arange(trainingDataInput.size(1)), yi[:trainingDataInput.size(1)], color, linewidth=2.0)
+    plt.plot(np.arange(trainingDataInput.size(1), trainingDataInput.size(1) + future), yi[trainingDataInput.size(1):], color + ':', linewidth=2.0)
+
+def drawPlot(yi, color):
+    plt.plot(yi, color, linewidth=2.0)
 
 
 
@@ -228,7 +240,7 @@ for epoch in range(n_epochs):
         pendulumPrediction = pred.detach().numpy()
         # this is our prediction array
     
-    # draw the result
+    # drawPrediction the result
     plt.figure(figsize=(30, 10))
     plt.title(
         'Predict future values for time sequences\n(Dashlines are predicted values)', fontsize=30)
@@ -237,11 +249,9 @@ for epoch in range(n_epochs):
     plt.xticks(fontsize=20)
     plt.yticks(fontsize=20)
 
-    def draw(yi, color):
-        plt.plot(np.arange(trainingDataInput.size(1)), yi[:trainingDataInput.size(1)], color, linewidth=2.0)
-        plt.plot(np.arange(trainingDataInput.size(1), trainingDataInput.size(1) + future), yi[trainingDataInput.size(1):], color + ':', linewidth=2.0)
-    draw(pendulumPrediction[0], 'r')
-    # draw(pendulumPrediction[1], 'g')
-    # draw(pendulumPrediction[2], 'b')
+    drawPrediction(pendulumPrediction[0], 'r')
+    drawPlot(actualResult,'b')
+    # drawPrediction(pendulumPrediction[1], 'g')
+    # drawPrediction(pendulumPrediction[2], 'b')
     plt.savefig('predict%d.pdf' % epoch)
     plt.close()
