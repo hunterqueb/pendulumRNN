@@ -7,6 +7,7 @@ from torch import nn
 import torch
 import random
 from scipy.interpolate import interp1d
+import os.path
 
 # https://www.youtube.com/watch?v=AvKSPZ7oyVg
 
@@ -121,6 +122,18 @@ def drawPlot(yi, color):
     plt.plot(yi, color, linewidth=2.0)
 
 
+# ------------------------------------------------------------------------
+## FILE IO
+reportNum = 0
+reportCreated = False
+while(not reportCreated):
+    if os.path.isfile("report" + str(reportNum) + ".txt"):
+        reportNum += 1
+    else:
+        file = open("report" + str(reportNum) + ".txt", "w")
+        reportCreated = True
+
+
 
 # ------------------------------------------------------------------------
 ## RNN
@@ -214,7 +227,7 @@ class pendulumRNN3(nn.Module):
         return outputs
 
 # initilizing the model, criterion, and optimizer for the data
-model = pendulumRNN3(hidden_size)
+model = pendulumRNN(hidden_size)
 criterion = nn.MSELoss()
 optimizer = torch.optim.LBFGS(model.parameters(), lr=lr)
 
@@ -222,12 +235,14 @@ optimizer = torch.optim.LBFGS(model.parameters(), lr=lr)
 # training loop
 for epoch in range(n_epochs):
     print("Step",epoch)
+    file.write("Step " +  str(epoch) + "\n")
     def closure():
         # defining the back prop function
         optimizer.zero_grad()
         out = model(trainingDataInput)
         loss = criterion(out, trainingDataOutput)
         print("loss", loss.item())
+        file.write("loss: " + str(loss.item()) + "\n")
         loss.backward()
         return loss
     optimizer.step(closure)
@@ -237,6 +252,7 @@ for epoch in range(n_epochs):
         pred = model(testingDataInput, future=future)
         loss = criterion(pred[:, :-future], testingDataOutput)
         print("test loss", loss.item())
+        file.write("test loss: " + str(loss.item()) + "\n")
         pendulumPrediction = pred.detach().numpy()
         # this is our prediction array
     
@@ -255,3 +271,5 @@ for epoch in range(n_epochs):
     # drawPrediction(pendulumPrediction[2], 'b')
     plt.savefig('predict%d.pdf' % epoch)
     plt.close()
+
+file.close()
