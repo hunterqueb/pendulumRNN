@@ -31,6 +31,8 @@ r = integrate.odeint(pendulumODEFriction, theta0, t)
 # print(r.y.shape)
 # print(r.y)
 
-
 plt.plot(t,r[:,0])
+plt.xlabel("Time (sec)")
+plt.ylabel("Angluar Position (theta)")
+plt.title("Numerical Solution for a Pendulum with Friction")
 plt.show()
