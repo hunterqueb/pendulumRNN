@@ -175,11 +175,11 @@ n_epochs = 100
 lr = 5*(10**-5)
 lr = 0.004
 lr = 0.08
-lr = 0.1
+lr = 0.8
 input_size = 1
 output_size = 1
 num_layers = 3
-hidden_size = 50
+hidden_size = 51
 momentum = 0.9
 
 # defining the model class
