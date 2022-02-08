@@ -80,11 +80,12 @@ output_seq = np.asfarray(output_seq)
 
 
 # now convert the training data to tensors
-trainingDataInput = torch.from_numpy(output_seq[NUM_TEST_SIZE:, :-1])
-trainingDataOutput = torch.from_numpy(output_seq[NUM_TEST_SIZE:, 1:])
+# output_seq = 101,1000
+trainingDataInput = torch.from_numpy(output_seq[:NUM_TEST_SIZE, :-1]) # 100, 999
+trainingDataOutput = torch.from_numpy(output_seq[:NUM_TEST_SIZE, 1:])# 100, 999
 
-testingDataInput = torch.from_numpy(output_seq[:NUM_TEST_SIZE, :-1])
-testingDataOutput = torch.from_numpy(output_seq[:NUM_TEST_SIZE, 1:])
+testingDataInput = torch.from_numpy(output_seq[NUM_TEST_SIZE:, :-1]) # 1, 999
+testingDataOutput = torch.from_numpy(output_seq[NUM_TEST_SIZE:, 1:]) # 1, 999
 
 trainingDataInput = trainingDataInput.float()
 trainingDataOutput = trainingDataOutput.float()
