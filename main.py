@@ -53,25 +53,55 @@ def pendulumODEFriction(theta, t):
     dtheta2 = -b/m*theta[1]-g/L*math.sin(theta[0])
     return [dtheta1, dtheta2]
 
+def simpleHarmonicODE(t,y,p):
+    dydt1 = y[1]
+    dydt2 = -(p[0]/p[1]) * y[0]
+
+    return np.array([dydt1,dydt2])
+
+def myRK4(func,y0,tSpan,paramaters):
+    '''This function provides a sovler for any first order system using RK4 fixed time step algorithm.
+
+    Inputs: func - ode function point, y0 - inital conditions in the form of a numpy array (Nx1), tSpan - time span of integration (Mx1 vector of start time and end time), 
+    parameters - any parameters passed to the ode function
+
+    Outputs: ode solution in the form of a MxN matrix
+
+    Created: 10/12/21
+    Author: Hunter Quebedeaux'''
+    numTimeSteps = tSpan.size
+    h = tSpan[1] - tSpan[0]
+    y = np.zeros((numTimeSteps,y0.size))
+    y[0] = y0
+    
+    for i in range(1,numTimeSteps):
+        k1 = h*func(tSpan[i-1],y[i-1],paramaters)
+        k2 = h*func(tSpan[i-1]+0.5*h,y[i-1]+0.5*k1,paramaters)
+        k3 = h*func((tSpan[i-1]+0.5*h),(y[i-1]+0.5*k2),paramaters)
+        k4 = h*func((tSpan[i-1]+h),(y[i-1]+k3),paramaters)
+        y[i]= y[i-1] + (k1+2*k2+2*k3+k4)/6
+    return y
+
 # sim time
 t0, tf = 0, 10
 
 SAMPLE_SIZE = tf/TIME_STEP
 
 t = np.arange(t0, tf, TIME_STEP)
-
+stiffness = 1
+mass = 1
 # initilize the arrays used to store the info from the numerical solution
 theta = [0 for i in range(DATA_SET_SIZE)]
 numericResult = [0 for i in range(DATA_SET_SIZE)]
 output_seq = [0 for i in range(DATA_SET_SIZE)]
 # generate random data set of input thetas and output thetas and theta dots over a time series 
 for i in range(DATA_SET_SIZE):
-    theta = [(math.pi/180) * random.randint(70,90), (math.pi/180) * 0]
+    theta = np.array([(math.pi/180) * random.randint(70,90), (math.pi/180) * 0])
     # numericResult[i] = integrate.solve_ivp(pendulumODEFriction, (t0, tf), theta, "LSODA")
-    numericResult = integrate.odeint(pendulumODEFriction, theta, t)
+    numericResult = myRK4(simpleHarmonicODE,theta,t,np.array([stiffness,mass]))
     output_seq[i] = numericResult[:,0]
     if i == DATA_SET_SIZE-1:
-        actualResultFull = integrate.odeint(pendulumODEFriction, theta, np.arange(t0, 2*tf, TIME_STEP))
+        actualResultFull = myRK4(simpleHarmonicODE, theta, np.arange(t0, 2*tf, TIME_STEP),np.array([stiffness,mass]))
         actualResult = actualResultFull[:, 0]
 
 
