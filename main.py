@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
 from scipy import integrate
 import math
@@ -8,6 +7,8 @@ import torch
 import random
 from scipy.interpolate import interp1d
 import os.path
+import torch.nn.functional as F
+
 
 # https://www.youtube.com/watch?v=AvKSPZ7oyVg
 
@@ -41,32 +42,44 @@ else:
 
 m = 1
 k = 1
+
+
 def linPendulumODE(theta, t):
     dtheta1 = theta[1]
     dtheta2 = -k/m*(theta[0])
     return [dtheta1, dtheta2]
 
+
 L = 10
 g = 9.81
+
+
 def pendulumODE(theta, t):
     dtheta1 = theta[1]
     dtheta2 = -g/L*math.sin(theta[0])
     return [dtheta1, dtheta2]
 
+
 b = 0.1
+
+
 def pendulumODEFriction(theta, t):
     dtheta1 = theta[1]
     dtheta2 = -b/m*theta[1]-g/L*math.sin(theta[0])
     return [dtheta1, dtheta2]
 
-c=0
-w=1.4
-k=0.7
-def duffingOscillatorODE(y,t,p=[c,w**2,k**2]):
+
+c = 0
+w = 1.4
+k = 0.7
+
+
+def duffingOscillatorODE(y, t, p=[c, w**2, k**2]):
     dydt1 = y[1]
     dydt2 = -(p[0]*y[1] + p[1]*y[0] + p[2]*y[0]**3)
 
     return [dydt1, dydt2]
+
 
 sysfuncptr = duffingOscillatorODE
 # sim time
@@ -80,14 +93,15 @@ t = np.arange(t0, tf, TIME_STEP)
 theta = [0 for i in range(DATA_SET_SIZE)]
 numericResult = [0 for i in range(DATA_SET_SIZE)]
 output_seq = [0 for i in range(DATA_SET_SIZE)]
-# generate random data set of input thetas and output thetas and theta dots over a time series 
+# generate random data set of input thetas and output thetas and theta dots over a time series
 for i in range(DATA_SET_SIZE):
-    theta = [random.uniform(0.84,0.86), (math.pi/180) * 0]
+    theta = [random.uniform(0.84, 0.86), (math.pi/180) * 0]
     # numericResult[i] = integrate.solve_ivp(pendulumODEFriction, (t0, tf), theta, "LSODA")
     numericResult = integrate.odeint(sysfuncptr, theta, t)
-    output_seq[i] = numericResult[:,0]
+    output_seq[i] = numericResult[:, 0]
     if i == DATA_SET_SIZE-1:
-        actualResultFull = integrate.odeint(sysfuncptr, theta, np.arange(t0, 2*tf, TIME_STEP))
+        actualResultFull = integrate.odeint(
+            sysfuncptr, theta, np.arange(t0, 2*tf, TIME_STEP))
         actualResult = actualResultFull[:, 0]
 
 
@@ -97,11 +111,13 @@ output_seq = np.asfarray(output_seq)
 
 # now convert the training data to tensors
 # output_seq = 101,1000
-trainingDataInput = torch.from_numpy(output_seq[NUM_TEST_SIZE:, :-1]) # 100, 999
-trainingDataOutput = torch.from_numpy(output_seq[NUM_TEST_SIZE:, 1:])# 100, 999
+trainingDataInput = torch.from_numpy(
+    output_seq[NUM_TEST_SIZE:, :-1])  # 100, 999
+trainingDataOutput = torch.from_numpy(
+    output_seq[NUM_TEST_SIZE:, 1:])  # 100, 999
 
-testingDataInput = torch.from_numpy(output_seq[:NUM_TEST_SIZE, :-1]) # 1, 999
-testingDataOutput = torch.from_numpy(output_seq[:NUM_TEST_SIZE, 1:]) # 1, 999
+testingDataInput = torch.from_numpy(output_seq[:NUM_TEST_SIZE, :-1])  # 1, 999
+testingDataOutput = torch.from_numpy(output_seq[:NUM_TEST_SIZE, 1:])  # 1, 999
 
 trainingDataInput = trainingDataInput.float().to(device)
 trainingDataOutput = trainingDataOutput.float().to(device)
@@ -110,11 +126,15 @@ testingDataOutput = testingDataOutput.float().to(device)
 
 
 def drawPrediction(yi, color):
-    plt.plot(np.arange(t0, tf-TIME_STEP, TIME_STEP), yi[:trainingDataInput.size(1)], color, linewidth=2.0,label='Direct Training Output')
-    plt.plot(np.arange(tf, tf*2-TIME_STEP, TIME_STEP), yi[trainingDataInput.size(1):], color + ':', linewidth=2.0, label='Predicted Motion')
+    plt.plot(np.arange(t0, tf-TIME_STEP, TIME_STEP),
+             yi[:trainingDataInput.size(1)], color, linewidth=2.0, label='Direct Training Output')
+    plt.plot(np.arange(tf, tf*2-TIME_STEP, TIME_STEP),
+             yi[trainingDataInput.size(1):], color + ':', linewidth=2.0, label='Predicted Motion')
+
 
 def drawPlot(yi, color):
-    plt.plot(np.arange(t0, 2*tf, TIME_STEP),yi, color, linewidth=2.0,label='True Motion')
+    plt.plot(np.arange(t0, 2*tf, TIME_STEP), yi,
+             color, linewidth=2.0, label='True Motion')
 
 
 # ------------------------------------------------------------------------
@@ -127,7 +147,6 @@ while(not reportCreated):
     else:
         file = open("report" + str(reportNum) + ".txt", "w")
         reportCreated = True
-
 
 
 # ------------------------------------------------------------------------
@@ -149,28 +168,34 @@ hidden_size = 51
 p_dropout = 0
 
 # defining the model class
+
+
 class pendulumRNN(nn.Module):
-    
-    def __init__(self, hidden_dim,dropout_prob=0):
+
+    def __init__(self, hidden_dim, dropout_prob=0):
         super(pendulumRNN, self).__init__()
 
         self.hidden_dim = hidden_dim
 
-        self.lstm1 = nn.LSTMCell(1,self.hidden_dim)
-        self.lstm2 = nn.LSTMCell(self.hidden_dim,self.hidden_dim)
-        self.linear = nn.Linear(self.hidden_dim,1)
+        self.lstm1 = nn.LSTMCell(1, self.hidden_dim)
+        self.lstm2 = nn.LSTMCell(self.hidden_dim, self.hidden_dim)
+        self.linear = nn.Linear(self.hidden_dim, 1)
         self.dropout = nn.Dropout(p=dropout_prob)
 
-    def forward(self,input,future=0):
-        outputs=[]
+    def forward(self, input, future=0):
+        outputs = []
         n_samples = input.size(0)
-        h_t = torch.zeros(n_samples,self.hidden_dim, dtype=torch.float32,device=device)
-        c_t = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32,device=device)
-        h_t2 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32,device=device)
-        c_t2 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32,device=device)
+        h_t = torch.zeros(n_samples, self.hidden_dim,
+                          dtype=torch.float32, device=device)
+        c_t = torch.zeros(n_samples, self.hidden_dim,
+                          dtype=torch.float32, device=device)
+        h_t2 = torch.zeros(n_samples, self.hidden_dim,
+                           dtype=torch.float32, device=device)
+        c_t2 = torch.zeros(n_samples, self.hidden_dim,
+                           dtype=torch.float32, device=device)
 
         for input_t in input.split(1, dim=1):
-            h_t, c_t = self.lstm1(input_t,(h_t,c_t))
+            h_t, c_t = self.lstm1(input_t, (h_t, c_t))
             h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
             h_t2 = self.dropout(h_t2)
             output = self.linear(h_t2)
@@ -183,12 +208,12 @@ class pendulumRNN(nn.Module):
             output = self.linear(h_t2)
             outputs.append(output)
 
-        outputs = torch.cat(outputs, dim = 1)
+        outputs = torch.cat(outputs, dim=1)
         return outputs
 
 
 class pendulumRNN3(nn.Module):
-    def __init__(self, hidden_dim,dropout_prob=0.0):
+    def __init__(self, hidden_dim, dropout_prob=0.0):
         super(pendulumRNN3, self).__init__()
 
         self.hidden_dim = hidden_dim
@@ -202,12 +227,18 @@ class pendulumRNN3(nn.Module):
     def forward(self, input, future=0):
         outputs = []
         n_samples = input.size(0)
-        h_t = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32,device=device)
-        c_t = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32,device=device)
-        h_t2 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32,device=device)
-        c_t2 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32,device=device)
-        h_t3 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32,device=device)
-        c_t3 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float32,device=device)
+        h_t = torch.zeros(n_samples, self.hidden_dim,
+                          dtype=torch.float32, device=device)
+        c_t = torch.zeros(n_samples, self.hidden_dim,
+                          dtype=torch.float32, device=device)
+        h_t2 = torch.zeros(n_samples, self.hidden_dim,
+                           dtype=torch.float32, device=device)
+        c_t2 = torch.zeros(n_samples, self.hidden_dim,
+                           dtype=torch.float32, device=device)
+        h_t3 = torch.zeros(n_samples, self.hidden_dim,
+                           dtype=torch.float32, device=device)
+        c_t3 = torch.zeros(n_samples, self.hidden_dim,
+                           dtype=torch.float32, device=device)
 
         for input_t in input.split(1, dim=1):
             h_t, c_t = self.lstm1(input_t, (h_t, c_t))
@@ -228,21 +259,29 @@ class pendulumRNN3(nn.Module):
         outputs = torch.cat(outputs, dim=1)
         return outputs
 
+
 # initilizing the model, criterion, and optimizer for the data
-model = pendulumRNN3(hidden_size,p_dropout).to(device)
-criterion = nn.MSELoss()
+model = pendulumRNN3(hidden_size, p_dropout).to(device)
+criterionMSE = nn.MSELoss()
 optimizer = torch.optim.LBFGS(model.parameters(), lr=lr, tolerance_grad=1e-8, tolerance_change=1e-10)
+criterion = F.smooth_l1_loss
+# Define the mean absolute error (MAE) loss function
+# mae_loss = F.l1_loss(predicted, target)
+
+# Define the Huber loss function with delta=1.0
+# huber_loss = F.smooth_l1_loss(predicted, target, reduction='mean', delta=1.0)
 
 
 # training loop
 for epoch in range(n_epochs):
-    print("Step",epoch)
-    file.write("Step " +  str(epoch) + "\n")
+    print("Step", epoch)
+    file.write("Step " + str(epoch) + "\n")
+
     def closure():
         # defining the back prop function
         optimizer.zero_grad()
         out = model(trainingDataInput)
-        loss = criterion(out, trainingDataOutput)
+        loss = criterion(out, trainingDataOutput,reduction='mean', beta=1e-5, size_average=True)
         print("     loss", loss.item())
         file.write("     loss: " + str(loss.item()) + "\n")
         loss.backward()
@@ -252,12 +291,12 @@ for epoch in range(n_epochs):
     with torch.no_grad():
         future = int(SAMPLE_SIZE)
         pred = model(testingDataInput, future=future)
-        loss = criterion(pred[:, :-future], testingDataOutput)
-        print("test loss", loss.item())
+        loss = criterionMSE(pred[:, :-future], testingDataOutput)
+        print("MSE  loss", loss.item())
         file.write("test loss: " + str(loss.item()) + "\n")
         pendulumPrediction = pred.cpu().detach().numpy()
         # this is our prediction array
-    
+
     # drawPrediction the result
     if epoch % 5 == 0 or epoch == n_epochs-1:
         plt.figure(figsize=(30, 10))
@@ -268,7 +307,7 @@ for epoch in range(n_epochs):
         plt.yticks(fontsize=20)
 
         drawPrediction(pendulumPrediction[0], 'r')
-        drawPlot(actualResult,'k')
+        drawPlot(actualResult, 'k')
         plt.legend(fontsize=15)
         # drawPrediction(pendulumPrediction[1], 'g')
         # drawPrediction(pendulumPrediction[2], 'b')
