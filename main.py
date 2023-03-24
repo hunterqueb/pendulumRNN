@@ -119,10 +119,10 @@ trainingDataOutput = torch.from_numpy(
 testingDataInput = torch.from_numpy(output_seq[:NUM_TEST_SIZE, :-1])  # 1, 999
 testingDataOutput = torch.from_numpy(output_seq[:NUM_TEST_SIZE, 1:])  # 1, 999
 
-trainingDataInput = trainingDataInput.float().to(device)
-trainingDataOutput = trainingDataOutput.float().to(device)
-testingDataInput = testingDataInput.float().to(device)
-testingDataOutput = testingDataOutput.float().to(device)
+trainingDataInput = trainingDataInput.double().to(device)
+trainingDataOutput = trainingDataOutput.double().to(device)
+testingDataInput = testingDataInput.double().to(device)
+testingDataOutput = testingDataOutput.double().to(device)
 
 
 def drawPrediction(yi, color):
@@ -160,7 +160,7 @@ lr = 5*(10**-5)
 lr = 0.004
 # lr = 0.08
 # lr = 0.85
-lr = 0.7
+lr = 0.6
 input_size = 1
 output_size = 1
 # num_layers = 3
@@ -186,13 +186,13 @@ class pendulumRNN(nn.Module):
         outputs = []
         n_samples = input.size(0)
         h_t = torch.zeros(n_samples, self.hidden_dim,
-                          dtype=torch.float32, device=device)
+                          dtype=torch.float64, device=device)
         c_t = torch.zeros(n_samples, self.hidden_dim,
-                          dtype=torch.float32, device=device)
+                          dtype=torch.float64, device=device)
         h_t2 = torch.zeros(n_samples, self.hidden_dim,
-                           dtype=torch.float32, device=device)
+                           dtype=torch.float64, device=device)
         c_t2 = torch.zeros(n_samples, self.hidden_dim,
-                           dtype=torch.float32, device=device)
+                           dtype=torch.float64, device=device)
 
         for input_t in input.split(1, dim=1):
             h_t, c_t = self.lstm1(input_t, (h_t, c_t))
@@ -228,17 +228,17 @@ class pendulumRNN3(nn.Module):
         outputs = []
         n_samples = input.size(0)
         h_t = torch.zeros(n_samples, self.hidden_dim,
-                          dtype=torch.float32, device=device)
+                          dtype=torch.float64, device=device)
         c_t = torch.zeros(n_samples, self.hidden_dim,
-                          dtype=torch.float32, device=device)
+                          dtype=torch.float64, device=device)
         h_t2 = torch.zeros(n_samples, self.hidden_dim,
-                           dtype=torch.float32, device=device)
+                           dtype=torch.float64, device=device)
         c_t2 = torch.zeros(n_samples, self.hidden_dim,
-                           dtype=torch.float32, device=device)
+                           dtype=torch.float64, device=device)
         h_t3 = torch.zeros(n_samples, self.hidden_dim,
-                           dtype=torch.float32, device=device)
+                           dtype=torch.float64, device=device)
         c_t3 = torch.zeros(n_samples, self.hidden_dim,
-                           dtype=torch.float32, device=device)
+                           dtype=torch.float64, device=device)
 
         for input_t in input.split(1, dim=1):
             h_t, c_t = self.lstm1(input_t, (h_t, c_t))
@@ -261,7 +261,7 @@ class pendulumRNN3(nn.Module):
 
 
 # initilizing the model, criterion, and optimizer for the data
-model = pendulumRNN3(hidden_size, p_dropout).to(device)
+model = pendulumRNN3(hidden_size, p_dropout).double().to(device)
 criterionMSE = nn.MSELoss()
 optimizer = torch.optim.LBFGS(model.parameters(), lr=lr, tolerance_grad=1e-8, tolerance_change=1e-10)
 criterion = F.smooth_l1_loss
@@ -271,6 +271,8 @@ criterion = F.smooth_l1_loss
 # Define the Huber loss function with delta=1.0
 # huber_loss = F.smooth_l1_loss(predicted, target, reduction='mean', delta=1.0)
 
+future = int(SAMPLE_SIZE)
+futureTruth = torch.Tensor(actualResult[-future:]).to(device).view(1,-1)
 
 # training loop
 for epoch in range(n_epochs):
@@ -281,18 +283,20 @@ for epoch in range(n_epochs):
         # defining the back prop function
         optimizer.zero_grad()
         out = model(trainingDataInput)
-        loss = criterion(out, trainingDataOutput,reduction='mean', beta=1e-5, size_average=True)
+        loss = criterion(out, trainingDataOutput,reduction='mean', beta=1e-6, size_average=True)
         print("     loss", loss.item())
         file.write("     loss: " + str(loss.item()) + "\n")
         loss.backward()
         return loss
     optimizer.step(closure)
 
+
     with torch.no_grad():
-        future = int(SAMPLE_SIZE)
         pred = model(testingDataInput, future=future)
         loss = criterionMSE(pred[:, :-future], testingDataOutput)
         print("MSE  loss", loss.item())
+        loss = criterionMSE(pred[:, -future:], futureTruth)
+        print("pMSE loss", loss.item())
         file.write("test loss: " + str(loss.item()) + "\n")
         pendulumPrediction = pred.cpu().detach().numpy()
         # this is our prediction array
