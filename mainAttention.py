@@ -154,17 +154,17 @@ while(not reportCreated):
 
 # hyperparameters
 # from stanford poster example (https://web.stanford.edu/class/archive/cs/cs221/cs221.1196/posters/18560035.pdf)
+n_epochs = 10
 n_epochs = 50
-# n_epochs = 100
 lr = 5*(10**-5)
-lr = 0.004
-# lr = 0.08
+# lr = 0.004
 # lr = 0.85
-lr = 0.6
+# lr = 0.6
+lr = 0.08
 input_size = 1
 output_size = 1
 # num_layers = 3
-hidden_size = 51
+hidden_size = 40
 p_dropout = 0
 
 # defining the model class
@@ -213,47 +213,63 @@ class pendulumRNN(nn.Module):
 
 
 class pendulumRNN3(nn.Module):
-    def __init__(self, hidden_dim, dropout_prob=0.0):
+    def __init__(self, hidden_dim, dropout_prob=0.0, n_heads=1):
         super(pendulumRNN3, self).__init__()
 
         self.hidden_dim = hidden_dim
 
+        # LSTM layers
         self.lstm1 = nn.LSTMCell(1, self.hidden_dim)
         self.lstm2 = nn.LSTMCell(self.hidden_dim, self.hidden_dim)
         self.lstm3 = nn.LSTMCell(self.hidden_dim, self.hidden_dim)
+
+        # Multi-head attention
+        self.attention = nn.MultiheadAttention(self.hidden_dim, num_heads=n_heads)
+
+        # Linear layer
         self.linear = nn.Linear(self.hidden_dim, 1)
+
+        # Dropout
         self.dropout = nn.Dropout(p=dropout_prob)
 
     def forward(self, input, future=0):
         outputs = []
         n_samples = input.size(0)
-        h_t = torch.zeros(n_samples, self.hidden_dim,
-                          dtype=torch.float64, device=device)
-        c_t = torch.zeros(n_samples, self.hidden_dim,
-                          dtype=torch.float64, device=device)
-        h_t2 = torch.zeros(n_samples, self.hidden_dim,
-                           dtype=torch.float64, device=device)
-        c_t2 = torch.zeros(n_samples, self.hidden_dim,
-                           dtype=torch.float64, device=device)
-        h_t3 = torch.zeros(n_samples, self.hidden_dim,
-                           dtype=torch.float64, device=device)
-        c_t3 = torch.zeros(n_samples, self.hidden_dim,
-                           dtype=torch.float64, device=device)
+        
+        # Initial hidden states
+        h_t = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float64, device=input.device)
+        c_t = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float64, device=input.device)
+        h_t2 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float64, device=input.device)
+        c_t2 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float64, device=input.device)
+        h_t3 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float64, device=input.device)
+        c_t3 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float64, device=input.device)
 
+        # Process each time step
         for input_t in input.split(1, dim=1):
             h_t, c_t = self.lstm1(input_t, (h_t, c_t))
             h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
             h_t3, c_t3 = self.lstm3(h_t2, (h_t3, c_t3))
-            h_t3 = self.dropout(h_t3)
-            output = self.linear(h_t3)
+
+            # Apply attention
+            attn_output, _ = self.attention(h_t3.unsqueeze(0), h_t3.unsqueeze(0), h_t3.unsqueeze(0))
+            attn_output = attn_output.squeeze(0)
+
+            attn_output = self.dropout(attn_output)
+            output = self.linear(attn_output)
             outputs.append(output)
 
+        # Future prediction
         for i in range(future):
             h_t, c_t = self.lstm1(output, (h_t, c_t))
             h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
             h_t3, c_t3 = self.lstm3(h_t2, (h_t3, c_t3))
-            h_t3 = self.dropout(h_t3)
-            output = self.linear(h_t3)
+
+            # Apply attention
+            attn_output, _ = self.attention(h_t3.unsqueeze(0), h_t3.unsqueeze(0), h_t3.unsqueeze(0))
+            attn_output = attn_output.squeeze(0)
+
+            attn_output = self.dropout(attn_output)
+            output = self.linear(attn_output)
             outputs.append(output)
 
         outputs = torch.cat(outputs, dim=1)
@@ -302,7 +318,7 @@ for epoch in range(n_epochs):
         # this is our prediction array
 
     # drawPrediction the result
-    if epoch % 5 == 0 or epoch == n_epochs-1 or True:
+    if epoch % 2 == 0 or epoch == n_epochs-1 or True: 
         plt.figure(figsize=(30, 10))
         plt.title('LSTM Solution to Duffing Oscillator', fontsize=30)
         plt.xlabel('time (sec)', fontsize=20)
