@@ -156,30 +156,85 @@ while(not reportCreated):
 # from stanford poster example (https://web.stanford.edu/class/archive/cs/cs221/cs221.1196/posters/18560035.pdf)
 n_epochs = 10
 n_epochs = 50
-lr = 5*(10**-5)
-# lr = 0.004
+# lr = 5*(10**-5)
 # lr = 0.85
 # lr = 0.6
 lr = 0.08
+lr = 0.04
 input_size = 1
 output_size = 1
 # num_layers = 3
-hidden_size = 40
-p_dropout = 0
+hidden_size = 50
+p_dropout = 0.1
 
 # defining the model class
+# class pendulumRNN(nn.Module):
+
+#     def __init__(self, hidden_dim, dropout_prob=0):
+#         super(pendulumRNN, self).__init__()
+
+#         self.hidden_dim = hidden_dim
+
+#         self.lstm1 = nn.LSTMCell(1, self.hidden_dim)
+#         self.lstm2 = nn.LSTMCell(self.hidden_dim, self.hidden_dim)
+#         self.linear = nn.Linear(self.hidden_dim, 1)
+#         self.dropout = nn.Dropout(p=dropout_prob)
+
+#     def forward(self, input, future=0):
+#         outputs = []
+#         n_samples = input.size(0)
+#         h_t = torch.zeros(n_samples, self.hidden_dim,
+#                           dtype=torch.float64, device=device)
+#         c_t = torch.zeros(n_samples, self.hidden_dim,
+#                           dtype=torch.float64, device=device)
+#         h_t2 = torch.zeros(n_samples, self.hidden_dim,
+#                            dtype=torch.float64, device=device)
+#         c_t2 = torch.zeros(n_samples, self.hidden_dim,
+#                            dtype=torch.float64, device=device)
+
+#         for input_t in input.split(1, dim=1):
+#             h_t, c_t = self.lstm1(input_t, (h_t, c_t))
+#             h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
+#             h_t2 = self.dropout(h_t2)
+#             output = self.linear(h_t2)
+#             outputs.append(output)
+
+#         for i in range(future):
+#             h_t, c_t = self.lstm1(output, (h_t, c_t))
+#             h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
+#             h_t2 = self.dropout(h_t2)
+#             output = self.linear(h_t2)
+#             outputs.append(output)
+
+#         outputs = torch.cat(outputs, dim=1)
+#         return outputs
 
 
-class pendulumRNN(nn.Module):
+class SelfAttention(nn.Module):
+    def __init__(self, hidden_dim):
+        super(SelfAttention, self).__init__()
+        self.hidden_dim = hidden_dim
+        self.linear1 = nn.Linear(hidden_dim, hidden_dim)
+        self.linear2 = nn.Linear(hidden_dim, hidden_dim)
 
-    def __init__(self, hidden_dim, dropout_prob=0):
-        super(pendulumRNN, self).__init__()
+    def forward(self, h):
+        attn_weights = torch.tanh(self.linear1(h))
+        attn_weights = self.linear2(attn_weights).squeeze(1)
+        attn_weights = torch.softmax(attn_weights, dim=-1)
+        context = (attn_weights * h)
+        return context
+
+
+class pendulumRNNSA(nn.Module):
+    def __init__(self, hidden_dim, dropout_prob=0.0):
+        super(pendulumRNNSA, self).__init__()
 
         self.hidden_dim = hidden_dim
 
-        self.lstm1 = nn.LSTMCell(1, self.hidden_dim)
-        self.lstm2 = nn.LSTMCell(self.hidden_dim, self.hidden_dim)
-        self.linear = nn.Linear(self.hidden_dim, 1)
+        self.lstm1 = nn.LSTMCell(1, hidden_dim)
+        self.lstm2 = nn.LSTMCell(hidden_dim, hidden_dim)
+        self.attention = SelfAttention(hidden_dim)
+        self.linear = nn.Linear(hidden_dim, 1)
         self.dropout = nn.Dropout(p=dropout_prob)
 
     def forward(self, input, future=0):
@@ -198,23 +253,24 @@ class pendulumRNN(nn.Module):
             h_t, c_t = self.lstm1(input_t, (h_t, c_t))
             h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
             h_t2 = self.dropout(h_t2)
-            output = self.linear(h_t2)
+            context = self.attention(h_t2)
+            output = self.linear(context)
             outputs.append(output)
 
         for i in range(future):
             h_t, c_t = self.lstm1(output, (h_t, c_t))
             h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
             h_t2 = self.dropout(h_t2)
-            output = self.linear(h_t2)
+            context = self.attention(h_t2)
+            output = self.linear(context)
             outputs.append(output)
 
         outputs = torch.cat(outputs, dim=1)
         return outputs
 
-
-class pendulumRNN3(nn.Module):
+class pendulumRNNMHA(nn.Module):
     def __init__(self, hidden_dim, dropout_prob=0.0, n_heads=1):
-        super(pendulumRNN3, self).__init__()
+        super(pendulumRNNMHA, self).__init__()
 
         self.hidden_dim = hidden_dim
 
@@ -277,7 +333,7 @@ class pendulumRNN3(nn.Module):
 
 
 # initilizing the model, criterion, and optimizer for the data
-model = pendulumRNN3(hidden_size, p_dropout).double().to(device)
+model = pendulumRNNSA(hidden_size, p_dropout).double().to(device)
 criterionMSE = nn.MSELoss()
 optimizer = torch.optim.LBFGS(model.parameters(), lr=lr, tolerance_grad=1e-8, tolerance_change=1e-10)
 criterion = F.smooth_l1_loss
