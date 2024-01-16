@@ -259,6 +259,126 @@ class pendulumRNN3(nn.Module):
         outputs = torch.cat(outputs, dim=1)
         return outputs
 
+class SelfAttention(nn.Module):
+    def __init__(self, hidden_dim):
+        super(SelfAttention, self).__init__()
+        self.hidden_dim = hidden_dim
+        self.linear1 = nn.Linear(hidden_dim, hidden_dim)
+        self.linear2 = nn.Linear(hidden_dim, hidden_dim)
+
+    def forward(self, h):
+        attn_weights = torch.tanh(self.linear1(h))
+        attn_weights = self.linear2(attn_weights).squeeze(1)
+        attn_weights = torch.softmax(attn_weights, dim=-1)
+        context = (attn_weights * h)
+        return context
+
+
+class pendulumRNNSA(nn.Module):
+    def __init__(self, hidden_dim, dropout_prob=0.0):
+        super(pendulumRNNSA, self).__init__()
+
+        self.hidden_dim = hidden_dim
+
+        self.lstm1 = nn.LSTMCell(1, hidden_dim)
+        self.lstm2 = nn.LSTMCell(hidden_dim, hidden_dim)
+        self.attention = SelfAttention(hidden_dim)
+        self.linear = nn.Linear(hidden_dim, 1)
+        self.dropout = nn.Dropout(p=dropout_prob)
+
+    def forward(self, input, future=0):
+        outputs = []
+        n_samples = input.size(0)
+        h_t = torch.zeros(n_samples, self.hidden_dim,
+                          dtype=torch.float64, device=device)
+        c_t = torch.zeros(n_samples, self.hidden_dim,
+                          dtype=torch.float64, device=device)
+        h_t2 = torch.zeros(n_samples, self.hidden_dim,
+                           dtype=torch.float64, device=device)
+        c_t2 = torch.zeros(n_samples, self.hidden_dim,
+                           dtype=torch.float64, device=device)
+
+        for input_t in input.split(1, dim=1):
+            h_t, c_t = self.lstm1(input_t, (h_t, c_t))
+            h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
+            h_t2 = self.dropout(h_t2)
+            context = self.attention(h_t2)
+            output = self.linear(context)
+            outputs.append(output)
+
+        for i in range(future):
+            h_t, c_t = self.lstm1(output, (h_t, c_t))
+            h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
+            h_t2 = self.dropout(h_t2)
+            context = self.attention(h_t2)
+            output = self.linear(context)
+            outputs.append(output)
+
+        outputs = torch.cat(outputs, dim=1)
+        return outputs
+
+class pendulumRNNMHA(nn.Module):
+    def __init__(self, hidden_dim, dropout_prob=0.0, n_heads=1):
+        super(pendulumRNNMHA, self).__init__()
+
+        self.hidden_dim = hidden_dim
+
+        # LSTM layers
+        self.lstm1 = nn.LSTMCell(1, self.hidden_dim)
+        self.lstm2 = nn.LSTMCell(self.hidden_dim, self.hidden_dim)
+        self.lstm3 = nn.LSTMCell(self.hidden_dim, self.hidden_dim)
+
+        # Multi-head attention
+        self.attention = nn.MultiheadAttention(self.hidden_dim, num_heads=n_heads)
+
+        # Linear layer
+        self.linear = nn.Linear(self.hidden_dim, 1)
+
+        # Dropout
+        self.dropout = nn.Dropout(p=dropout_prob)
+
+    def forward(self, input, future=0):
+        outputs = []
+        n_samples = input.size(0)
+        
+        # Initial hidden states
+        h_t = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float64, device=input.device)
+        c_t = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float64, device=input.device)
+        h_t2 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float64, device=input.device)
+        c_t2 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float64, device=input.device)
+        h_t3 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float64, device=input.device)
+        c_t3 = torch.zeros(n_samples, self.hidden_dim, dtype=torch.float64, device=input.device)
+
+        # Process each time step
+        for input_t in input.split(1, dim=1):
+            h_t, c_t = self.lstm1(input_t, (h_t, c_t))
+            h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
+            h_t3, c_t3 = self.lstm3(h_t2, (h_t3, c_t3))
+
+            # Apply attention
+            attn_output, _ = self.attention(h_t3.unsqueeze(0), h_t3.unsqueeze(0), h_t3.unsqueeze(0))
+            attn_output = attn_output.squeeze(0)
+
+            attn_output = self.dropout(attn_output)
+            output = self.linear(attn_output)
+            outputs.append(output)
+
+        # Future prediction
+        for i in range(future):
+            h_t, c_t = self.lstm1(output, (h_t, c_t))
+            h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
+            h_t3, c_t3 = self.lstm3(h_t2, (h_t3, c_t3))
+
+            # Apply attention
+            attn_output, _ = self.attention(h_t3.unsqueeze(0), h_t3.unsqueeze(0), h_t3.unsqueeze(0))
+            attn_output = attn_output.squeeze(0)
+
+            attn_output = self.dropout(attn_output)
+            output = self.linear(attn_output)
+            outputs.append(output)
+
+        outputs = torch.cat(outputs, dim=1)
+        return outputs
 
 # initilizing the model, criterion, and optimizer for the data
 model = pendulumRNN3(hidden_size, p_dropout).double().to(device)

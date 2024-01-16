@@ -1,5 +1,54 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+
+def create_dataset(dataset,device,lookback):
+    """Transform a time series into a prediction dataset
+    
+    Args:
+        dataset: A numpy array of time series, first dimension is the time steps
+        lookback: Size of window for prediction
+    """
+    X, y = [], []
+    for i in range(len(dataset)-lookback):
+        feature = dataset[i:i+lookback]
+        target = dataset[i+1:i+lookback+1]
+        X.append(feature)
+        y.append(target)
+    return torch.tensor(X).double().to(device), torch.tensor(y).double().to(device)
+
+
+class SelfAttentionLayer(nn.Module):
+   def __init__(self, feature_size):
+       super(SelfAttentionLayer, self).__init__()
+       self.feature_size = feature_size
+
+       # Linear transformations for Q, K, V from the same source
+       self.key = nn.Linear(feature_size, feature_size)
+       self.query = nn.Linear(feature_size, feature_size)
+       self.value = nn.Linear(feature_size, feature_size)
+
+   def forward(self, x, mask=None):
+       # Apply linear transformations
+       keys = self.key(x)
+       queries = self.query(x)
+       values = self.value(x)
+
+       # Scaled dot-product attention
+       scores = torch.matmul(queries, keys.transpose(-2, -1)) / torch.sqrt(torch.tensor(self.feature_size, dtype=torch.float32))
+
+       # Apply mask (if provided)
+       if mask is not None:
+           scores = scores.masked_fill(mask == 0, -1e9)
+
+       # Apply softmax
+       attention_weights = F.softmax(scores, dim=-1)
+
+       # Multiply weights with values
+       output = torch.matmul(attention_weights, values)
+
+       return output, attention_weights
+
 
 class SelfAttention(nn.Module):
     def __init__(self, embed_size, heads):
@@ -49,17 +98,36 @@ class SelfAttention(nn.Module):
 
 
 class LSTMSelfAttentionNetwork(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, num_layers, dropout_value, heads):
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers, dropout_value, heads=1):
         super(LSTMSelfAttentionNetwork, self).__init__()
 
         # LSTM layer
-        self.lstm = nn.LSTM(input_size=input_dim, hidden_size=hidden_dim, num_layers=num_layers, batch_first=True)
-
-        # Dropout layer
-        self.dropout = nn.Dropout(dropout_value)
+        self.lstm = nn.LSTM(input_size=input_dim, hidden_size=hidden_dim, num_layers=num_layers, batch_first=True,dropout=dropout_value)
 
         # Self-attention layer
-        self.self_attention = SelfAttention(embed_size=hidden_dim, heads=heads)
+        self.self_attention = SelfAttentionLayer(hidden_dim)
+
+        # Fully connected layer
+        self.fc = nn.Linear(hidden_dim, output_dim)
+
+    def forward(self, x):
+        # Pass data through LSTM layer
+        lstm_out, lstm_hidden = self.lstm(x)
+
+        # Pass data through self-attention layer
+        attention_out, attention_weights = self.self_attention(lstm_out,mask=None)
+
+        # Pass data through fully connected layer
+        final_out = self.fc(attention_out)
+
+        return final_out
+
+class LSTM(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers, dropout_value, heads=1):
+        super(LSTM, self).__init__()
+
+        # LSTM layer
+        self.lstm = nn.LSTM(input_size=input_dim, hidden_size=hidden_dim, num_layers=num_layers, batch_first=True,dropout=dropout_value)
 
         # Fully connected layer
         self.fc = nn.Linear(hidden_dim, output_dim)
@@ -68,13 +136,7 @@ class LSTMSelfAttentionNetwork(nn.Module):
         # Pass data through LSTM layer
         lstm_out, _ = self.lstm(x)
 
-        # Apply dropout
-        dropout_out = self.dropout(lstm_out)
-
-        # Pass data through self-attention layer
-        attention_out = self.self_attention(dropout_out, dropout_out, dropout_out, mask=None)
-
         # Pass data through fully connected layer
-        final_out = self.fc(attention_out)
+        final_out = self.fc(lstm_out)
 
         return final_out
