@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 
 def create_dataset(dataset,device,lookback):
     """Transform a time series into a prediction dataset
@@ -15,6 +16,9 @@ def create_dataset(dataset,device,lookback):
         target = dataset[i+1:i+lookback+1]
         X.append(feature)
         y.append(target)
+    X = np.array(X)
+    y = np.array(y)
+
     return torch.tensor(X).double().to(device), torch.tensor(y).double().to(device)
 
 

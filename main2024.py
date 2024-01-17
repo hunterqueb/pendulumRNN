@@ -12,8 +12,10 @@ import torch
 import random
 import torch.nn.functional as F
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM
-from quebutils.integrators import myRK4Py
+from quebUtils.integrators import myRK4Py
 import torch.utils.data as data
+from quebUtils.mlExtras import findDecimalAccuracy
+
 
 # seed any random functions
 random.seed(123)
@@ -96,17 +98,6 @@ for i in range(DATA_SET_SIZE):
     output_seq[:,i] = numericResult[:, 0]
 
 
-train_size = int(len(output_seq) * 0.67)
-test_size = len(output_seq) - train_size
-
-train, test = output_seq[:train_size], output_seq[train_size:]
-
-lookback = 2
-
-train_in,train_out = create_dataset(train,device,lookback=lookback)
-test_in,test_out = create_dataset(test,device,lookback=lookback)
-
-
 # hyperparameters
 n_epochs = 50
 # lr = 5*(10**-5)
@@ -118,7 +109,18 @@ input_size = 1
 output_size = 1
 num_layers = 1
 hidden_size = 50
-p_dropout = 0
+p_dropout = 0.0
+lookback = 1
+
+
+train_size = int(len(output_seq) * 0.67)
+test_size = len(output_seq) - train_size
+
+train, test = output_seq[:train_size], output_seq[train_size:]
+
+
+train_in,train_out = create_dataset(train,device,lookback=lookback)
+test_in,test_out = create_dataset(test,device,lookback=lookback)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
@@ -144,6 +146,8 @@ def plotPredition(epoch):
             # shift test predictions for plotting
             test_plot = np.ones_like(output_seq) * np.nan
             test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :]
+
+
         # plot
         plt.plot(t,output_seq, c='b',label = 'True Motion')
         plt.plot(t,train_plot, c='r',label = 'Training Data')
@@ -157,10 +161,17 @@ def plotPredition(epoch):
         plt.savefig('predict/predict%d.png' % epoch)
         plt.close()
 
+        # filter out nan values for better post processing
+        train_plot = train_plot[~np.isnan(train_plot)]
+        test_plot = test_plot[~np.isnan(test_plot)]
+
+        trajPredition = np.concatenate((train_plot,test_plot))
+
+        return trajPredition.reshape((len(trajPredition),1))
 
 for epoch in range(n_epochs):
 
-    plotPredition(epoch)
+    trajPredition = plotPredition(epoch)
 
     model.train()
     for X_batch, y_batch in loader:
@@ -172,10 +183,12 @@ for epoch in range(n_epochs):
     # Validation
     model.eval()
     with torch.no_grad():
-        y_pred = model(train_in)
-        train_loss = np.sqrt(criterion(y_pred, train_out))
-        y_pred = model(test_in)
-        test_loss = np.sqrt(criterion(y_pred, test_out))
+        y_pred_train = model(train_in)
+        train_loss = np.sqrt(criterion(y_pred_train, train_out))
+        y_pred_test = model(test_in)
+        test_loss = np.sqrt(criterion(y_pred_test, test_out))
+
+        # decAcc, _ = findDecimalAccuracy(output_seq,trajPredition)
 
     print("Epoch %d: train loss %.4f, test loss %.4f" % (epoch, train_loss, test_loss))
 
