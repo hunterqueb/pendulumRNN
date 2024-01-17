@@ -1,3 +1,4 @@
 ﻿.vscode
 first RNN
 *.pdf
+__pycache__
