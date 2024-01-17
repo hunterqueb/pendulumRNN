@@ -43,29 +43,29 @@ m = 1
 k = 1
 
 
-def linPendulumODE(theta, t):
+def linPendulumODE(t,theta,p=None):
     dtheta1 = theta[1]
     dtheta2 = -k/m*(theta[0])
-    return [dtheta1, dtheta2]
+    return np.array([dtheta1, dtheta2])
 
 
 L = 10
 g = 9.81
 
 
-def pendulumODE(theta, t):
+def pendulumODE(t,theta,p=None):
     dtheta1 = theta[1]
     dtheta2 = -g/L*math.sin(theta[0])
-    return [dtheta1, dtheta2]
+    return np.array([dtheta1, dtheta2])
 
 
 b = 0.1
 
 
-def pendulumODEFriction(theta, t):
+def pendulumODEFriction(t,theta,p=None):
     dtheta1 = theta[1]
     dtheta2 = -b/m*theta[1]-g/L*math.sin(theta[0])
-    return [dtheta1, dtheta2]
+    return np.array([dtheta1, dtheta2])
 
 
 c = 0
@@ -129,7 +129,7 @@ model = LSTMSelfAttentionNetwork(input_size,hidden_size,output_size,num_layers, 
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
-# criterion = nn.MSELoss()
+# criterion = torch.nn.MSELoss()
 # Define the mean absolute error (MAE) loss function
 # mae_loss = F.l1_loss(predicted, target)
 
