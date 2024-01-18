@@ -144,3 +144,21 @@ class LSTM(nn.Module):
         final_out = self.fc(lstm_out)
 
         return final_out
+
+def transferLSTM(pretrainedModel,newModel):
+    '''
+    custom function to transfer knowledge of LSTM network from a pretrained model to a new model
+
+    parameters: pretrainedModel - pretrained pytorch model with two LSTM layers
+                newModel - untrained pytorch model with two LSTM layers
+    '''
+    newModel.lstm.load_state_dict(pretrainedModel.lstm.state_dict())
+    newModel.self_attention.load_state_dict(pretrainedModel.self_attention.state_dict())
+
+    # Freeze the weights of the LSTM layers
+    for param in newModel.lstm.parameters():
+        param.requires_grad = False
+    for param in newModel.self_attention.parameters():
+        param.requires_grad = False
+
+    return newModel

@@ -88,8 +88,9 @@ def duffingOscillatorODE(t,y, p=[c, w**2, k**2]):
 
 
 sysfuncptr = duffingOscillatorODE
+sysfuncptr = linPendulumODE
 # sim time
-t0, tf = 0, 2*np.pi/w * 10
+t0, tf = 0, 2*np.pi/w * 5
 
 t = np.arange(t0, tf, TIME_STEP)
 degreesOfFreedom = 2
@@ -111,7 +112,7 @@ n_epochs = 50
 lr = 0.8
 lr = 0.08
 lr = 0.004
-lr = 0.00004
+lr = 0.001
 input_size = degreesOfFreedom
 output_size = degreesOfFreedom
 num_layers = 1
@@ -169,7 +170,7 @@ def plotPredition(epoch):
         ax1.plot(t,output_seq[:,0], c='b',label = 'True Motion')
         ax1.plot(t,train_plot[:,0], c='r',label = 'Training Region')
         ax1.plot(t,test_plot[:,0], c='g',label = 'Predition')
-        ax1.set_title('LSTM Solution to Duffing Oscillator')
+        ax1.set_title('LSTM Solution to Linear Oscillator')
         # ax1.xlabel('time (sec)')
         ax1.set_ylabel('x (m)')
         # plt.legend(loc="lower left")
@@ -216,3 +217,116 @@ for epoch in range(n_epochs):
     print("Epoch %d: train loss %.4f, test loss %.4f" % (epoch, train_loss, test_loss))
 
 plotPredition(epoch+1)
+
+"""
+TRANSFER LEARN TO NEW, NONLINEAR SYSTEM ON DIFFERENT INITIAL CONDITIONS AND DIFFERENT TIME PERIOD AND DIFFERENT TIME STEP
+"""
+
+TIME_STEP = 0.02
+
+# transfer to different system
+
+newModel = LSTMSelfAttentionNetwork(input_size,hidden_size,output_size,num_layers, p_dropout).double().to(device)
+newModel = transferLSTM(model,newModel)
+
+sysfuncptr = duffingOscillatorODE
+# sim time
+t0, tf = 0, 2*np.pi/w * 10
+
+t = np.arange(t0, tf, TIME_STEP)
+degreesOfFreedom = 2
+
+# initilize the arrays used to store the info from the numerical solution
+theta = np.zeros((degreesOfFreedom,DATA_SET_SIZE))
+output_seq = np.zeros((len(t),degreesOfFreedom))
+
+# generate random data set of input thetas and output thetas and theta dots over a time series
+theta = np.array([random.uniform(-0.4, -0.5), random.uniform(0.1, 0.5)])
+
+numericResult = myRK4Py(sysfuncptr,theta,t,paramaters=np.array([c, w**2, k**2]))
+output_seq = numericResult
+
+train_size = int(len(output_seq) * p_motion_knowledge)
+test_size = len(output_seq) - train_size
+
+train, test = output_seq[:train_size], output_seq[train_size:]
+
+train_in,train_out = create_dataset(train,device,lookback=lookback)
+test_in,test_out = create_dataset(test,device,lookback=lookback)
+
+loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
+
+n_epochs = 5
+lr = 0.00004
+input_size = degreesOfFreedom
+output_size = degreesOfFreedom
+num_layers = 1
+hidden_size = 50
+p_dropout = 0.0
+lookback = 4
+p_motion_knowledge = 0.2
+
+def plotNewPredition(epoch):
+        with torch.no_grad():
+            # shift train predictions for plotting
+            train_plot = np.ones_like(output_seq) * np.nan
+            y_pred = model(train_in)
+            y_pred = y_pred[:, -1, :]
+            train_plot[lookback:train_size] = model(train_in)[:, -1, :]
+            # shift test predictions for plotting
+            test_plot = np.ones_like(output_seq) * np.nan
+            test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :]
+
+        fig, (ax1, ax2) = plt.subplots(2,1)
+        # plot
+        ax1.plot(t,output_seq[:,0], c='b',label = 'True Motion')
+        ax1.plot(t,train_plot[:,0], c='r',label = 'Training Region')
+        ax1.plot(t,test_plot[:,0], c='g',label = 'Predition')
+        ax1.set_title('LSTM Solution to Duffing Oscillator')
+        # ax1.xlabel('time (sec)')
+        ax1.set_ylabel('x (m)')
+        # plt.legend(loc="lower left")
+
+        ax2.plot(t,output_seq[:,1], c='b',label = 'True Motion')
+        ax2.plot(t,train_plot[:,1], c='r',label = 'Training Region')
+        ax2.plot(t,test_plot[:,1], c='g',label = 'Predition')
+        ax2.set_xlabel('time (sec)')
+        ax2.set_ylabel('xdot (m/s)')
+        plt.legend(loc="lower left")
+
+        plt.savefig('predict/newPredict%d.png' % epoch)
+        plt.close()
+
+        # filter out nan values for better post processing
+        train_plot = train_plot[~np.isnan(train_plot)]
+        test_plot = test_plot[~np.isnan(test_plot)]
+
+        trajPredition = np.concatenate((train_plot,test_plot))
+
+        return trajPredition.reshape((len(trajPredition),1))
+
+
+for epoch in range(n_epochs):
+
+    trajPredition = plotNewPredition(epoch)
+
+    model.train()
+    for X_batch, y_batch in loader:
+        y_pred = model(X_batch)
+        loss = criterion(y_pred, y_batch)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+    # Validation
+    model.eval()
+    with torch.no_grad():
+        y_pred_train = model(train_in)
+        train_loss = np.sqrt(criterion(y_pred_train, train_out))
+        y_pred_test = model(test_in)
+        test_loss = np.sqrt(criterion(y_pred_test, test_out))
+
+        # decAcc, _ = findDecimalAccuracy(output_seq,trajPredition)
+
+    print("Epoch %d: train loss %.4f, test loss %.4f" % (epoch, train_loss, test_loss))
+
+plotNewPredition(epoch+1)
