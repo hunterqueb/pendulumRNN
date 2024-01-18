@@ -68,7 +68,7 @@ def pendulumODEFriction(t,theta,p=None):
     return np.array([dtheta1, dtheta2])
 
 
-c = 0
+c = 0.05
 w = 1.4
 k = 0.7
 
@@ -82,38 +82,38 @@ def duffingOscillatorODE(t,y, p=[c, w**2, k**2]):
 
 sysfuncptr = duffingOscillatorODE
 # sim time
-t0, tf = 0, 2*np.pi/w * 4
+t0, tf = 0, 2*np.pi/w * 10
 
 t = np.arange(t0, tf, TIME_STEP)
 degreesOfFreedom = 2
 # initilize the arrays used to store the info from the numerical solution
 theta = np.zeros((degreesOfFreedom,DATA_SET_SIZE))
-output_seq = np.zeros((len(t),DATA_SET_SIZE))
+output_seq = np.zeros((len(t),degreesOfFreedom))
 
 # generate random data set of input thetas and output thetas and theta dots over a time series
-for i in range(DATA_SET_SIZE):
-    theta[:,i] = [random.uniform(0.84, 0.86), 0]
-    # numericResult[i] = integrate.solve_ivp(pendulumODEFriction, (t0, tf), theta, "LSODA")
-    numericResult = myRK4Py(sysfuncptr,theta[:,i],t,paramaters=np.array([c, w**2, k**2]))
-    output_seq[:,i] = numericResult[:, 0]
+theta = np.array([random.uniform(0.84, 0.86), 0])
+# numericResult[i] = integrate.solve_ivp(pendulumODEFriction, (t0, tf), theta, "LSODA")
+numericResult = myRK4Py(sysfuncptr,theta,t,paramaters=np.array([c, w**2, k**2]))
+output_seq = numericResult
 
 
 # hyperparameters
 n_epochs = 50
 # lr = 5*(10**-5)
 # lr = 0.85
-lr = 0.004
 lr = 0.8
 lr = 0.08
-input_size = 1
-output_size = 1
+lr = 0.004
+lr = 0.00004
+input_size = degreesOfFreedom
+output_size = degreesOfFreedom
 num_layers = 1
 hidden_size = 50
 p_dropout = 0.0
-lookback = 1
+lookback = 4
+p_motion_knowledge = 0.2
 
-
-train_size = int(len(output_seq) * 0.67)
+train_size = int(len(output_seq) * p_motion_knowledge)
 test_size = len(output_seq) - train_size
 
 train, test = output_seq[:train_size], output_seq[train_size:]
@@ -126,6 +126,7 @@ loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, 
 
 # initilizing the model, criterion, and optimizer for the data
 model = LSTMSelfAttentionNetwork(input_size,hidden_size,output_size,num_layers, p_dropout).double().to(device)
+# model = LSTM(input_size,hidden_size,output_size,num_layers, p_dropout).double().to(device)
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
@@ -147,17 +148,23 @@ def plotPredition(epoch):
             test_plot = np.ones_like(output_seq) * np.nan
             test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :]
 
-
+        fig, (ax1, ax2) = plt.subplots(2,1)
         # plot
-        plt.plot(t,output_seq, c='b',label = 'True Motion')
-        plt.plot(t,train_plot, c='r',label = 'Training Data')
-        plt.plot(t,test_plot, c='g',label = 'Predition')
+        ax1.plot(t,output_seq[:,0], c='b',label = 'True Motion')
+        ax1.plot(t,train_plot[:,0], c='r',label = 'Training Region')
+        ax1.plot(t,test_plot[:,0], c='g',label = 'Predition')
+        ax1.set_title('LSTM Solution to Duffing Oscillator')
+        # ax1.xlabel('time (sec)')
+        ax1.set_ylabel('x (m)')
+        # plt.legend(loc="lower left")
 
-        plt.title('LSTM Solution to Duffing Oscillator')
-        plt.xlabel('time (sec)')
-        plt.ylabel('x (m)')
+        ax2.plot(t,output_seq[:,1], c='b',label = 'True Motion')
+        ax2.plot(t,train_plot[:,1], c='r',label = 'Training Region')
+        ax2.plot(t,test_plot[:,1], c='g',label = 'Predition')
+        ax2.set_xlabel('time (sec)')
+        ax2.set_ylabel('xdot (m/s)')
         plt.legend(loc="lower left")
-        
+
         plt.savefig('predict/predict%d.png' % epoch)
         plt.close()
 
