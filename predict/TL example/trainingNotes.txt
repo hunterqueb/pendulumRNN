@@ -1,0 +1,11 @@
+Epoch 45: train loss 0.0037, test loss 0.0143
+Epoch 46: train loss 0.0036, test loss 0.0140
+Epoch 47: train loss 0.0036, test loss 0.0135
+Epoch 48: train loss 0.0036, test loss 0.0139
+Epoch 49: train loss 0.0036, test loss 0.0135
+
+Epoch 0: train loss 0.0086, test loss 0.0057
+Epoch 1: train loss 0.0084, test loss 0.0069
+Epoch 2: train loss 0.0081, test loss 0.0068
+Epoch 3: train loss 0.0082, test loss 0.0061
+Epoch 4: train loss 0.0080, test loss 0.0059
