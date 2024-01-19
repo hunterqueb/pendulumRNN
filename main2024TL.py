@@ -19,10 +19,9 @@ import torch
 import random
 import torch.nn.functional as F
 import torch.utils.data as data
-from quebutils.integrators import myRK4Py
-from quebutils.mlExtras import findDecimalAccuracy
+from quebUtils.integrators import myRK4Py
+from quebUtils.mlExtras import findDecimalAccuracy
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
-
 
 # seed any random functions
 random.seed(123)
@@ -160,10 +159,10 @@ def plotPredition(epoch):
             train_plot = np.ones_like(output_seq) * np.nan
             y_pred = model(train_in)
             y_pred = y_pred[:, -1, :]
-            train_plot[lookback:train_size] = model(train_in)[:, -1, :]
+            train_plot[lookback:train_size] = model(train_in)[:, -1, :].cpu()
             # shift test predictions for plotting
             test_plot = np.ones_like(output_seq) * np.nan
-            test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :]
+            test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :].cpu()
 
         fig, (ax1, ax2) = plt.subplots(2,1)
         # plot
@@ -208,9 +207,9 @@ for epoch in range(n_epochs):
     model.eval()
     with torch.no_grad():
         y_pred_train = model(train_in)
-        train_loss = np.sqrt(criterion(y_pred_train, train_out))
+        train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
         y_pred_test = model(test_in)
-        test_loss = np.sqrt(criterion(y_pred_test, test_out))
+        test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
 
         # decAcc, _ = findDecimalAccuracy(output_seq,trajPredition)
 
@@ -272,10 +271,10 @@ def plotNewPredition(epoch):
             train_plot = np.ones_like(output_seq) * np.nan
             y_pred = model(train_in)
             y_pred = y_pred[:, -1, :]
-            train_plot[lookback:train_size] = model(train_in)[:, -1, :]
+            train_plot[lookback:train_size] = model(train_in)[:, -1, :].cpu()
             # shift test predictions for plotting
             test_plot = np.ones_like(output_seq) * np.nan
-            test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :]
+            test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :].cpu()
 
         fig, (ax1, ax2) = plt.subplots(2,1)
         # plot
@@ -321,9 +320,9 @@ for epoch in range(n_epochs):
     model.eval()
     with torch.no_grad():
         y_pred_train = model(train_in)
-        train_loss = np.sqrt(criterion(y_pred_train, train_out))
+        train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
         y_pred_test = model(test_in)
-        test_loss = np.sqrt(criterion(y_pred_test, test_out))
+        test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
 
         # decAcc, _ = findDecimalAccuracy(output_seq,trajPredition)
 
