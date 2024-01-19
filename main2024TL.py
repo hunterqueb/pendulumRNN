@@ -20,7 +20,7 @@ import random
 import torch.nn.functional as F
 import torch.utils.data as data
 from quebUtils.integrators import myRK4Py
-from quebUtils.mlExtras import findDecimalAccuracy
+from quebUtils.mlExtras import findDecAcc
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
 
 # seed any random functions
@@ -211,7 +211,7 @@ for epoch in range(n_epochs):
         y_pred_test = model(test_in)
         test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
 
-        # decAcc, _ = findDecimalAccuracy(output_seq,trajPredition)
+        decAcc = findDecAcc(test_out,y_pred_test)
 
     print("Epoch %d: train loss %.4f, test loss %.4f" % (epoch, train_loss, test_loss))
 
@@ -324,7 +324,7 @@ for epoch in range(n_epochs):
         y_pred_test = model(test_in)
         test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
 
-        # decAcc, _ = findDecimalAccuracy(output_seq,trajPredition)
+        decAcc = findDecAcc(test_out,y_pred_test)
 
     print("Epoch %d: train loss %.4f, test loss %.4f" % (epoch, train_loss, test_loss))
 
