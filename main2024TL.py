@@ -213,7 +213,7 @@ for epoch in range(n_epochs):
 
         decAcc = findDecAcc(test_out,y_pred_test)
 
-    print("Epoch %d: train loss %.4f, test loss %.4f" % (epoch, train_loss, test_loss))
+    print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
 plotPredition(epoch+1)
 
@@ -326,6 +326,6 @@ for epoch in range(n_epochs):
 
         decAcc = findDecAcc(test_out,y_pred_test)
 
-    print("Epoch %d: train loss %.4f, test loss %.4f" % (epoch, train_loss, test_loss))
+    print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
 plotNewPredition(epoch+1)
