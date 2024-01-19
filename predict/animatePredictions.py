@@ -6,6 +6,8 @@ import PIL.Image as Image
 import os
 import datetime
 
+import convert2vid
+
 folder_path = 'predict/'
 
 file_list = []
@@ -38,3 +40,5 @@ now = datetime.datetime.now()
 timestamp = now.strftime("%Y-%m-%d-%H-%M-%S")
 
 ani.save(folder_path + 'animation_{}.gif'.format(timestamp), writer='imagemagick',dpi=300)
+
+convert2vid.main()
