@@ -44,12 +44,9 @@ else:
 # ------------------------------------------------------------------------
 ## NUMERICAL SOLUTION
 
-
-m = 1
-k = 1
-
-
 def linPendulumODE(t,theta,p=None):
+    m = 1
+    k = 1
     dtheta1 = theta[1]
     dtheta2 = -k/m*(theta[0])
     return np.array([dtheta1, dtheta2])
@@ -69,6 +66,7 @@ b = 0.1
 
 
 def pendulumODEFriction(t,theta,p=None):
+    m = 1
     dtheta1 = theta[1]
     dtheta2 = -b/m*theta[1]-g/L*math.sin(theta[0])
     return np.array([dtheta1, dtheta2])
@@ -78,6 +76,11 @@ c = 0.05
 w = 1.4
 k = 0.7
 
+# strange values from my discussion with pugal
+c = 0.0
+w = 1.3
+k = 2
+
 
 def duffingOscillatorODE(t,y, p=[c, w**2, k**2]):
     dydt1 = y[1]
@@ -86,7 +89,6 @@ def duffingOscillatorODE(t,y, p=[c, w**2, k**2]):
     return np.array([dydt1, dydt2])
 
 
-sysfuncptr = duffingOscillatorODE
 sysfuncptr = linPendulumODE
 # sim time
 t0, tf = 0, 2*np.pi/w * 5
@@ -103,6 +105,7 @@ theta = np.array([random.uniform(0.84, 0.86), 0])
 numericResult = myRK4Py(sysfuncptr,theta,t,paramaters=np.array([c, w**2, k**2]))
 output_seq = numericResult
 
+linPendNR = numericResult
 
 # hyperparameters
 n_epochs = 50
@@ -180,6 +183,7 @@ def plotPredition(epoch):
         ax2.set_xlabel('time (sec)')
         ax2.set_ylabel('xdot (m/s)')
         plt.legend(loc="lower left")
+        plt.tight_layout()
 
         plt.savefig('predict/predict%d.png' % epoch)
         plt.close()
@@ -245,6 +249,8 @@ theta = np.array([random.uniform(-0.4, -0.5), random.uniform(0.1, 0.5)])
 numericResult = myRK4Py(sysfuncptr,theta,t,paramaters=np.array([c, w**2, k**2]))
 output_seq = numericResult
 
+duffPendNR = numericResult
+
 train_size = int(len(output_seq) * p_motion_knowledge)
 test_size = len(output_seq) - train_size
 
@@ -292,6 +298,7 @@ def plotNewPredition(epoch):
         ax2.set_xlabel('time (sec)')
         ax2.set_ylabel('xdot (m/s)')
         plt.legend(loc="lower left")
+        plt.tight_layout()
 
         plt.savefig('predict/newPredict%d.png' % epoch)
         plt.close()
