@@ -226,7 +226,7 @@ for epoch in range(n_epochs):
         y_pred_test = model(test_in)
         test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
 
-        decAcc, err1 = findDecAcc(train_out,y_pred_train)
+        decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
         decAcc, err2 = findDecAcc(test_out,y_pred_test)
         err = np.concatenate((err1,err2),axis=0)
 
