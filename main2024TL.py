@@ -156,7 +156,7 @@ criterion = F.smooth_l1_loss
 # Define the Huber loss function with delta=1.0
 # huber_loss = F.smooth_l1_loss(predicted, target, reduction='mean', delta=1.0)
 
-def plotPredition(epoch):
+def plotPredition(epoch,err=None):
         with torch.no_grad():
             # shift train predictions for plotting
             train_plot = np.ones_like(output_seq) * np.nan
@@ -188,6 +188,11 @@ def plotPredition(epoch):
         plt.savefig('predict/predict%d.png' % epoch)
         plt.close()
 
+        if err is not None:
+            fig, (ax1, ax2) = plt.subplots(2,1)
+            ax1.plot(err)
+            ax2.plot(np.average(err,axis=0)*np.ones(err.shape))
+            plt.show()
         # filter out nan values for better post processing
         train_plot = train_plot[~np.isnan(train_plot)]
         test_plot = test_plot[~np.isnan(test_plot)]
@@ -215,11 +220,13 @@ for epoch in range(n_epochs):
         y_pred_test = model(test_in)
         test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
 
-        decAcc = findDecAcc(test_out,y_pred_test)
+        decAcc, err1 = findDecAcc(train_out,y_pred_train)
+        decAcc, err2 = findDecAcc(test_out,y_pred_test)
+        err = np.concatenate((err1,err2),axis=0)
 
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
-plotPredition(epoch+1)
+plotPredition(epoch+1,err = err)
 
 """
 TRANSFER LEARN TO NEW, NONLINEAR SYSTEM ON DIFFERENT INITIAL CONDITIONS AND DIFFERENT TIME PERIOD AND DIFFERENT TIME STEP
@@ -271,7 +278,7 @@ p_dropout = 0.0
 lookback = 4
 p_motion_knowledge = 0.2
 
-def plotNewPredition(epoch):
+def plotNewPredition(epoch,err=None):
         with torch.no_grad():
             # shift train predictions for plotting
             train_plot = np.ones_like(output_seq) * np.nan
@@ -303,6 +310,11 @@ def plotNewPredition(epoch):
         plt.savefig('predict/newPredict%d.png' % epoch)
         plt.close()
 
+        if err is not None:
+            fig, (ax1, ax2) = plt.subplots(2,1)
+            ax1.plot(err)
+            ax2.plot(np.average(err,axis=0)*np.ones(err.shape))
+            plt.show()
         # filter out nan values for better post processing
         train_plot = train_plot[~np.isnan(train_plot)]
         test_plot = test_plot[~np.isnan(test_plot)]
@@ -331,8 +343,10 @@ for epoch in range(n_epochs):
         y_pred_test = model(test_in)
         test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
 
-        decAcc = findDecAcc(test_out,y_pred_test)
+        decAcc, err1 = findDecAcc(train_out,y_pred_train)
+        decAcc, err2 = findDecAcc(test_out,y_pred_test)
+        err = np.concatenate((err1,err2),axis=0)
 
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
-plotNewPredition(epoch+1)
+plotNewPredition(epoch+1,err)
