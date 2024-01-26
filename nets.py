@@ -149,8 +149,8 @@ def transferLSTM(pretrainedModel,newModel):
     '''
     custom function to transfer knowledge of LSTM network from a pretrained model to a new model
 
-    parameters: pretrainedModel - pretrained pytorch model with two LSTM layers
-                newModel - untrained pytorch model with two LSTM layers
+    parameters: pretrainedModel - pretrained pytorch model with one LSTM layer and one self attention layer
+                newModel - untrained pytorch model with one LSTM layer and one self attention layer
     '''
     newModel.lstm.load_state_dict(pretrainedModel.lstm.state_dict())
     newModel.self_attention.load_state_dict(pretrainedModel.self_attention.state_dict())

@@ -19,8 +19,13 @@ import torch
 import random
 import torch.nn.functional as F
 import torch.utils.data as data
-from quebUtils.integrators import myRK4Py
-from quebUtils.mlExtras import findDecAcc
+
+# from quebUtils.integrators import myRK4Py
+# from quebUtils.mlExtras import findDecAcc
+
+from quebutils.integrators import myRK4Py
+from quebutils.mlExtras import findDecAcc
+
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
 
 # seed any random functions
@@ -91,7 +96,7 @@ def duffingOscillatorODE(t,y, p=[c, w**2, k**2]):
 
 sysfuncptr = duffingOscillatorODE
 # sim time
-t0, tf = 0, 300
+t0, tf = 0, 20
 
 t = np.arange(t0, tf, TIME_STEP)
 degreesOfFreedom = 2
@@ -109,16 +114,15 @@ linPendNR = numericResult
 
 # hyperparameters
 n_epochs = 50
-# lr = 5*(10**-5)
-# lr = 0.85
-lr = 0.8
-lr = 0.08
-lr = 0.004
+
 lr = 0.001
+lrSA = 0.001
+
 input_size = degreesOfFreedom
 output_size = degreesOfFreedom
 num_layers = 1
 hidden_size = 50
+hidden_size = 30
 p_dropout = 0.0
 lookback = 4
 
@@ -142,10 +146,12 @@ test_in,test_out = create_dataset(test,device,lookback=lookback)
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
 # initilizing the model, criterion, and optimizer for the data
-model = LSTMSelfAttentionNetwork(input_size,hidden_size,output_size,num_layers, p_dropout).double().to(device)
 model = LSTM(input_size,hidden_size,output_size,num_layers, p_dropout).double().to(device)
+modelSA = LSTMSelfAttentionNetwork(input_size,hidden_size,output_size,num_layers, p_dropout).double().to(device)
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
+optimizerSA = torch.optim.Adam(modelSA.parameters(),lr=lrSA)
+
 criterion = F.smooth_l1_loss
 # criterion = torch.nn.MSELoss()
 # Define the mean absolute error (MAE) loss function
@@ -154,7 +160,7 @@ criterion = F.smooth_l1_loss
 # Define the Huber loss function with delta=1.0
 # huber_loss = F.smooth_l1_loss(predicted, target, reduction='mean', delta=1.0)
 
-def plotPredition(epoch,err=None):
+def plotPredition(epoch,err=None,num = None):
         with torch.no_grad():
             # shift train predictions for plotting
             train_plot = np.ones_like(output_seq) * np.nan
@@ -170,7 +176,7 @@ def plotPredition(epoch,err=None):
         ax1.plot(t,output_seq[:,0], c='b',label = 'True Motion')
         ax1.plot(t,train_plot[:,0], c='r',label = 'Training Region')
         ax1.plot(t,test_plot[:,0], c='g',label = 'Predition')
-        ax1.set_title('LSTM Solution to Linear Oscillator')
+        ax1.set_title('LSTM Solution to Duffing Oscillator')
         # ax1.xlabel('time (sec)')
         ax1.set_ylabel('x (m)')
         # plt.legend(loc="lower left")
@@ -197,7 +203,12 @@ def plotPredition(epoch,err=None):
             ax2.set_xlabel('time (sec)')
 
             plt.legend(['Position Error','Velocity Error'],loc="best")
-            plt.savefig('predict/errorFinal_%ds_500pts.png' % tf)
+
+            if num == None:
+                plt.savefig('predict/errorFinal_%ds_500pts.png' % tf)
+            else:
+                plt.savefig('predict/errorFinal_%ds_500pts%d.png' % (tf, num))
+
             plt.close()
         # filter out nan values for better post processing
         train_plot = train_plot[~np.isnan(train_plot)]
@@ -209,17 +220,28 @@ def plotPredition(epoch,err=None):
 
 for epoch in range(n_epochs):
 
-    trajPredition = plotPredition(epoch)
+    # plotPredition(epoch)
 
     model.train()
+    modelSA.train()
+
     for X_batch, y_batch in loader:
         y_pred = model(X_batch)
         loss = criterion(y_pred, y_batch)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+
+        y_pred = modelSA(X_batch)
+        lossSA = criterion(y_pred, y_batch)
+        optimizerSA.zero_grad()
+        lossSA.backward()
+        optimizerSA.step()
+
     # Validation
     model.eval()
+    modelSA.eval()
+
     with torch.no_grad():
         y_pred_train = model(train_in)
         train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
@@ -230,7 +252,23 @@ for epoch in range(n_epochs):
         decAcc, err2 = findDecAcc(test_out,y_pred_test)
         err = np.concatenate((err1,err2),axis=0)
 
+    print('\nLSTM')
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
-plotPredition(epoch+1,err = err)
+    with torch.no_grad():
+        y_pred_train = modelSA(train_in)
+        train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
+        y_pred_test = modelSA(test_in)
+        test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
+
+        decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
+        decAcc, err2 = findDecAcc(test_out,y_pred_test)
+        errSA = np.concatenate((err1,err2),axis=0)
+    
+    print('\nLSTMSA')
+    print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
+
+
+plotPredition(epoch+1,err = err,num=1)
+plotPredition(epoch+1,err = errSA,num=2)
 
