@@ -19,11 +19,12 @@ import torch
 import random
 import torch.nn.functional as F
 import torch.utils.data as data
-from quebutils.integrators import myRK4Py
-from quebutils.mlExtras import findDecAcc
 
-# from quebUtils.integrators import myRK4Py
-# from quebUtils.mlExtras import findDecAcc
+# from quebutils.integrators import myRK4Py
+# from quebutils.mlExtras import findDecAcc
+
+from quebUtils.integrators import myRK4Py
+from quebUtils.mlExtras import findDecAcc
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
 
@@ -81,7 +82,7 @@ w = 1.4
 k = 0.7
 
 # strange values from my discussion with pugal
-c = 0.0
+c = 0.2
 w = 1.3
 k = 2
 
@@ -224,7 +225,7 @@ for epoch in range(n_epochs):
         y_pred_test = model(test_in)
         test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
 
-        decAcc, err1 = findDecAcc(train_out,y_pred_train)
+        decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
         decAcc, err2 = findDecAcc(test_out,y_pred_test)
         err = np.concatenate((err1,err2),axis=0)
 
@@ -347,7 +348,7 @@ for epoch in range(n_epochs):
         y_pred_test = model(test_in)
         test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
 
-        decAcc, err1 = findDecAcc(train_out,y_pred_train)
+        decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
         decAcc, err2 = findDecAcc(test_out,y_pred_test)
         err = np.concatenate((err1,err2),axis=0)
 
