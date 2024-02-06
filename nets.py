@@ -162,3 +162,43 @@ def transferLSTM(pretrainedModel,newModel):
         param.requires_grad = False
 
     return newModel
+
+
+class CNN_LSTM_SA(nn.Module):
+    def __init__(self):
+        super(CNN_LSTM_SA, self).__init__()
+        # CNN part
+        self.conv1 = nn.Conv2d(2, 16, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, padding=1)
+        self.pool = nn.MaxPool2d(2, 2)
+
+        # LSTM part
+        self.lstm = nn.LSTM(32, 50, batch_first=True) # 32 features from CNN, 50 hidden units
+
+        # Self-attention layer
+        self.self_attention = SelfAttentionLayer(50)
+
+        # Regression output
+        self.fc = nn.Linear(50, 1)  # Assuming a single continuous value as output
+
+    def forward(self, x):
+        # x shape: [batch, seq_len, channels, height, width]
+        batch_size, seq_len, C, H, W = x.size()
+        
+        # Reshape for CNN
+        c_in = x.view(batch_size * seq_len, C, H, W)
+        c_out = F.relu(self.conv1(c_in))
+        c_out = self.pool(F.relu(self.conv2(c_out)))
+        
+        # Reshape for LSTM
+        r_out = c_out.view(batch_size, seq_len, -1)
+
+        # LSTM output
+        lstm_out, _ = self.lstm(r_out)
+        lstm_out = lstm_out[:, -1, :]  # Get the output of the last time step
+
+        attention_out, attention_weights = self.self_attention(lstm_out,mask=None)
+
+        # Regression output
+        out = self.fc(attention_out)
+        return out
