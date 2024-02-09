@@ -6,7 +6,7 @@ from quebUtils.integrators import myRK4Py
 from matplotlib.animation import FuncAnimation
 import nets
 from torchinfo import summary
-
+import torchvision
 is_cuda = torch.cuda.is_available()
 
 # If we have a GPU available, we'll set our device to GPU. We'll use this device variable later in our code.
@@ -76,6 +76,11 @@ fig.colorbar(vel_ax, ax=axes[1])
 
 # Show the animation
 plt.show()
+
+trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True)
+
+
+
 
 model = nets.CNN_LSTM_SA().double().to(device)
 
