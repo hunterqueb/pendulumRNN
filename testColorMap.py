@@ -117,7 +117,7 @@ model(x_train)
 
 print()
 # https://chat.openai.com/c/3a5bf74e-8f62-4435-b6e5-4c4042721439
-
+# https://machinelearningmastery.com/building-a-convolutional-neural-network-in-pytorch/
 
 
 
