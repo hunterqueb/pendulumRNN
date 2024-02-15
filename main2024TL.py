@@ -20,11 +20,11 @@ import random
 import torch.nn.functional as F
 import torch.utils.data as data
 
-# from quebutils.integrators import myRK4Py
-# from quebutils.mlExtras import findDecAcc
+from quebutils.integrators import myRK4Py
+from quebutils.mlExtras import findDecAcc
 
-from quebUtils.integrators import myRK4Py
-from quebUtils.mlExtras import findDecAcc
+# from quebUtils.integrators import myRK4Py
+# from quebUtils.mlExtras import findDecAcc
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
 
@@ -125,7 +125,7 @@ output_size = degreesOfFreedom
 num_layers = 1
 hidden_size = 50
 p_dropout = 0.0
-lookback = 4
+lookback = 1
 p_motion_knowledge = 0.2
 
 '''
@@ -274,13 +274,13 @@ test_in,test_out = create_dataset(test,device,lookback=lookback)
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
 n_epochs = 5
-lr = 0.00004
+lr = 0.004
 input_size = degreesOfFreedom
 output_size = degreesOfFreedom
 num_layers = 1
 hidden_size = 50
 p_dropout = 0.0
-lookback = 4
+lookback = 1
 p_motion_knowledge = 0.2
 
 def plotNewPredition(epoch,err=None):

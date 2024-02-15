@@ -329,7 +329,7 @@ test_in,test_out = create_dataset(test,device,lookback=lookback)
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
 n_epochs = 5
-lr = 0.0004
+lr = 0.004
 input_size = degreesOfFreedom
 output_size = degreesOfFreedom
 num_layers = 1
