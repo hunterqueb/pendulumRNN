@@ -2,7 +2,8 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import random
-from quebUtils.integrators import myRK4Py
+# from quebUtils.integrators import myRK4Py
+from quebutils.integrators import myRK4Py
 from matplotlib.animation import FuncAnimation
 import nets
 from torchinfo import summary
