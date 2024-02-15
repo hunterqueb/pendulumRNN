@@ -339,7 +339,6 @@ lr = 0.01
 input_size = degreesOfFreedom
 output_size = degreesOfFreedom
 num_layers = 1
-hidden_size = 50
 p_dropout = 0.0
 lookback = 1
 p_motion_knowledge = 0.2
