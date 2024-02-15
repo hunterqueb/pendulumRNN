@@ -20,11 +20,12 @@ import random
 import torch.nn.functional as F
 import torch.utils.data as data
 
-from quebutils.integrators import myRK4Py, ode45
-from quebutils.mlExtras import findDecAcc
+# from quebutils.integrators import myRK4Py, ode45
+# from quebutils.mlExtras import findDecAcc
 
-# from quebUtils.integrators import myRK4Py
-# from quebUtils.mlExtras import findDecAcc
+from quebUtils.integrators import myRK4Py, ode45
+from quebUtils.mlExtras import findDecAcc
+from quebUtils.plot import plotOrbitPhasePredictions
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
 
@@ -161,32 +162,32 @@ def plotPredition(epoch,prediction='source',err=None):
 
         fig, axes = plt.subplots(2,2)
 
-        axes[0,0].plot(t,output_seq[:,0], c='b',label = 'True Motion')
-        axes[0,0].plot(t,train_plot[:,0], c='r',label = 'Training Region')
-        axes[0,0].plot(t,test_plot[:,0], c='g',label = 'Predition')
+        axes[0,0].plot(t,output_seq[:,0] * DU, c='b',label = 'True Motion')
+        axes[0,0].plot(t,train_plot[:,0] * DU, c='r',label = 'Training Region')
+        axes[0,0].plot(t,test_plot[:,0] * DU, c='g',label = 'Predition')
         axes[0,0].set_xlabel('time (sec)')
-        axes[0,0].set_ylabel('x ()')
+        axes[0,0].set_ylabel('x (m)')
 
-        axes[0,1].plot(t,output_seq[:,1], c='b',label = 'True Motion')
-        axes[0,1].plot(t,train_plot[:,1], c='r',label = 'Training Region')
-        axes[0,1].plot(t,test_plot[:,1], c='g',label = 'Predition')
+        axes[0,1].plot(t,output_seq[:,1] * DU/TU, c='b',label = 'True Motion')
+        axes[0,1].plot(t,train_plot[:,1] * DU/TU, c='r',label = 'Training Region')
+        axes[0,1].plot(t,test_plot[:,1] * DU/TU, c='g',label = 'Predition')
         axes[0,1].set_xlabel('time (sec)')
         axes[0,1].set_ylabel('xdot (m/s)')
 
-        axes[1,0].plot(t,output_seq[:,2], c='b',label = 'True Motion')
-        axes[1,0].plot(t,train_plot[:,2], c='r',label = 'Training Region')
-        axes[1,0].plot(t,test_plot[:,2], c='g',label = 'Predition')
+        axes[1,0].plot(t,output_seq[:,2] * DU, c='b',label = 'True Motion')
+        axes[1,0].plot(t,train_plot[:,2] * DU, c='r',label = 'Training Region')
+        axes[1,0].plot(t,test_plot[:,2] * DU, c='g',label = 'Predition')
         axes[1,0].set_xlabel('time (sec)')
         axes[1,0].set_ylabel('y (m)')
 
-        axes[1,1].plot(t,output_seq[:,3], c='b',label = 'True Motion')
-        axes[1,1].plot(t,train_plot[:,3], c='r',label = 'Training Region')
-        axes[1,1].plot(t,test_plot[:,3], c='g',label = 'Predition')
+        axes[1,1].plot(t,output_seq[:,3] * DU/TU, c='b',label = 'True Motion')
+        axes[1,1].plot(t,train_plot[:,3] * DU/TU, c='r',label = 'Training Region')
+        axes[1,1].plot(t,test_plot[:,3] * DU/TU, c='g',label = 'Predition')
         axes[1,1].set_xlabel('time (sec)')
         axes[1,1].set_ylabel('ydot (m/s)')
 
 
-        plt.legend(loc="lower left")
+        plt.legend(loc='upper left', bbox_to_anchor=(1,0.5))
         plt.tight_layout()
 
         if prediction == 'source':
@@ -291,6 +292,8 @@ def twoBodyPert(t, y, p=pam):
     drag_factor = -0.5 * (rho / m_sat) * c_d * A_sat * v_norm
     a_drag_x = drag_factor * y[2]
     a_drag_y = drag_factor *  y[3]
+    a_drag_x = 0
+    a_drag_y = 0
 
     dydt3 = -mu / R**3 * y[0] + j2_accel_x + a_drag_x
     dydt4 = -mu / R**3 * y[1] + j2_accel_y + a_drag_y
@@ -316,7 +319,7 @@ _ , numericResult = ode45(sysfuncptr,[t0,tf],IC,t)
 
 output_seq = numericResult
 
-duffPendNR = numericResult
+pertNR = numericResult
 
 train_size = int(len(output_seq) * p_motion_knowledge)
 test_size = len(output_seq) - train_size
@@ -328,8 +331,8 @@ test_in,test_out = create_dataset(test,device,lookback=lookback)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
-n_epochs = 5
-lr = 0.004
+n_epochs = 10
+lr = 0.001
 input_size = degreesOfFreedom
 output_size = degreesOfFreedom
 num_layers = 1
@@ -362,5 +365,10 @@ for epoch in range(n_epochs):
         err = np.concatenate((err1,err2),axis=0)
 
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
+
+
+plotOrbitPhasePredictions(circNR,'circular')
+plotOrbitPhasePredictions(pertNR,'perturbed')
+plt.show()
 
 plotPredition(epoch+1,'target',err)
