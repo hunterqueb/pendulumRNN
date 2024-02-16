@@ -126,6 +126,33 @@ class LSTMSelfAttentionNetwork(nn.Module):
 
         return final_out
 
+class LSTMSelfAttentionNetwork2(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers, dropout_value, heads=1):
+        super(LSTMSelfAttentionNetwork2, self).__init__()
+
+        # LSTM layer
+        self.lstm = nn.LSTM(input_size=input_dim, hidden_size=hidden_dim, num_layers=num_layers, batch_first=True,dropout=dropout_value)
+
+        # Self-attention layer
+        self.self_attention = SelfAttentionLayer(hidden_dim)
+
+        # Fully connected layer
+        self.fc = nn.Linear(hidden_dim, hidden_dim)
+        self.fcOut = nn.Linear(hidden_dim, output_dim)
+
+    def forward(self, x):
+        # Pass data through LSTM layer
+        lstm_out, lstm_hidden = self.lstm(x)
+
+        # Pass data through self-attention layer
+        attention_out, attention_weights = self.self_attention(lstm_out,mask=None)
+
+        # Pass data through fully connected layer
+        fcout = self.fc(attention_out)
+        final_out = self.fcOut(fcout)
+
+        return final_out
+
 class LSTM(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers, dropout_value, heads=1):
         super(LSTM, self).__init__()

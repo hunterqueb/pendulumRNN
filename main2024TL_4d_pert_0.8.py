@@ -20,7 +20,7 @@ from quebUtils.mlExtras import findDecAcc
 from quebUtils.plot import plotOrbitPhasePredictions
 from quebUtils.orbital import nonDim2Dim4
 
-from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
+from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM,LSTMSelfAttentionNetwork2
 
 # seed any random functions
 random.seed(123)
@@ -334,7 +334,7 @@ test_in,test_out = create_dataset(test,device,lookback=lookback)
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
 n_epochs = 20
-lr = 0.005
+lr = 0.001
 input_size = degreesOfFreedom
 output_size = degreesOfFreedom
 num_layers = 1
