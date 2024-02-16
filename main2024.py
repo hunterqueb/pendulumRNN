@@ -19,10 +19,11 @@ import torch
 import random
 import torch.nn.functional as F
 import torch.utils.data as data
+
 from quebUtils.integrators import myRK4Py
 from quebUtils.mlExtras import findDecAcc
-from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
 
+from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
 
 # seed any random functions
 random.seed(123)

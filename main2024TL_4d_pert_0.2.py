@@ -1,10 +1,3 @@
-# new example using the knowledge i have gained....
-
-# lets do a duffing!
-# adam optimizer
-# criterion = F.smooth_l1_loss
-
-# https://machinelearningmastery.com/lstm-for-time-series-prediction-in-pytorch/
 '''
 usually, time seties oreduction is done on a window.
 given data from time [t - w,t], you predict t + m where m is any timestep into the future.
@@ -19,9 +12,6 @@ import torch
 import random
 import torch.nn.functional as F
 import torch.utils.data as data
-
-# from quebutils.integrators import myRK4Py, ode45
-# from quebutils.mlExtras import findDecAcc
 
 from quebUtils.integrators import myRK4Py, ode45
 from quebUtils.mlExtras import findDecAcc

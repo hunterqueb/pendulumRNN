@@ -2,12 +2,13 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import random
-# from quebUtils.integrators import myRK4Py
-from quebutils.integrators import myRK4Py
 from matplotlib.animation import FuncAnimation
 import nets
 from torchinfo import summary
 import torchvision
+
+from quebUtils.integrators import myRK4Py
+
 is_cuda = torch.cuda.is_available()
 
 # If we have a GPU available, we'll set our device to GPU. We'll use this device variable later in our code.

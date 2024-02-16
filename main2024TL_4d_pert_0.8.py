@@ -15,9 +15,6 @@ import random
 import torch.nn.functional as F
 import torch.utils.data as data
 
-# from quebutils.integrators import myRK4Py, ode45
-# from quebutils.mlExtras import findDecAcc
-
 from quebUtils.integrators import myRK4Py, ode45
 from quebUtils.mlExtras import findDecAcc
 from quebUtils.plot import plotOrbitPhasePredictions
