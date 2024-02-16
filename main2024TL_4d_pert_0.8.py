@@ -1,8 +1,3 @@
-# new example using the knowledge i have gained....
-
-# lets do a duffing!
-# adam optimizer
-# criterion = F.smooth_l1_loss
 
 # https://machinelearningmastery.com/lstm-for-time-series-prediction-in-pytorch/
 '''
@@ -26,7 +21,7 @@ import torch.utils.data as data
 from quebUtils.integrators import myRK4Py, ode45
 from quebUtils.mlExtras import findDecAcc
 from quebUtils.plot import plotOrbitPhasePredictions
-from quebUtils.orbital import OE2ECI
+from quebUtils.orbital import nonDim2Dim4
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
 
@@ -61,6 +56,7 @@ vLEO = np.sqrt(muR/np.linalg.norm(rLEO))
 vLEO = np.array([0,vLEO])
 TLEO = 2*np.pi * np.sqrt(np.linalg.norm(rLEO)**3 / muR)
 
+# dimensionalized units
 mu = 1
 r = rLEO/DU
 v = vLEO * TU / DU
@@ -88,14 +84,11 @@ t0, tf = 0, 5*T
 
 t = np.arange(t0, tf, TIME_STEP)
 degreesOfFreedom = problemDim
-# initilize the arrays used to store the info from the numerical solution
-IC = np.zeros((degreesOfFreedom,DATA_SET_SIZE))
-output_seq = np.zeros((len(t),degreesOfFreedom))
 
 # generate random data set of input thetas and output thetas and theta dots over a time series
 IC = np.concatenate((r,v))
 numericResult = myRK4Py(sysfuncptr,IC,t,paramaters=pam)
-_ , numericResult = ode45(sysfuncptr,[t0,tf],IC,t)
+t , numericResult = ode45(sysfuncptr,[t0,tf],IC,t)
 
 output_seq = numericResult
 
@@ -127,10 +120,10 @@ In each time step, there can be multiple features.
 '''
 
 
-train_size = int(len(output_seq) * p_motion_knowledge)
-test_size = len(output_seq) - train_size
+train_size = int(len(circNR) * p_motion_knowledge)
+test_size = len(circNR) - train_size
 
-train, test = output_seq[:train_size], output_seq[train_size:]
+train, test = circNR[:train_size], circNR[train_size:]
 
 train_in,train_out = create_dataset(train,device,lookback=lookback)
 test_in,test_out = create_dataset(test,device,lookback=lookback)
@@ -150,7 +143,7 @@ criterion = F.smooth_l1_loss
 # Define the Huber loss function with delta=1.0
 # huber_loss = F.smooth_l1_loss(predicted, target, reduction='mean', delta=1.0)
 
-def plotPredition(epoch,prediction='source',err=None):
+def plotPredition(epoch,prediction='source',err=None,t=t * TU,output_seq = circNR):
         with torch.no_grad():
             # shift train predictions for plotting
             train_plot = np.ones_like(output_seq) * np.nan
@@ -161,31 +154,35 @@ def plotPredition(epoch,prediction='source',err=None):
             test_plot = np.ones_like(output_seq) * np.nan
             test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :].cpu()
 
+        output_seq = nonDim2Dim4(output_seq)
+        train_plot = nonDim2Dim4(train_plot)
+        test_plot = nonDim2Dim4(test_plot)
+    
         fig, axes = plt.subplots(2,2)
 
         axes[0,0].plot(t,output_seq[:,0], c='b',label = 'True Motion')
         axes[0,0].plot(t,train_plot[:,0], c='r',label = 'Training Region')
         axes[0,0].plot(t,test_plot[:,0], c='g',label = 'Predition')
         axes[0,0].set_xlabel('time (sec)')
-        axes[0,0].set_ylabel('x ()')
+        axes[0,0].set_ylabel('x (km)')
 
         axes[0,1].plot(t,output_seq[:,1], c='b',label = 'True Motion')
         axes[0,1].plot(t,train_plot[:,1], c='r',label = 'Training Region')
         axes[0,1].plot(t,test_plot[:,1], c='g',label = 'Predition')
         axes[0,1].set_xlabel('time (sec)')
-        axes[0,1].set_ylabel('xdot (m/s)')
+        axes[0,1].set_ylabel('y (km)')
 
         axes[1,0].plot(t,output_seq[:,2], c='b',label = 'True Motion')
         axes[1,0].plot(t,train_plot[:,2], c='r',label = 'Training Region')
         axes[1,0].plot(t,test_plot[:,2], c='g',label = 'Predition')
         axes[1,0].set_xlabel('time (sec)')
-        axes[1,0].set_ylabel('y (m)')
+        axes[1,0].set_ylabel('xdot (km/s)')
 
         axes[1,1].plot(t,output_seq[:,3], c='b',label = 'True Motion')
         axes[1,1].plot(t,train_plot[:,3], c='r',label = 'Training Region')
         axes[1,1].plot(t,test_plot[:,3], c='g',label = 'Predition')
         axes[1,1].set_xlabel('time (sec)')
-        axes[1,1].set_ylabel('ydot (m/s)')
+        axes[1,1].set_ylabel('ydot (km/s)')
 
 
         plt.legend(loc='upper left', bbox_to_anchor=(1,0.5))
@@ -199,8 +196,15 @@ def plotPredition(epoch,prediction='source',err=None):
 
         if err is not None:
             fig, (ax1, ax2) = plt.subplots(2,1)
-            ax1.plot(err)
-            ax2.plot(np.average(err,axis=0)*np.ones(err.shape))
+            ax1.plot(err[:,0:2],label=('x','y'))
+            ax1.set_xlabel('node #')
+            ax1.set_ylabel('error (km)')
+            ax1.legend()
+            ax2.plot(err[:,2:4],label=('xdot','ydot'))
+            ax2.set_xlabel('node #')
+            ax2.set_ylabel('error (km/s)')
+            ax2.legend()
+            # ax2.plot(np.average(err,axis=0)*np.ones(err.shape))
             plt.show()
         # filter out nan values for better post processing
         train_plot = train_plot[~np.isnan(train_plot)]
@@ -235,6 +239,8 @@ for epoch in range(n_epochs):
 
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
+
+err = nonDim2Dim4(err)
 plotPredition(epoch+1,err = err)
 
 # """
@@ -267,8 +273,10 @@ r = rHEO / DU
 v = vHEO * TU / DU
 T = THEO / TU
 
+J2 = 1.08263e-3
+
 IC = np.concatenate((r,v))
-pam = [mu,1.08263e-3]
+pam = [mu,J2]
 
 m_sat = 1
 c_d = 2.1 #shperical model
@@ -306,36 +314,30 @@ def twoBodyPert(t, y, p=pam):
 
 sysfuncptr = twoBodyPert
 # sim time
-t0, tf = 0, 6 * T
+t0, tf = 0, 10 * T
 
 t = np.arange(t0, tf, TIME_STEP)
 
-# initilize the arrays used to store the info from the numerical solution
-IC = np.zeros((degreesOfFreedom,DATA_SET_SIZE))
-output_seq = np.zeros((len(t),degreesOfFreedom))
-
-# generate random data set of input thetas and output thetas and theta dots over a time series
 IC = np.concatenate((r,v))
 
-# numericResult = myRK4Py(sysfuncptr,IC,t,paramaters=pam)
-_ , numericResult = ode45(sysfuncptr,[t0,tf],IC,t)
+t , numericResult = ode45(sysfuncptr,[t0,tf],IC,t)
 
 output_seq = numericResult
 
 pertNR = numericResult
 
-train_size = int(len(output_seq) * p_motion_knowledge)
-test_size = len(output_seq) - train_size
+train_size = int(len(pertNR) * p_motion_knowledge)
+test_size = len(pertNR) - train_size
 
-train, test = output_seq[:train_size], output_seq[train_size:]
+train, test = pertNR[:train_size], pertNR[train_size:]
 
 train_in,train_out = create_dataset(train,device,lookback=lookback)
 test_in,test_out = create_dataset(test,device,lookback=lookback)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
-n_epochs = 10
-lr = 0.001
+n_epochs = 20
+lr = 0.005
 input_size = degreesOfFreedom
 output_size = degreesOfFreedom
 num_layers = 1
@@ -345,7 +347,7 @@ p_motion_knowledge = 0.2
 
 for epoch in range(n_epochs):
 
-    trajPredition = plotPredition(epoch,'target')
+    trajPredition = plotPredition(epoch,'target',t=t*TU,output_seq=pertNR)
 
     model.train()
     for X_batch, y_batch in loader:
@@ -369,8 +371,12 @@ for epoch in range(n_epochs):
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
 
-plotOrbitPhasePredictions(circNR,'circular')
-plotOrbitPhasePredictions(pertNR,'perturbed')
-plt.show()
+circNR = nonDim2Dim4(circNR)
+pertNR = nonDim2Dim4(pertNR)
 
-plotPredition(epoch+1,'target',err)
+# plotOrbitPhasePredictions(circNR,'circular')
+# plotOrbitPhasePredictions(pertNR,'perturbed')
+# plt.show()
+
+err = nonDim2Dim4(err)
+plotPredition(epoch+1,'target',err,t*TU,pertNR)

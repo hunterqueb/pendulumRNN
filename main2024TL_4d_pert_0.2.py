@@ -26,6 +26,7 @@ import torch.utils.data as data
 from quebUtils.integrators import myRK4Py, ode45
 from quebUtils.mlExtras import findDecAcc
 from quebUtils.plot import plotOrbitPhasePredictions
+from quebUtils.orbital import nonDim2Dim4
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
 
@@ -149,7 +150,7 @@ criterion = F.smooth_l1_loss
 # Define the Huber loss function with delta=1.0
 # huber_loss = F.smooth_l1_loss(predicted, target, reduction='mean', delta=1.0)
 
-def plotPredition(epoch,prediction='source',err=None):
+def plotPredition(epoch,prediction='source',err=None,t = t * TU,output_seq = circNR):
         with torch.no_grad():
             # shift train predictions for plotting
             train_plot = np.ones_like(output_seq) * np.nan
@@ -160,31 +161,36 @@ def plotPredition(epoch,prediction='source',err=None):
             test_plot = np.ones_like(output_seq) * np.nan
             test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :].cpu()
 
+        output_seq = nonDim2Dim4(output_seq)
+        train_plot = nonDim2Dim4(train_plot)
+        test_plot = nonDim2Dim4(test_plot)
+
         fig, axes = plt.subplots(2,2)
 
-        axes[0,0].plot(t,output_seq[:,0] * DU, c='b',label = 'True Motion')
-        axes[0,0].plot(t,train_plot[:,0] * DU, c='r',label = 'Training Region')
-        axes[0,0].plot(t,test_plot[:,0] * DU, c='g',label = 'Predition')
+        axes[0,0].plot(t,output_seq[:,0], c='b',label = 'True Motion')
+        axes[0,0].plot(t,train_plot[:,0], c='r',label = 'Training Region')
+        axes[0,0].plot(t,test_plot[:,0], c='g',label = 'Predition')
         axes[0,0].set_xlabel('time (sec)')
-        axes[0,0].set_ylabel('x (m)')
+        axes[0,0].set_ylabel('x (km)')
 
-        axes[0,1].plot(t,output_seq[:,1] * DU/TU, c='b',label = 'True Motion')
-        axes[0,1].plot(t,train_plot[:,1] * DU/TU, c='r',label = 'Training Region')
-        axes[0,1].plot(t,test_plot[:,1] * DU/TU, c='g',label = 'Predition')
+        axes[0,1].plot(t,output_seq[:,1], c='b',label = 'True Motion')
+        axes[0,1].plot(t,train_plot[:,1], c='r',label = 'Training Region')
+        axes[0,1].plot(t,test_plot[:,1], c='g',label = 'Predition')
         axes[0,1].set_xlabel('time (sec)')
-        axes[0,1].set_ylabel('xdot (m/s)')
+        axes[0,1].set_ylabel('y (km)')
 
-        axes[1,0].plot(t,output_seq[:,2] * DU, c='b',label = 'True Motion')
-        axes[1,0].plot(t,train_plot[:,2] * DU, c='r',label = 'Training Region')
-        axes[1,0].plot(t,test_plot[:,2] * DU, c='g',label = 'Predition')
+        axes[1,0].plot(t,output_seq[:,2], c='b',label = 'True Motion')
+        axes[1,0].plot(t,train_plot[:,2], c='r',label = 'Training Region')
+        axes[1,0].plot(t,test_plot[:,2], c='g',label = 'Predition')
         axes[1,0].set_xlabel('time (sec)')
-        axes[1,0].set_ylabel('y (m)')
+        axes[1,0].set_ylabel('xdot (km/s)')
 
-        axes[1,1].plot(t,output_seq[:,3] * DU/TU, c='b',label = 'True Motion')
-        axes[1,1].plot(t,train_plot[:,3] * DU/TU, c='r',label = 'Training Region')
-        axes[1,1].plot(t,test_plot[:,3] * DU/TU, c='g',label = 'Predition')
+        axes[1,1].plot(t,output_seq[:,3], c='b',label = 'True Motion')
+        axes[1,1].plot(t,train_plot[:,3], c='r',label = 'Training Region')
+        axes[1,1].plot(t,test_plot[:,3], c='g',label = 'Predition')
         axes[1,1].set_xlabel('time (sec)')
-        axes[1,1].set_ylabel('ydot (m/s)')
+        axes[1,1].set_ylabel('ydot (km/s)')
+
 
 
         plt.legend(loc='upper left', bbox_to_anchor=(1,0.5))
@@ -198,8 +204,15 @@ def plotPredition(epoch,prediction='source',err=None):
 
         if err is not None:
             fig, (ax1, ax2) = plt.subplots(2,1)
-            ax1.plot(err)
-            ax2.plot(np.average(err,axis=0)*np.ones(err.shape))
+            ax1.plot(err[:,0:2],label=('x','y'))
+            ax1.set_xlabel('node #')
+            ax1.set_ylabel('error (km)')
+            ax1.legend()
+            ax2.plot(err[:,2:4],label=('xdot','ydot'))
+            ax2.set_xlabel('node #')
+            ax2.set_ylabel('error (km/s)')
+            ax2.legend()
+            # ax2.plot(np.average(err,axis=0)*np.ones(err.shape))
             plt.show()
         # filter out nan values for better post processing
         train_plot = train_plot[~np.isnan(train_plot)]
@@ -234,6 +247,7 @@ for epoch in range(n_epochs):
 
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
+err = nonDim2Dim4(err)
 plotPredition(epoch+1,err = err)
 
 # """
@@ -265,7 +279,10 @@ a = a/DU
 r = rLEO/DU
 v = vLEO * TU / DU
 T = TLEO / TU
-pam = [mu,1.08263e-3]
+
+J2 = 1.08263e-3
+
+pam = [mu,J2]
 h = np.cross(r,v)
 
 m_sat = 1
@@ -343,7 +360,7 @@ p_motion_knowledge = 0.2
 
 for epoch in range(n_epochs):
 
-    trajPredition = plotPredition(epoch,'target')
+    trajPredition = plotPredition(epoch,'target',t=t,output_seq=pertNR)
 
     model.train()
     for X_batch, y_batch in loader:
@@ -367,8 +384,12 @@ for epoch in range(n_epochs):
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
 
+circNR = nonDim2Dim4(circNR)
+pertNR = nonDim2Dim4(pertNR)
+
 plotOrbitPhasePredictions(circNR,'circular')
 plotOrbitPhasePredictions(pertNR,'perturbed')
 plt.show()
 
-plotPredition(epoch+1,'target',err)
+err = nonDim2Dim4(err)
+plotPredition(epoch+1,'target',err,t*TU,output_seq=pertNR)
