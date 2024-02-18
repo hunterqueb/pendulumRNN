@@ -237,9 +237,9 @@ TRANSFER LEARN TO NEW, NONLINEAR SYSTEM ON DIFFERENT INITIAL CONDITIONS AND DIFF
 TIME_STEP = 0.005
 
 # transfer to different system
-
 newModel = LSTMSelfAttentionNetwork(input_size,hidden_size,output_size,num_layers, p_dropout).double().to(device)
-newModel = transferLSTM(model,newModel)
+trainableLayer = [True, True, False]
+newModel = transferLSTM(model,newModel,trainableLayer)
 
 sysfuncptr = duffingOscillatorODE
 # sim time
@@ -270,8 +270,8 @@ test_in,test_out = create_dataset(test,device,lookback=lookback)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
-n_epochs = 5
-lr = 0.004
+n_epochs = 10
+lr = 0.01
 input_size = degreesOfFreedom
 output_size = degreesOfFreedom
 num_layers = 1
@@ -280,16 +280,18 @@ p_dropout = 0.0
 lookback = 1
 p_motion_knowledge = 0.2
 
+optimizer = torch.optim.Adam(newModel.parameters(),lr=lr)
+
 def plotNewPredition(epoch,err=None):
         with torch.no_grad():
             # shift train predictions for plotting
             train_plot = np.ones_like(output_seq) * np.nan
-            y_pred = model(train_in)
+            y_pred = newModel(train_in)
             y_pred = y_pred[:, -1, :]
-            train_plot[lookback:train_size] = model(train_in)[:, -1, :].cpu()
+            train_plot[lookback:train_size] = newModel(train_in)[:, -1, :].cpu()
             # shift test predictions for plotting
             test_plot = np.ones_like(output_seq) * np.nan
-            test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :].cpu()
+            test_plot[train_size+lookback:len(output_seq)] = newModel(test_in)[:, -1, :].cpu()
 
         fig, (ax1, ax2) = plt.subplots(2,1)
         # plot
@@ -330,19 +332,19 @@ for epoch in range(n_epochs):
 
     trajPredition = plotNewPredition(epoch)
 
-    model.train()
+    newModel.train()
     for X_batch, y_batch in loader:
-        y_pred = model(X_batch)
+        y_pred = newModel(X_batch)
         loss = criterion(y_pred, y_batch)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
     # Validation
-    model.eval()
+    newModel.eval()
     with torch.no_grad():
-        y_pred_train = model(train_in)
+        y_pred_train = newModel(train_in)
         train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
-        y_pred_test = model(test_in)
+        y_pred_test = newModel(test_in)
         test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
 
         decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)

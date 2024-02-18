@@ -140,7 +140,7 @@ criterion = F.smooth_l1_loss
 # Define the Huber loss function with delta=1.0
 # huber_loss = F.smooth_l1_loss(predicted, target, reduction='mean', delta=1.0)
 
-def plotPredition(epoch,prediction='source',err=None,t = t * TU,output_seq = circNR):
+def plotPredition(epoch,model,prediction='source',err=None,t = t * TU,output_seq = circNR):
         with torch.no_grad():
             # shift train predictions for plotting
             train_plot = np.ones_like(output_seq) * np.nan
@@ -214,7 +214,7 @@ def plotPredition(epoch,prediction='source',err=None,t = t * TU,output_seq = cir
 
 for epoch in range(n_epochs):
 
-    trajPredition = plotPredition(epoch)
+    trajPredition = plotPredition(epoch,model)
 
     model.train()
     for X_batch, y_batch in loader:
@@ -238,7 +238,7 @@ for epoch in range(n_epochs):
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
 err = nonDim2Dim4(err)
-plotPredition(epoch+1,err = err)
+plotPredition(epoch+1,model,err = err)
 
 # """
 # TRANSFER LEARN TO NEW, NONLINEAR SYSTEM ON DIFFERENT INITIAL CONDITIONS AND DIFFERENT TIME PERIOD AND DIFFERENT TIME STEP
@@ -249,7 +249,8 @@ TIME_STEP = 0.005
 # transfer to different system
 
 newModel = LSTMSelfAttentionNetwork(input_size,hidden_size,output_size,num_layers, p_dropout).double().to(device)
-newModel = transferLSTM(model,newModel)
+trainableLayer = [True, True, False]
+newModel = transferLSTM(model,newModel,trainableLayer)
 
 
 DU = 6378.1*1e3 # radius of earth
@@ -348,23 +349,25 @@ p_dropout = 0.0
 lookback = 1
 p_motion_knowledge = 0.2
 
+optimizer = torch.optim.Adam(newModel.parameters(),lr=lr)
+
 for epoch in range(n_epochs):
 
-    trajPredition = plotPredition(epoch,'target',t=t,output_seq=pertNR)
+    trajPredition = plotPredition(epoch,newModel,'target',t=t*TU,output_seq=pertNR)
 
-    model.train()
+    newModel.train()
     for X_batch, y_batch in loader:
-        y_pred = model(X_batch)
+        y_pred = newModel(X_batch)
         loss = criterion(y_pred, y_batch)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
     # Validation
-    model.eval()
+    newModel.eval()
     with torch.no_grad():
-        y_pred_train = model(train_in)
+        y_pred_train = newModel(train_in)
         train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
-        y_pred_test = model(test_in)
+        y_pred_test = newModel(test_in)
         test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
 
         decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
@@ -382,4 +385,4 @@ plotOrbitPhasePredictions(pertNR,'perturbed')
 plt.show()
 
 err = nonDim2Dim4(err)
-plotPredition(epoch+1,'target',err,t*TU,output_seq=pertNR)
+plotPredition(epoch+1,newModel,'target',err,t*TU,output_seq=pertNR)
