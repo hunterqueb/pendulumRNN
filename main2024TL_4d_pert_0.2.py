@@ -42,10 +42,11 @@ else:
 ## NUMERICAL SOLUTION
 
 problemDim = 4 
-DU = 6378.1 # radius of earth in km
-TU = ((DU)**3 / 396800)**0.5
 
 muR = 3.96800e14
+DU = 6378.1e3 # radius of earth in km
+TU = ((DU)**3 / muR)**0.5
+
 rLEO = np.array([6.611344740000000e+06,0])
 vLEO = np.sqrt(muR/np.linalg.norm(rLEO))
 vLEO = np.array([0,vLEO])
@@ -253,11 +254,11 @@ trainableLayer = [True, True, False]
 newModel = transferLSTM(model,newModel,trainableLayer)
 
 
-DU = 6378.1 # radius of earth in km
-TU = ((DU)**3 / 396800)**0.5
+muR = 3.96800e14
+DU = 6378.1e3 # radius of earth in km
+TU = ((DU)**3 / muR)**0.5
 
 # initial conditions from example 2.7 in curtis
-muR = 3.96800e14
 rLEO = np.array([6778e3,0])
 vLEO = np.array([0, 8.435e3])
 a = 8578e3
@@ -309,6 +310,17 @@ def twoBodyPert(t, y, p=pam):
     return np.array([dydt1, dydt2,dydt3,dydt4])
 
 
+n_epochs = 10
+lr = 0.001
+input_size = degreesOfFreedom
+output_size = degreesOfFreedom
+num_layers = 1
+hidden_size = 50
+p_dropout = 0.0
+lookback = 1
+p_motion_knowledge = 0.2
+
+
 sysfuncptr = twoBodyPert
 # sim time
 t0, tf = 0, 5 * T
@@ -338,16 +350,6 @@ train_in,train_out = create_dataset(train,device,lookback=lookback)
 test_in,test_out = create_dataset(test,device,lookback=lookback)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
-
-n_epochs = 10
-lr = 0.001
-input_size = degreesOfFreedom
-output_size = degreesOfFreedom
-num_layers = 1
-hidden_size = 50
-p_dropout = 0.0
-lookback = 1
-p_motion_knowledge = 0.2
 
 optimizer = torch.optim.Adam(newModel.parameters(),lr=lr)
 

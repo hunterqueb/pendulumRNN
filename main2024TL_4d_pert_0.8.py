@@ -45,10 +45,10 @@ else:
 
 problemDim = 4 
 
-DU = 6378.1 # radius of earth in km
-TU = ((DU)**3 / 396800)**0.5
-
 muR = 3.96800e14
+DU = 6378.1e3 # radius of earth in km
+TU = ((DU)**3 / muR)**0.5
+
 rLEO = np.array([6.611344740000000e+06,0])
 vLEO = np.sqrt(muR/np.linalg.norm(rLEO))
 vLEO = np.array([0,vLEO])
@@ -258,8 +258,9 @@ newModel = LSTMSelfAttentionNetwork(input_size,hidden_size,output_size,num_layer
 trainableLayer = [True, True, False]
 newModel = transferLSTM(model,newModel,trainableLayer)
 
+muR = 396800
 DU = 6378.1 # radius of earth in km
-TU = ((DU)**3 / 396800)**0.5
+TU = ((DU)**3 / muR)**0.5
 
 p = 20410 # km
 e = 0.8
@@ -315,6 +316,16 @@ def twoBodyPert(t, y, p=pam):
     return np.array([dydt1, dydt2,dydt3,dydt4])
 
 
+
+n_epochs = 5
+lr = 0.001
+input_size = degreesOfFreedom
+output_size = degreesOfFreedom
+num_layers = 1
+p_dropout = 0.0
+lookback = 1
+p_motion_knowledge = 0.1
+
 sysfuncptr = twoBodyPert
 # sim time
 t0, tf = 0, 10 * T
@@ -339,14 +350,6 @@ test_in,test_out = create_dataset(test,device,lookback=lookback)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
-n_epochs = 5
-lr = 0.001
-input_size = degreesOfFreedom
-output_size = degreesOfFreedom
-num_layers = 1
-p_dropout = 0.0
-lookback = 1
-p_motion_knowledge = 0.2
 
 optimizer = torch.optim.Adam(newModel.parameters(),lr=lr)
 
