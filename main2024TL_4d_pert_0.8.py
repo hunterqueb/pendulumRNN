@@ -308,7 +308,8 @@ def twoBodyPert(t, y, p=pam):
 
     a_drag_x = 0
     a_drag_y = 0
-    
+    # j2_accel_x = 0
+    # j2_accel_y = 0
     dydt3 = -mu / R**3 * y[0] + j2_accel_x + a_drag_x
     dydt4 = -mu / R**3 * y[1] + j2_accel_y + a_drag_y
 
@@ -379,8 +380,8 @@ for epoch in range(n_epochs):
 circNR = nonDim2Dim4(circNR)
 pertNR = nonDim2Dim4(pertNR)
 
-# plotOrbitPhasePredictions(circNR,'circular')
-# plotOrbitPhasePredictions(pertNR,'perturbed')
+plotOrbitPhasePredictions(circNR,'circular')
+plotOrbitPhasePredictions(pertNR,'perturbed')
 # plt.show()
 
 err = nonDim2Dim4(err)
