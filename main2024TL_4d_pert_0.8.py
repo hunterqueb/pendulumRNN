@@ -44,8 +44,9 @@ else:
 ## NUMERICAL SOLUTION
 
 problemDim = 4 
-DU = 6378.1e3 # radius of earth
-TU = 806.80415
+
+DU = 6378.1 # radius of earth in km
+TU = ((DU)**3 / 396800)**0.5
 
 muR = 3.96800e14
 rLEO = np.array([6.611344740000000e+06,0])
@@ -258,9 +259,7 @@ trainableLayer = [True, True, False]
 newModel = transferLSTM(model,newModel,trainableLayer)
 
 DU = 6378.1 # radius of earth in km
-TU = 806.80415
-
-muR = 396800
+TU = ((DU)**3 / 396800)**0.5
 
 p = 20410 # km
 e = 0.8
