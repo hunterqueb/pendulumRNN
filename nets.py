@@ -181,6 +181,7 @@ def transferLSTM(pretrainedModel,newModel,trainPhase = [True, True, True]):
     '''
     newModel.lstm.load_state_dict(pretrainedModel.lstm.state_dict())
     newModel.self_attention.load_state_dict(pretrainedModel.self_attention.state_dict())
+    newModel.fc.load_state_dict(pretrainedModel.fc.state_dict())
 
     # Freeze the weights of the LSTM layers
     for param in newModel.lstm.parameters():
