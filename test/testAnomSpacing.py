@@ -65,44 +65,45 @@ def twoBodyPert(t, y, p=pam):
     return np.array([dydt1, dydt2,dydt3,dydt4])
 
 numPoints = 100
-
+numPeriods = 3
 trueAnom = np.linspace(0,2*np.pi,numPoints)
-
 # linspace f 0 to 360 
 
 # find E from f
 # 3.13b curtis
-
 E = 2*np.arctan(np.sqrt((1-e)/(1+e))*np.tan(trueAnom/2))
-# E = E + np.pi
+
 # find Me from E and e
 # 3.14 curtis
-# plt.figure()
-# plt.plot(E)
-
 Me = E - np.multiply(e,np.sin(E))
-# find t from Me and period
-# 3.15 from curtis
-# plt.figure()
-# plt.plot(E,Me,linestyle="None",marker= 's')
 
+# ensure the angles lies on the the correct range from 0 to 2pi
 Me[int(numPoints/2):] = Me[int(numPoints/2):] + 2*np.pi
 
+# find t from Me and period
+# 3.15 from curtis
 tEval = Me/(2*np.pi) * T
 
+# construct time eval matrix
+tEvalM = np.zeros((numPoints,numPeriods))
+tEvalM[:,0] = tEval
+
+# compute for arbitrary periods
+for i in range(numPeriods-1):
+    tEvalM[:,i+1] = tEvalM[:,i] + T
+    tEval = np.concatenate((tEval,tEvalM[1:,i+1]))
+
 plt.figure()
-plt.plot(trueAnom,tEval,linestyle='None',marker='s')
+plt.plot(tEval,linestyle='None',marker='s')
 plt.xlabel('True Anomoly (rad)')
 plt.ylabel('Time (nondim)')
+plt.show()
 
-# tEval2 = tEval + T
-# tEval = np.concatenate((tEval,tEval2[1:]))
-
-t,y = ode45(twoBodyPert,[0,T],IC,tEval)
-t,y_eqi = ode45(twoBodyPert,[0,T],IC)
+t,y = ode45(twoBodyPert,[0,numPeriods*T],IC,tEval)
+# t,y_eqi = ode45(twoBodyPert,[0,T],IC)
 
 plt.figure()
 plt.plot(y[:,0],y[:,1],linestyle='None',marker='s')
-plt.plot(y_eqi[:,0],y_eqi[:,1],linestyle='None',marker='o')
+# plt.plot(y_eqi[:,0],y_eqi[:,1],linestyle='None',marker='o')
 
 plt.show()
