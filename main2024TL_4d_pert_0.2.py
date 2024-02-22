@@ -93,7 +93,7 @@ output_seq = numericResult
 circNR = numericResult
 
 # hyperparameters
-n_epochs = 50
+n_epochs = 1
 # lr = 5*(10**-5)
 # lr = 0.85
 lr = 0.8
@@ -301,8 +301,11 @@ def twoBodyPert(t, y, p=pam):
     drag_factor = -0.5 * (rho / m_sat) * c_d * A_sat * v_norm
     a_drag_x = drag_factor * y[2]
     a_drag_y = drag_factor *  y[3]
+    
     a_drag_x = 0
     a_drag_y = 0
+    j2_accel_x = 0
+    j2_accel_y = 0
 
     dydt3 = -mu / R**3 * y[0] + j2_accel_x + a_drag_x
     dydt4 = -mu / R**3 * y[1] + j2_accel_y + a_drag_y
@@ -310,7 +313,7 @@ def twoBodyPert(t, y, p=pam):
     return np.array([dydt1, dydt2,dydt3,dydt4])
 
 
-n_epochs = 10
+n_epochs = 50
 lr = 0.001
 input_size = degreesOfFreedom
 output_size = degreesOfFreedom
@@ -326,7 +329,7 @@ sysfuncptr = twoBodyPert
 t0, tf = 0, 5 * T
 
 t = np.arange(t0, tf, TIME_STEP)
-
+t = np.linspace(t0,tf,5000)
 # initilize the arrays used to store the info from the numerical solution
 IC = np.zeros((degreesOfFreedom,DATA_SET_SIZE))
 output_seq = np.zeros((len(t),degreesOfFreedom))

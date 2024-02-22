@@ -308,8 +308,8 @@ def twoBodyPert(t, y, p=pam):
 
     a_drag_x = 0
     a_drag_y = 0
-    # j2_accel_x = 0
-    # j2_accel_y = 0
+    j2_accel_x = 0
+    j2_accel_y = 0
     dydt3 = -mu / R**3 * y[0] + j2_accel_x + a_drag_x
     dydt4 = -mu / R**3 * y[1] + j2_accel_y + a_drag_y
 
@@ -317,7 +317,7 @@ def twoBodyPert(t, y, p=pam):
 
 
 
-n_epochs = 5
+n_epochs = 50
 lr = 0.001
 input_size = degreesOfFreedom
 output_size = degreesOfFreedom

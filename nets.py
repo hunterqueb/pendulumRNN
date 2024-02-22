@@ -172,7 +172,7 @@ class LSTM(nn.Module):
 
         return final_out
 
-def transferLSTM(pretrainedModel,newModel,trainPhase = [True, True, True]):
+def transferLSTM(pretrainedModel,newModel,trainableLayer = [True, True, True]):
     '''
     custom function to transfer knowledge of LSTM network from a pretrained model to a new model
 
@@ -185,11 +185,11 @@ def transferLSTM(pretrainedModel,newModel,trainPhase = [True, True, True]):
 
     # Freeze the weights of the LSTM layers
     for param in newModel.lstm.parameters():
-        param.requires_grad = trainPhase[0]
+        param.requires_grad = trainableLayer[0]
     for param in newModel.self_attention.parameters():
-        param.requires_grad = trainPhase[1]
+        param.requires_grad = trainableLayer[1]
     for param in newModel.fc.parameters():
-        param.requires_grad = trainPhase[2]
+        param.requires_grad = trainableLayer[2]
     return newModel
 
 

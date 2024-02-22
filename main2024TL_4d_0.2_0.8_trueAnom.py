@@ -330,13 +330,13 @@ output_size = degreesOfFreedom
 num_layers = 1
 p_dropout = 0.0
 lookback = 1
-p_motion_knowledge = 0.2
+p_motion_knowledge = 0.1
 
 sysfuncptr = twoBodyCirc
 # sim time
-numPeriods = 5
+numPeriods = 10
 # numPoints = 400
-t0, tf = 0, numPeriods * T
+t0, tf = 0, numPeriods * T + 0.000000001
 
 t = genTimestep4EquiTrueAnom(numPoints,numPeriods,e,T)
 
