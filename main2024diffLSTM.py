@@ -24,8 +24,8 @@ import random
 import torch.nn.functional as F
 import torch.utils.data as data
 
-from quebUtils.integrators import myRK4Py
-from quebUtils.mlExtras import findDecAcc
+from qutils.integrators import myRK4Py
+from qutils.mlExtras import findDecAcc
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
 

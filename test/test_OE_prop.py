@@ -6,10 +6,10 @@ import random
 import torch.nn.functional as F
 import torch.utils.data as data
 
-from quebUtils.integrators import myRK4Py, ode45
-from quebUtils.mlExtras import findDecAcc
-from quebUtils.plot import plotOrbitPhasePredictions
-from quebUtils.orbital import nonDim2Dim4, classicOrbitProp, ECI2OE
+from qutils.integrators import myRK4Py, ode45
+from qutils.mlExtras import findDecAcc
+from qutils.plot import plotOrbitPhasePredictions
+from qutils.orbital import nonDim2Dim4, classicOrbitProp, ECI2OE
 
 # seed any random functions
 random.seed(123)
@@ -60,7 +60,7 @@ ax = fig.add_subplot(111, projection='3d')
 ax.plot(X_Class[:,0],X_Class[:,1],X_Class[:,2])
 plt.show()
 
-# from quebUtils.dynSys.dim6 import lagrangePlanEq
+# from qutils.dynSys.dim6 import lagrangePlanEq
 
 # # np.array((a, e, i, Omega, omega, M0, P))
 # # elements = [OMEGA i omega a e M0]

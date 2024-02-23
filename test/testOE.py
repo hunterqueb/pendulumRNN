@@ -6,13 +6,13 @@ import random
 import torch.nn.functional as F
 import torch.utils.data as data
 
-# from quebutils.integrators import myRK4Py, ode45
-# from quebutils.mlExtras import findDecAcc
+# from qutils.integrators import myRK4Py, ode45
+# from qutils.mlExtras import findDecAcc
 
-from quebUtils.integrators import myRK4Py, ode45
-from quebUtils.mlExtras import findDecAcc
-from quebUtils.plot import plotOrbitPhasePredictions
-from quebUtils.orbital import OE2ECI
+from qutils.integrators import myRK4Py, ode45
+from qutils.mlExtras import findDecAcc
+from qutils.plot import plotOrbitPhasePredictions
+from qutils.orbital import OE2ECI
 
 DU = 6378.1 # radius of earth in km
 TU = 806.80415

@@ -7,7 +7,7 @@ import nets
 from torchinfo import summary
 import torchvision
 
-from quebUtils.integrators import myRK4Py
+from qutils.integrators import myRK4Py
 
 is_cuda = torch.cuda.is_available()
 

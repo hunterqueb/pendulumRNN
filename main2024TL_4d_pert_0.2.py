@@ -13,10 +13,10 @@ import random
 import torch.nn.functional as F
 import torch.utils.data as data
 
-from quebUtils.integrators import myRK4Py, ode45
-from quebUtils.mlExtras import findDecAcc
-from quebUtils.plot import plotOrbitPhasePredictions
-from quebUtils.orbital import nonDim2Dim4
+from qutils.integrators import myRK4Py, ode45
+from qutils.mlExtras import findDecAcc
+from qutils.plot import plotOrbitPhasePredictions
+from qutils.orbital import nonDim2Dim4
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
 

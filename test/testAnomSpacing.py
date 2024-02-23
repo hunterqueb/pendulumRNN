@@ -2,7 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from quebUtils.integrators import ode45
+from qutils.integrators import ode45
 
 
 muR = 396800
