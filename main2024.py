@@ -24,6 +24,7 @@ from qutils.integrators import myRK4Py
 from qutils.mlExtras import findDecAcc
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
+from mamba import Mamba, MambaConfig
 
 # seed any random functions
 random.seed(123)
@@ -142,6 +143,10 @@ test_in,test_out = create_dataset(test,device,lookback=lookback)
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
 # initilizing the model, criterion, and optimizer for the data
+
+config = MambaConfig(d_model=degreesOfFreedom, n_layers=2)
+model = Mamba(config).to(device).double()
+
 model = LSTMSelfAttentionNetwork(input_size,hidden_size,output_size,num_layers, p_dropout).double().to(device)
 # model = LSTM(input_size,hidden_size,output_size,num_layers, p_dropout).double().to(device)
 
