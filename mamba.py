@@ -209,6 +209,10 @@ class MambaBlock(nn.Module):
         else:
             y = self.selective_scan_seq(x, delta, A, B, C, D)
 
+        self.delta = delta
+        self.A = A
+        self.B = B
+        self.C = C
         return y
     
     def selective_scan(self, x, delta, A, B, C, D):
