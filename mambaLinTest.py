@@ -33,8 +33,8 @@ else:
 # linear system for a simple harmonic oscillator
 k = 1; m = 1
 wr = np.sqrt(k/m)
-F0 = 0.1
-c = 0.6 # consider no damping for now
+F0 = 1
+c = 0 # consider no damping for now
 zeta = c / (2*m*wr)
 
 def linPendulumODE(t,theta,u,p=[m,c,k]):
@@ -50,11 +50,12 @@ C = np.eye(2)
 
 D = 0
 
-t0 = 0; tf = 10
-dt = 0.001
+t0 = 0; tf = 30
+dt = 0.01
 t = np.linspace(t0,tf,int(tf/dt))
 
-u = F0 * np.sin(t)
+u = F0 * np.sin(t) # LTI system
+# u = F0 * np.exp(-2*t) # LTV system
 
 sys = ct.StateSpace(A,B,C,D)
 
@@ -68,11 +69,10 @@ numericalResult = results.states.T
 n_epochs = 50
 lr = 0.001
 lookback = 1
-p_motion_knowledge = 0.02
 
 nDim = 2
-nLayers = 1
-config = MambaConfig(nDim,nLayers,d_state = 2,expand_factor=1)
+nLayers = 2
+config = MambaConfig(nDim,nLayers,d_state = 2,expand_factor=4)
 
 modelLSTM = LSTMSelfAttentionNetwork(2,20,2,1, 0).double().to(device)
 modelMamba = Mamba(config).to(device).double()
@@ -80,10 +80,15 @@ modelMamba = Mamba(config).to(device).double()
 model = modelMamba
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
+# criterion = torch.nn.MSELoss()
 
 
-train_size = int(len(numericalResult) * p_motion_knowledge)
-test_size = len(numericalResult) - train_size
+# p_motion_knowledge = 0.02
+# train_size = int(len(numericalResult) * p_motion_knowledge)
+# test_size = len(numericalResult) - train_size
+
+train_size = 2
+test_size = len(numericalResult) - train_size - 5000
 
 train, test = numericalResult[:train_size], numericalResult[train_size:]
 
@@ -155,11 +160,10 @@ for epoch in range(n_epochs):
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
 if model == modelMamba:
-    print(model.layers[0].mixer.A.shape)
-    print(model.layers[0].mixer.B.shape)
-    print(model.layers[0].mixer.C.shape)
-    # print(model.layers[0].mixer.delta)
-
+    print(model.layers[0].mixer.A_SSM.shape)
+    print(model.layers[0].mixer.B_SSM.shape)
+    print(model.layers[0].mixer.C_SSM.shape)
+    print(model.layers[0].mixer.delta)
 # A takes the a shape defined by the user, a combination of the user defined latent space size and the expansion size of the input
 # B and C take the size of the test vector? how is it doing this? how does it now
 plotPredition(n_epochs)
