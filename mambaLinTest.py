@@ -33,8 +33,8 @@ else:
 # linear system for a simple harmonic oscillator
 k = 1; m = 1
 wr = np.sqrt(k/m)
-F0 = 1
-c = 0 # consider no damping for now
+F0 = 0.3
+c = 0.1 # consider no damping for now
 zeta = c / (2*m*wr)
 
 def linPendulumODE(t,theta,u,p=[m,c,k]):
@@ -50,7 +50,7 @@ C = np.eye(2)
 
 D = 0
 
-t0 = 0; tf = 30
+t0 = 0; tf = 100
 dt = 0.01
 t = np.linspace(t0,tf,int(tf/dt))
 
@@ -71,13 +71,15 @@ lr = 0.001
 lookback = 1
 
 nDim = 2
-nLayers = 2
+nLayers = 1
 config = MambaConfig(nDim,nLayers,d_state = 2,expand_factor=4)
 
-modelLSTM = LSTMSelfAttentionNetwork(2,20,2,1, 0).double().to(device)
+modelLSTM = LSTMSelfAttentionNetwork(2,20,2,1,0).double().to(device)
 modelMamba = Mamba(config).to(device).double()
 
 model = modelMamba
+model = modelLSTM
+
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
 # criterion = torch.nn.MSELoss()
@@ -87,8 +89,9 @@ criterion = F.smooth_l1_loss
 # train_size = int(len(numericalResult) * p_motion_knowledge)
 # test_size = len(numericalResult) - train_size
 
-train_size = 2
-test_size = len(numericalResult) - train_size - 5000
+train_size = int(dt * 10000 * 2)
+# train_size = 2
+test_size = len(numericalResult) - train_size
 
 train, test = numericalResult[:train_size], numericalResult[train_size:]
 
@@ -113,7 +116,10 @@ def plotPredition(epoch):
         ax1.plot(t,numericalResult[:,0], c='b',label = 'True Motion')
         ax1.plot(t,train_plot[:,0], c='r',label = 'Training Region')
         ax1.plot(t,test_plot[:,0], c='g',label = 'Predition')
-        ax1.set_title('Mamba Solution to Linear Oscillator')
+        if model == modelLSTM:
+            ax1.set_title('LSTM Solution to Linear Oscillator')
+        elif model == modelMamba:
+            ax1.set_title('Mamba Solution to Linear Oscillator')
         # ax1.xlabel('time (sec)')
         ax1.set_ylabel('x (m)')
         # plt.legend(loc="lower left")
@@ -166,4 +172,6 @@ if model == modelMamba:
     print(model.layers[0].mixer.delta)
 # A takes the a shape defined by the user, a combination of the user defined latent space size and the expansion size of the input
 # B and C take the size of the test vector? how is it doing this? how does it now
+torchinfo.summary(model)
+
 plotPredition(n_epochs)
