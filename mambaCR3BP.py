@@ -7,6 +7,7 @@ import torch.utils.data as data
 from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
 from qutils.mlExtras import findDecAcc
+from qutils.orbital import nonDim2Dim4
 
 from nets import create_dataset, LSTMSelfAttentionNetwork
 from mamba import Mamba, MambaConfig
@@ -247,6 +248,13 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
 
 networkPrediction = plotPredition(epoch+1,model,output_seq)
 plotCR3BPPhasePredictions(output_seq,networkPrediction)
+
+
+DU = 38400
+TU = 2.3616e8
+networkPrediction = nonDim2Dim4(networkPrediction,DU,TU)
+output_seq = nonDim2Dim4(output_seq,DU,TU)
+
 plotOrbitPredictions(output_seq,networkPrediction,t=t)
 plotSolutionErrors(output_seq,networkPrediction,t,problemDim)
 # plotDecAccs(decAcc,t,problemDim)

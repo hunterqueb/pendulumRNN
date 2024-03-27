@@ -71,9 +71,12 @@ def create_dataset(dataset,device,lookback):
 
 
 def generateTrajectoryPrediction(train_plot,test_plot):
-    # takes matrices of two equal lengths and compares the values element by element. 
-    # if a number occupys one matrix but not the other return a new matrix with the nonzero value.
-    # if both matrices have nan, a new matrix is returned with the nan value.
+    '''
+    takes matrices of two equal lengths and compares the values element by element. 
+    if a number occupys one matrix but not the other return a new matrix with the nonzero value.
+    if a number occupies both matrics then the value is prefered from the testing output / prediction
+    if both matrices have nan, a new matrix is returned with the nan value.
+    '''
     trajPredition = np.zeros_like(train_plot)
 
     for i in range(test_plot.shape[0]):
@@ -221,11 +224,18 @@ def transferMamba(pretrainedModel,newModel,trainableLayers = [True,False,False])
     # deltaBC is calced simultaneously here!
     # model.layers[0].mixer.x_proj.state_dict()
 
+    # load the parameters from the old model to the new, and set all parameters to untrainable
     newModel.load_state_dict(pretrainedModel.state_dict())
-
     for param in newModel.parameters():
         param.requires_grad = False
 
+
+    for param in newModel.layers[0].mixer.conv1d.parameters():
+        param.requires_grad = False
+
+    # trainanle A matrix
+    newModel.layers[0].mixer.A_log.requires_grad = False
+    # trainable deltaBC matrix
     for param in newModel.layers[0].mixer.x_proj.parameters():
         param.requires_grad = trainableLayers[0]
 
