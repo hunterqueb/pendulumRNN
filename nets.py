@@ -210,7 +210,34 @@ def transferLSTM(pretrainedModel,newModel,trainableLayer = [True, True, True]):
         param.requires_grad = trainableLayer[2]
     return newModel
 
+def transferMamba(pretrainedModel,newModel,trainableLayers = [True,False,False]):
+    '''
+    custom function to transfer knowledge of a mamba network from a pretrained model to a new model
+    the mamba network is from https://github.com/alxndrTL/mamba.py
 
+    parameters: pretrainedModel - pretrained pytorch mamba model with one state space layer
+                newModel - untrained pytorch mamba model with one state space layer
+    '''
+    # deltaBC is calced simultaneously here!
+    # model.layers[0].mixer.x_proj.state_dict()
+
+    newModel.load_state_dict(pretrainedModel.state_dict())
+
+    for param in newModel.parameters():
+        param.requires_grad = False
+
+    for param in newModel.layers[0].mixer.x_proj.parameters():
+        param.requires_grad = trainableLayers[0]
+
+    for param in newModel.layers[0].mixer.dt_proj.parameters():
+        param.requires_grad = trainableLayers[1]
+
+    # probably not the best to transfer, this is the projection from the latent state space back to the output space
+    for param in newModel.layers[0].mixer.out_proj.parameters():
+        param.requires_grad = trainableLayers[2]
+
+
+    return newModel
 class CNN_LSTM_SA(nn.Module):
     def __init__(self):
         super(CNN_LSTM_SA, self).__init__()

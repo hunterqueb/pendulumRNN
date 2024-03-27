@@ -1,3 +1,11 @@
+'''
+
+i dont know what this script does, but im leaving it for now just in case. i think its for unsupervised learning
+maybe just a test file
+
+'''
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 import math
@@ -167,10 +175,10 @@ for epoch in range(n_epochs):
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
 if model == modelMamba:
-    print(model.layers[0].mixer.A.shape)
-    print(model.layers[0].mixer.B.shape)
-    print(model.layers[0].mixer.C.shape)
-    # print(model.layers[0].mixer.delta)
+    print(model.layers[0].mixer.A_SSM.shape)
+    print(model.layers[0].mixer.B_SSM.shape)
+    print(model.layers[0].mixer.C_SSM.shape)
+#     print(model.layers[0].mixer.delta)
 
 # A takes the a shape defined by the user, a combination of the user defined latent space size and the expansion size of the input
 # B and C take the size of the test vector? how is it doing this? how does it now

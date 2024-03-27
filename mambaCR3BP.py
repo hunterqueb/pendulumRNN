@@ -133,7 +133,7 @@ loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, 
 # initilizing the model, criterion, and optimizer for the data
 config = MambaConfig(d_model=problemDim, n_layers=num_layers)
 model = Mamba(config).to(device).double()
-model = LSTMSelfAttentionNetwork(input_size,50,output_size,num_layers,0).double().to(device)
+# model = LSTMSelfAttentionNetwork(input_size,50,output_size,num_layers,0).double().to(device)
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
