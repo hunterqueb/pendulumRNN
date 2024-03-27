@@ -70,6 +70,24 @@ def create_dataset(dataset,device,lookback):
     return torch.tensor(X).double().to(device), torch.tensor(y).double().to(device)
 
 
+def generateTrajectoryPrediction(train_plot,test_plot):
+    # takes matrices of two equal lengths and compares the values element by element. 
+    # if a number occupys one matrix but not the other return a new matrix with the nonzero value.
+    # if both matrices have nan, a new matrix is returned with the nan value.
+    trajPredition = np.zeros_like(train_plot)
+
+    for i in range(test_plot.shape[0]):
+        for j in range(test_plot.shape[1]):
+            # Check if either of the matrices has a non-nan value at the current position
+            if not np.isnan(test_plot[i, j]) or not np.isnan(train_plot[i, j]):
+                # Choose the non-nan value if one exists, otherwise default to test value
+                trajPredition[i, j] = test_plot[i, j] if not np.isnan(test_plot[i, j]) else train_plot[i, j]
+            else:
+                # If both are nan, set traj element to nan
+                trajPredition[i, j] = np.nan
+
+    return trajPredition
+
 class SelfAttentionLayer(nn.Module):
    def __init__(self, feature_size):
        super(SelfAttentionLayer, self).__init__()

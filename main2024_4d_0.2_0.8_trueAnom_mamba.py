@@ -320,6 +320,9 @@ def twoBodyPert(t, y, p=pamJ):
     a_drag_x = 0
     a_drag_y = 0
 
+    j2_accel_x = 0
+    j2_accel_y = 0
+
 
     dydt3 = -mu / R**3 * y[0] + j2_accel_x + a_drag_x
     dydt4 = -mu / R**3 * y[1] + j2_accel_y + a_drag_y
@@ -332,7 +335,7 @@ numPeriods = 20
 # numPoints = 400
 t0, tf = 0, numPeriods * T + 0.000000001
 
-n_epochs = 50
+n_epochs = 1
 lr = 0.001
 input_size = degreesOfFreedom
 output_size = degreesOfFreedom
@@ -395,7 +398,8 @@ plotPredition(epoch+1,newModel,'target',err,t*TU,pertNR)
 
 circNR = nonDim2Dim4(circNR)
 pertNR = nonDim2Dim4(pertNR)
+plt.figure()
 
-# plotOrbitPhasePredictions(circNR,'Source')
-# plotOrbitPhasePredictions(pertNR,'Target')
-# plt.show()
+plotOrbitPhasePredictions(circNR,'Source')
+plotOrbitPhasePredictions(pertNR,'Target')
+plt.show()
