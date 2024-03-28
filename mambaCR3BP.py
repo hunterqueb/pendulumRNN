@@ -250,14 +250,21 @@ networkPrediction = plotPredition(epoch+1,model,output_seq)
 plotCR3BPPhasePredictions(output_seq,networkPrediction)
 
 
-DU = 38400
-TU = 2.3616e8
+DU = 384400
+G = 6.67430e-11
+TU = np.sqrt(DU**3 / (G*(m_1+m_2)))
+
 networkPrediction = nonDim2Dim4(networkPrediction,DU,TU)
 output_seq = nonDim2Dim4(output_seq,DU,TU)
 
 plotOrbitPredictions(output_seq,networkPrediction,t=t)
 plotSolutionErrors(output_seq,networkPrediction,t,problemDim)
 # plotDecAccs(decAcc,t,problemDim)
+errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
+print("Average values of each dimension:")
+for i, avg in enumerate(errorAvg, 1):
+    print(f"Dimension {i}: {avg}")
+
 
 if plotOn is True:
     plt.show()
