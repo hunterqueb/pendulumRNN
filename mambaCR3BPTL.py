@@ -12,7 +12,8 @@ from qutils.orbital import nonDim2Dim4
 from nets import create_dataset, LSTMSelfAttentionNetwork,transferMamba,transferLSTM
 from mamba import Mamba, MambaConfig
 
-DEBUG = True
+modelSaved = True
+pretrainedModelPath = 'CR3BP_L4_SP.pth'
 plotOn = True
 
 problemDim = 4 
@@ -137,33 +138,35 @@ model = Mamba(config).to(device).double()
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
 
-for epoch in range(n_epochs):
+if not modelSaved:
+    for epoch in range(n_epochs):
 
-    # trajPredition = plotPredition(epoch,model,'target',t=t*TU,output_seq=pertNR)
+        # trajPredition = plotPredition(epoch,model,'target',t=t*TU,output_seq=pertNR)
 
-    model.train()
-    for X_batch, y_batch in loader:
-        y_pred = model(X_batch)
-        loss = criterion(y_pred, y_batch)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-    # Validation
-    model.eval()
-    with torch.no_grad():
-        y_pred_train = model(train_in)
-        train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
-        y_pred_test = model(test_in)
-        test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
+        model.train()
+        for X_batch, y_batch in loader:
+            y_pred = model(X_batch)
+            loss = criterion(y_pred, y_batch)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        # Validation
+        model.eval()
+        with torch.no_grad():
+            y_pred_train = model(train_in)
+            train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
+            y_pred_test = model(test_in)
+            test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
 
-        decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
-        decAcc, err2 = findDecAcc(test_out,y_pred_test)
-        err = np.concatenate((err1,err2),axis=0)
+            decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
+            decAcc, err2 = findDecAcc(test_out,y_pred_test)
+            err = np.concatenate((err1,err2),axis=0)
 
-    print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
-
-
-
+        print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
+    torch.save(model,pretrainedModelPath)
+else:
+    print('Loading pretrained model: ' + pretrainedModelPath)
+    model = torch.load(pretrainedModelPath)
 
 def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         output_seq = trueMotion
@@ -244,7 +247,7 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
 
         return trajPredition
 
-networkPrediction = plotPredition(epoch+1,model,output_seq)
+networkPrediction = plotPredition(n_epochs,model,output_seq)
 plotCR3BPPhasePredictions(output_seq,networkPrediction)
 
 DU = 384400
@@ -263,7 +266,6 @@ print("Average values of each dimension:")
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg}")
 
-
 # TRANSFER LEARN
 
 # short period L4 "kidney bean"
@@ -279,7 +281,37 @@ tEnd = 6.2858346244258847
 # vx_0 = -7.4430997318144260E-2	
 # vy_0 = 5.6679773588495463E-2
 # tEnd = 2.1134216469590449E1
+    
+# long period L4 "weirdo smaller stable orbit"
+# x_0 = 4.8784941344943100E-1
+# y_0 = 6.8561800039907050E-1
+# vx_0 = -2.1988906536966030E-1
+# vy_0 = 1.4035202756071452E-1
+# tEnd = 2.2949593180987161E+1
 
+# Long period L5 with jacobi constant of 2.9979611240160713 (within 2 dec pts of long period L4)
+# stability index of 1.1018
+# x_0 = 4.8784941344943100E-1
+# y_0 = -6.7216923728902811E-1
+# vx_0 = 2.4526519697961138E-1
+# vy_0 = 1.3806761685537203E-1
+# tEnd = 2.4068108193305424E+1
+
+
+# long period L5 with jacobi constant of 2.7116867242419902E+0	
+# x_0 = 4.8784941344943100E-1
+# y_0 = -3.1572783764407214E-1
+# vx_0 = 9.6168428525236171E-1
+# vy_0 = 2.8862010897709328E-1
+# tEnd = 2.5646081097796674E+1		
+# stability index = 5.4769067605400700E+1
+
+# # short period L5 with jacobi constant of 2.0181025139684499E+0	
+# x_0 = 4.8784941344943100E-1
+# y_0 = -1.4712659584826735
+# vx_0 = -1.0248413865395025
+# vy_0 = -7.8822421957823163E-1
+# tEnd = 6.2858346243635790E+0
 
 vSquared = (vx_0**2 + vy_0**2)
 xn1 = -mu
@@ -305,7 +337,7 @@ delT = 0.001
 nSamples = int(np.ceil((tf - t0) / delT))
 t = np.linspace(t0, tf, nSamples)
 
-t , numericResult = ode45(system,[t0,tf],IC,t)
+t , numericResult = ode45(system,[t0,tf],IC,t,rtol=1e-15,atol=1e-15)
 
 output_seq = numericResult
 
@@ -367,8 +399,8 @@ for epoch in range(n_epochs):
 
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
-networkPrediction = plotPredition(epoch+1,newModel,output_seq)
-plotCR3BPPhasePredictions(output_seq,networkPrediction)
+networkPrediction = plotPredition(n_epochs,newModel,output_seq)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=4)
 
 
 DU = 384400
@@ -382,7 +414,7 @@ plotOrbitPredictions(output_seq,networkPrediction,t=t)
 plotSolutionErrors(output_seq,networkPrediction,t,problemDim)
 # plotDecAccs(decAcc,t,problemDim)
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
-print("Average values of each dimension:")
+print("Average error of each dimension:")
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg}")
 
