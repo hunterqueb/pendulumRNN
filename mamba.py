@@ -62,8 +62,6 @@ class Mamba(nn.Module):
         self.layers = nn.ModuleList([ResidualBlock(config) for _ in range(config.n_layers)])
         #self.norm_f = RMSNorm(config.d_model)
 
-        self.finalLayer = nn.Linear(config.d_model,1)
-
     def forward(self, x):
         # x : (B, L, D)
 
