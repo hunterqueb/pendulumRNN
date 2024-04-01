@@ -92,7 +92,7 @@ else:
     device = torch.device("cpu")
     print("GPU not available, CPU used")
 
-numPeriods = 5
+numPeriods = 20
 
 
 t0 = 0; tf = numPeriods * tEnd
@@ -102,6 +102,8 @@ nSamples = int(np.ceil((tf - t0) / delT))
 t = np.linspace(t0, tf, nSamples)
 
 t , numericResult = ode45(system,[t0,tf],IC,t)
+
+t = t / tEnd
 
 output_seq = numericResult
 

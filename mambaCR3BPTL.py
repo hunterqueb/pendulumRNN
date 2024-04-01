@@ -9,7 +9,7 @@ from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolu
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim4
 
-from nets import create_dataset, LSTMSelfAttentionNetwork
+from nets import create_dataset, LSTMSelfAttentionNetwork,transferMamba,transferLSTM
 from mamba import Mamba, MambaConfig
 
 DEBUG = True
@@ -334,7 +334,10 @@ loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, 
 # initilizing the model, criterion, and optimizer for the data
 config = MambaConfig(d_model=problemDim, n_layers=num_layers)
 newModel = Mamba(config).to(device).double()
-# model = LSTMSelfAttentionNetwork(input_size,50,output_size,num_layers,0).double().to(device)
+
+newModel = transferMamba(model,newModel)
+
+# newModel = LSTMSelfAttentionNetwork(input_size,50,output_size,num_layers,0).double().to(device)
 
 optimizer = torch.optim.Adam(newModel.parameters(),lr=lr)
 criterion = F.smooth_l1_loss

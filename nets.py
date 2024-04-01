@@ -229,12 +229,12 @@ def transferMamba(pretrainedModel,newModel,trainableLayers = [True,False,False])
     for param in newModel.parameters():
         param.requires_grad = False
 
-
     for param in newModel.layers[0].mixer.conv1d.parameters():
         param.requires_grad = False
 
     # trainanle A matrix
     newModel.layers[0].mixer.A_log.requires_grad = False
+
     # trainable deltaBC matrix
     for param in newModel.layers[0].mixer.x_proj.parameters():
         param.requires_grad = trainableLayers[0]
