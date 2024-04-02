@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
 import torch.utils.data as data
+import torchinfo
 
 from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
@@ -12,7 +13,7 @@ from qutils.orbital import nonDim2Dim4
 from nets import create_dataset, LSTMSelfAttentionNetwork,transferMamba,transferLSTM
 from mamba import Mamba, MambaConfig
 
-modelSaved = True
+modelSaved = False
 pretrainedModelPath = 'CR3BP_L4_SP.pth'
 plotOn = True
 
@@ -162,7 +163,7 @@ if not modelSaved:
             decAcc, err2 = findDecAcc(test_out,y_pred_test)
             err = np.concatenate((err1,err2),axis=0)
 
-        print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
+        print("Epoch %d: train loss %f, test loss %f\n" % (epoch, train_loss, test_loss))
     torch.save(model,pretrainedModelPath)
 else:
     print('Loading pretrained model: ' + pretrainedModelPath)
@@ -265,6 +266,9 @@ errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average values of each dimension:")
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg}")
+
+
+torchinfo.summary(model)
 
 # TRANSFER LEARN
 
@@ -397,7 +401,7 @@ for epoch in range(n_epochs):
         decAcc, err2 = findDecAcc(test_out,y_pred_test)
         err = np.concatenate((err1,err2),axis=0)
 
-    print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
+    print("Epoch %d: train loss %f, test loss %f\n" % (epoch, train_loss, test_loss))
 
 networkPrediction = plotPredition(n_epochs,newModel,output_seq)
 plotCR3BPPhasePredictions(output_seq,networkPrediction,L=4)
