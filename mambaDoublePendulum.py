@@ -70,11 +70,12 @@ thetadot1_0 = np.radians(-1)
 thetadot2_0 = np.radians(0.7)
 
 initialConditions = np.array([theta1_0,thetadot1_0,theta2_0,thetadot2_0],dtype=np.float64)
+initialConditions = np.radians(np.random.uniform(-180, 180, (problemDim,)))
 
 tStart = 0
-tEnd = 100
+tEnd = 20
 tSpan = np.array([tStart,tEnd])
-dt = 1
+dt = 0.01
 tSpanExplicit = np.linspace(tStart,tEnd,int(tEnd / dt))
 
 t , numericResult = ode45(doublePendulumODE,[tStart,tEnd],initialConditions,tSpanExplicit)
@@ -165,25 +166,25 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         axes[0,0].plot(t,train_plot[:,0], c='r',label = 'Training Region')
         axes[0,0].plot(t,test_plot[:,0], c='g',label = 'Predition')
         axes[0,0].set_xlabel('time (sec)')
-        axes[0,0].set_ylabel('x (km)')
+        axes[0,0].set_ylabel('theta1 (rad)')
 
         axes[0,1].plot(t,output_seq[:,1], c='b',label = 'True Motion')
         axes[0,1].plot(t,train_plot[:,1], c='r',label = 'Training Region')
         axes[0,1].plot(t,test_plot[:,1], c='g',label = 'Predition')
         axes[0,1].set_xlabel('time (sec)')
-        axes[0,1].set_ylabel('y (km)')
+        axes[0,1].set_ylabel('theta1dot (rad/s)')
 
         axes[1,0].plot(t,output_seq[:,2], c='b',label = 'True Motion')
         axes[1,0].plot(t,train_plot[:,2], c='r',label = 'Training Region')
         axes[1,0].plot(t,test_plot[:,2], c='g',label = 'Predition')
         axes[1,0].set_xlabel('time (sec)')
-        axes[1,0].set_ylabel('xdot (km/s)')
+        axes[1,0].set_ylabel('theta2 (rad)')
 
         axes[1,1].plot(t,output_seq[:,3], c='b',label = 'True Motion')
         axes[1,1].plot(t,train_plot[:,3], c='r',label = 'Training Region')
         axes[1,1].plot(t,test_plot[:,3], c='g',label = 'Predition')
         axes[1,1].set_xlabel('time (sec)')
-        axes[1,1].set_ylabel('ydot (km/s)')
+        axes[1,1].set_ylabel('theta2dot (rad/s)')
 
 
         plt.legend(loc='upper left', bbox_to_anchor=(1,0.5))
@@ -227,9 +228,10 @@ networkPrediction = plotPredition(epoch+1,model,output_seq)
 plotSolutionErrors(output_seq,networkPrediction,t,problemDim)
 # plotDecAccs(decAcc,t,problemDim)
 errorAvg = np.nanmean(abs(networkPrediction-output_seq) * 90 / np.pi, axis=0)
-print("Average values of each dimension:")
+print("Average error of each dimension:")
+unitLabels = ['deg','deg/s','deg','deg/s']
 for i, avg in enumerate(errorAvg, 1):
-    print(f"Dimension {i}: {avg}")
+    print(f"Dimension {i}: {avg} {unitLabels[i-1]}")
 
 
 if plotOn is True:

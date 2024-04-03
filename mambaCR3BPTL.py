@@ -9,6 +9,7 @@ from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim4
+from qutils.tictoc import timer
 
 from nets import create_dataset, LSTMSelfAttentionNetwork,transferMamba,transferLSTM
 from mamba import Mamba, MambaConfig
@@ -104,7 +105,9 @@ delT = 0.001
 nSamples = int(np.ceil((tf - t0) / delT))
 t = np.linspace(t0, tf, nSamples)
 
+ODEtime = timer()
 t , numericResult = ode45(system,[t0,tf],IC,t)
+ODEtime.toc()
 
 output_seq = numericResult
 
@@ -174,7 +177,11 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         with torch.no_grad():
             # shift train predictions for plotting
             train_plot = np.ones_like(output_seq) * np.nan
+
+            NNtimer = timer()
             y_pred = model(train_in)
+            NNtimer.toc()
+
             y_pred = y_pred[:, -1, :]
             train_plot[lookback:train_size] = model(train_in)[:, -1, :].cpu()
             # shift test predictions for plotting
