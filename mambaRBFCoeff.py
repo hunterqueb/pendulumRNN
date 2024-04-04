@@ -4,11 +4,13 @@ import torch
 import torch.nn.functional as F
 import torch.utils.data as data
 import torchinfo
+from scipy.io import loadmat,savemat
 
 from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim4
+from qutils.tictoc import timer
 
 from nets import create_dataset, LSTMSelfAttentionNetwork
 from mamba import Mamba, MambaConfig
@@ -34,18 +36,29 @@ else:
     device = torch.device("cpu")
     print("GPU not available, CPU used")
 
+matrix_t0 = loadmat('matlab/lowerDataMamba/matrix_t0.mat')['matrix_t0']
+matrix_t1 = loadmat('matlab/lowerDataMamba/matrix_t1.mat')['matrix_t1']
+matrix_tf = loadmat('matlab/lowerDataMamba/matrix_tf.mat')['matrix_tf']
+
+# gridPoints =  np.stack((matrix_t0[:,0:2],matrix_t1[:,0:2]),axis=0)
+# gridPoints =  np.stack((matrix_t0[:,2],matrix_t1[:,2]),axis=0)
+gridPoints =  np.stack((matrix_t0[:,3],matrix_t1[:,3]),axis=0)
+
+problemDim = gridPoints.shape[1]
+
+dt = 0.1
+tf = 7.4
+
 # hyperparameters
-n_epochs = 50
-# lr = 5*(10**-5)
-# lr = 0.85
-lr = 0.8
-lr = 0.08
-lr = 0.004
+n_epochs = 100
+# lr = 0.0007
 lr = 0.001
 input_size = problemDim
 output_size = problemDim
 num_layers = 1
 lookback = 1
+train_size = 2
+
 # p_motion_knowledge = 0.5
 
 # load matrices
@@ -54,9 +67,11 @@ lookback = 1
 
 
 
-train, test = output_seq[:train_size]
+train = gridPoints[:train_size]
 
 train_in,train_out = create_dataset(train,device,lookback=lookback)
+# train_in = torch.squeeze(train_in,dim=1) 
+# train_out = torch.squeeze(train_out,dim=1) 
 
 
 # testing can be the final matrix
@@ -64,7 +79,8 @@ train_in,train_out = create_dataset(train,device,lookback=lookback)
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
 # initilizing the model, criterion, and optimizer for the data
-config = MambaConfig(d_model=problemDim, n_layers=num_layers)
+# config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=256)
+config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=1024,expand_factor=1)
 model = Mamba(config).to(device).double()
 
 torchinfo.summary(model)
@@ -72,6 +88,7 @@ torchinfo.summary(model)
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
 
+trainingTime = timer()
 for epoch in range(n_epochs):
 
     # trajPredition = plotPredition(epoch,model,'target',t=t*TU,output_seq=pertNR)
@@ -88,14 +105,28 @@ for epoch in range(n_epochs):
     with torch.no_grad():
         y_pred_train = model(train_in)
         train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
-        y_pred_test = model(test_in)
-        test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
 
-        decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
-        decAcc, err2 = findDecAcc(test_out,y_pred_test)
-        err = np.concatenate((err1,err2),axis=0)
+    # print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
+    print("Epoch %d: train loss %.4f\n" % (epoch, train_loss))
+trainingTime.toc()
 
-    print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
+model.eval()
+data_in = train_in
 
+predictionTime = timer()
+for t in range(int(tf/dt) + 1):
+    with torch.no_grad():
+        data_out = model(data_in)
+        data_in = data_out
+predictionTime.toc()
 
+predictedPDFValues = data_out.cpu().numpy()
+PDFValues = matrix_tf[:,2]
+error = predictedPDFValues - PDFValues
+errorAvg = np.mean(abs(error))
+print('Average error: ',errorAvg)
 # save the final y_pred_test
+
+
+# savemat('normalized_pdf_tf.mat',{'normalized_pdf_tf': predictedPDFValues})
+savemat('normalized_coeff_tf.mat',{'normalized_coeff_tf': predictedPDFValues})
