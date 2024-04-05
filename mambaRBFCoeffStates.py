@@ -40,19 +40,17 @@ matrix_t0 = loadmat('matlab/lowerDataMamba/matrix_t0.mat')['matrix_t0']
 matrix_t1 = loadmat('matlab/lowerDataMamba/matrix_t1.mat')['matrix_t1']
 matrix_tf = loadmat('matlab/lowerDataMamba/matrix_tf.mat')['matrix_tf']
 
-# gridPoints =  np.stack((matrix_t0[:,0:2],matrix_t1[:,0:2]),axis=0)
-# gridPoints =  np.stack((matrix_t0[:,2],matrix_t1[:,2]),axis=0)
-gridPoints =  np.stack((matrix_t0[:,3],matrix_t1[:,3]),axis=0)
+gridPoints =  np.stack((matrix_t0[:,0:2],matrix_t1[:,0:2]),axis=0)
 
-problemDim = gridPoints.shape[1]
+problemDim = gridPoints.shape[0]
 
 dt = 0.1
 tf = 7.4
 
 # hyperparameters
-n_epochs = 100
+n_epochs = 50
 # lr = 0.0007
-lr = 0.001
+lr = 0.0001
 input_size = problemDim
 output_size = problemDim
 num_layers = 1
@@ -67,11 +65,11 @@ train_size = 2
 
 
 
-train = gridPoints[:train_size]
+train = gridPoints
 
 train_in,train_out = create_dataset(train,device,lookback=lookback)
-# train_in = torch.squeeze(train_in,dim=1) 
-# train_out = torch.squeeze(train_out,dim=1) 
+train_in = torch.squeeze(train_in,dim=1) 
+train_out = torch.squeeze(train_out,dim=1) 
 
 
 # testing can be the final matrix
@@ -80,7 +78,7 @@ loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, 
 
 # initilizing the model, criterion, and optimizer for the data
 # config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=256)
-config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=1024,expand_factor=1)
+config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=64,expand_factor=2)
 model = Mamba(config).to(device).double()
 
 torchinfo.summary(model)
@@ -121,12 +119,11 @@ for t in range(int(tf/dt) + 1):
 predictionTime.toc()
 
 predictedPDFValues = data_out.cpu().numpy()
-PDFValues = matrix_tf[:,2]
+PDFValues = matrix_tf[:,0:2]
 error = predictedPDFValues - PDFValues
 errorAvg = np.mean(abs(error))
 print('Average error: ',errorAvg)
 # save the final y_pred_test
 
 
-# savemat('matlab/lowerDataMamba/prediction/normalized_pdf_tf.mat',{'normalized_pdf_tf': predictedPDFValues})
-savemat('matlab/lowerDataMamba/prediction/normalized_coeff_tf.mat',{'normalized_coeff_tf': predictedPDFValues})
+savemat('matlab/lowerDataMamba/prediction/rbf_nodes_tf.mat',{'rbf_nodes_tf': predictedPDFValues})
