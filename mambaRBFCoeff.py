@@ -40,9 +40,13 @@ matrix_t0 = loadmat('matlab/lowerDataMamba/matrix_t0.mat')['matrix_t0']
 matrix_t1 = loadmat('matlab/lowerDataMamba/matrix_t1.mat')['matrix_t1']
 matrix_tf = loadmat('matlab/lowerDataMamba/matrix_tf.mat')['matrix_tf']
 
+axisAccess = 2
+
 # gridPoints =  np.stack((matrix_t0[:,0:2],matrix_t1[:,0:2]),axis=0)
 # gridPoints =  np.stack((matrix_t0[:,2],matrix_t1[:,2]),axis=0)
-gridPoints =  np.stack((matrix_t0[:,3],matrix_t1[:,3]),axis=0)
+gridPoints =  np.stack((matrix_t0[:,axisAccess],matrix_t1[:,axisAccess]),axis=0)
+
+gridPoints = gridPoints/max(matrix_tf[:,axisAccess])
 
 problemDim = gridPoints.shape[1]
 
@@ -121,7 +125,8 @@ for t in range(int(tf/dt) + 1):
 predictionTime.toc()
 
 predictedPDFValues = data_out.cpu().numpy()
-PDFValues = matrix_tf[:,2]
+predictedPDFValues = predictedPDFValues * max(matrix_tf[:,axisAccess])
+PDFValues = matrix_tf[:,axisAccess]
 error = predictedPDFValues - PDFValues
 errorAvg = np.mean(abs(error))
 print('Average error: ',errorAvg)
