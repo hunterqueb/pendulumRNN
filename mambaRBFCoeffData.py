@@ -49,7 +49,7 @@ dt = 0.1
 tf = 7.4
 
 # hyperparameters
-n_epochs = 100
+n_epochs = 10
 # lr = 0.0007
 lr = 0.001
 input_size = problemDim
