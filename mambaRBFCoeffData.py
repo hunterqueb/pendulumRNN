@@ -8,7 +8,7 @@ from scipy.io import loadmat,savemat
 
 from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
-from qutils.mlExtras import findDecAcc
+from qutils.mlExtras import findDecAcc,combineReccurentPred
 from qutils.orbital import nonDim2Dim4
 from qutils.tictoc import timer
 
@@ -37,13 +37,14 @@ else:
     print("GPU not available, CPU used")
 
 normalized_coeff = loadmat('matlab/lowerDataMamba/normalized_coeff.mat')['normalized_coeff']
+current_coeff = loadmat('matlab/lowerDataMamba/current_coeff.mat')['current_coeff']
 
 # gridPoints =  np.stack((matrix_t0[:,0:2],matrix_t1[:,0:2]),axis=0)
 # gridPoints =  np.stack((matrix_t0[:,2],matrix_t1[:,2]),axis=0)
-gridPoints =  normalized_coeff
+gridPoints =  normalized_coeff.T
 
-problemDim = gridPoints.shape[0]
-sequenceLength = gridPoints.shape[1]
+sequenceLength = gridPoints.shape[0]
+problemDim = gridPoints.shape[1]
 
 dt = 0.1
 tf = 7.4
@@ -64,8 +65,8 @@ train_size = int(sequenceLength * p_motion_knowledge)
 test_size = sequenceLength - train_size
 
 
-train = gridPoints[:,:train_size].T
-test = gridPoints[:,train_size:].T
+train = gridPoints[:train_size]
+test = gridPoints[train_size:]
 
 train_in,train_out = create_dataset(train,device,lookback=lookback)
 test_in,test_out = create_dataset(test,device,lookback=lookback)
@@ -112,22 +113,36 @@ for epoch in range(n_epochs):
 trainingTime.toc()
 
 model.eval()
-data_in = train_in
 
 predictionTime = timer()
-for t in range(int(tf/dt) + 1):
-    with torch.no_grad():
-        data_out = model(data_in)
-        data_in = data_out
+with torch.no_grad():
+    train_pred = np.ones_like(gridPoints) * np.nan
+    train_pred[lookback:train_size] = model(train_in)[:,-1,:].cpu()
+
+    test_pred = np.ones_like(gridPoints) * np.nan
+    test_pred[train_size+lookback:sequenceLength] = model(test_in)[:, -1, :].cpu()
 predictionTime.toc()
 
-# predictedPDFValues = data_out.cpu().numpy()
-# PDFValues = matrix_tf[:,2]
-# error = predictedPDFValues - PDFValues
-# errorAvg = np.mean(abs(error))
-# print('Average error: ',errorAvg)
+finalData = combineReccurentPred(train_pred,test_pred)
+
+scale_factor = np.max(current_coeff)
+
+predictedCoeffNorm = finalData
+predictedCoeffScaled = predictedCoeffNorm * scale_factor
+
+trueCoffNorm = normalized_coeff[:,-1]
+trueCoffScaled = current_coeff[:,-1]
+
+error = predictedCoeffNorm[-1,:] - trueCoffNorm
+errorAvg = np.nanmean(abs(error))
+print('Average error in normalized: ',errorAvg)
+
+error = predictedCoeffScaled[-1,:] - trueCoffScaled
+errorAvg = np.nanmean(abs(error))
+print('Average error in scaled: ',errorAvg)
+
 # # save the final y_pred_test
 
 
 # # savemat('matlab/lowerDataMamba/prediction/normalized_pdf_tf.mat',{'normalized_pdf_tf': predictedPDFValues})
-# savemat('matlab/lowerDataMamba/prediction/normalized_coeff_tf.mat',{'normalized_coeff_tf': predictedPDFValues})
+savemat('matlab/lowerDataMamba/prediction/coeff_prediction.mat',{'normalized_coeff_pred': predictedCoeffNorm,'scaled_coeff_pred': predictedCoeffScaled})
