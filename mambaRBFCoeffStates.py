@@ -13,7 +13,7 @@ from qutils.orbital import nonDim2Dim4
 from qutils.tictoc import timer
 
 from nets import create_dataset, LSTMSelfAttentionNetwork
-from mamba import Mamba, MambaConfig
+from qutils.mamba import Mamba, MambaConfig
 
 DEBUG = True
 plotOn = True

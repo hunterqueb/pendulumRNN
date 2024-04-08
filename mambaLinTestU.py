@@ -22,7 +22,7 @@ from qutils.orbital import nonDim2Dim4
 
 from nets import LSTMSelfAttentionNetwork, create_dataset
 
-from mamba import Mamba, MambaConfig
+from qutils.mamba import Mamba, MambaConfig
 
 import control as ct
 # pip install control

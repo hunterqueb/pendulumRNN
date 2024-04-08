@@ -12,7 +12,7 @@ from qutils.orbital import nonDim2Dim4
 from qutils.tictoc import timer
 
 from nets import create_dataset, LSTMSelfAttentionNetwork,transferMamba,transferLSTM
-from mamba import Mamba, MambaConfig
+from qutils.mamba import Mamba, MambaConfig
 
 modelSaved = False
 pretrainedModelPath = 'CR3BP_L4_SP.pth'

@@ -19,7 +19,7 @@ from qutils.plot import plotOrbitPhasePredictions
 from qutils.orbital import nonDim2Dim4
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
-from mamba import Mamba, MambaConfig
+from qutils.mamba import Mamba, MambaConfig
 
 # seed any random functions
 random.seed(123)

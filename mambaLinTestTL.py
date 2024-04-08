@@ -13,11 +13,11 @@ import torch.utils.data as data
 import torchinfo
 
 from qutils.integrators import myRK4Py, ode45
-from qutils.mlExtras import findDecAcc
+from qutils.mlExtras import findDecAcc,generateTrajectoryPrediction
 
-from nets import LSTMSelfAttentionNetwork, create_dataset, transferMamba, generateTrajectoryPrediction
+from nets import LSTMSelfAttentionNetwork, create_dataset, transferMamba
 
-from mamba import Mamba, MambaConfig
+from qutils.mamba import Mamba, MambaConfig
 
 import control as ct
 # pip install control

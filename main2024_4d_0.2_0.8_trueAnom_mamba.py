@@ -13,7 +13,7 @@ from qutils.orbital import nonDim2Dim4, genTimestep4EquiTrueAnom
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM,LSTMSelfAttentionNetwork2
 
-from mamba import Mamba, MambaConfig
+from qutils.mamba import Mamba, MambaConfig
 
 # seed any random functions
 random.seed(123)

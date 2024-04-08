@@ -8,9 +8,9 @@ from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim4
+from qutils.mamba import Mamba, MambaConfig
 
 from nets import create_dataset, LSTMSelfAttentionNetwork
-from mamba import Mamba, MambaConfig
 
 DEBUG = True
 plotOn = True

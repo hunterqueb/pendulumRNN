@@ -70,26 +70,42 @@ def create_dataset(dataset,device,lookback):
     return torch.tensor(X).double().to(device), torch.tensor(y).double().to(device)
 
 
-def generateTrajectoryPrediction(train_plot,test_plot):
-    '''
-    takes matrices of two equal lengths and compares the values element by element. 
-    if a number occupys one matrix but not the other return a new matrix with the nonzero value.
-    if a number occupies both matrics then the value is prefered from the testing output / prediction
-    if both matrices have nan, a new matrix is returned with the nan value.
-    '''
-    trajPredition = np.zeros_like(train_plot)
 
-    for i in range(test_plot.shape[0]):
-        for j in range(test_plot.shape[1]):
-            # Check if either of the matrices has a non-nan value at the current position
-            if not np.isnan(test_plot[i, j]) or not np.isnan(train_plot[i, j]):
-                # Choose the non-nan value if one exists, otherwise default to test value
-                trajPredition[i, j] = test_plot[i, j] if not np.isnan(test_plot[i, j]) else train_plot[i, j]
-            else:
-                # If both are nan, set traj element to nan
-                trajPredition[i, j] = np.nan
+def transferMamba(pretrainedModel,newModel,trainableLayers = [True,False,False]):
+    '''
+    custom function to transfer knowledge of a mamba network from a pretrained model to a new model
+    the mamba network is from https://github.com/alxndrTL/mamba.py
 
-    return trajPredition
+    parameters: pretrainedModel - pretrained pytorch mamba model with one state space layer
+                newModel - untrained pytorch mamba model with one state space layer
+    '''
+    # deltaBC is calced simultaneously here!
+    # model.layers[0].mixer.x_proj.state_dict()
+
+    # load the parameters from the old model to the new, and set all parameters to untrainable
+    newModel.load_state_dict(pretrainedModel.state_dict())
+    for param in newModel.parameters():
+        param.requires_grad = False
+
+    for param in newModel.layers[0].mixer.conv1d.parameters():
+        param.requires_grad = False
+
+    # trainanle A matrix
+    newModel.layers[0].mixer.A_log.requires_grad = False
+
+    # trainable deltaBC matrix
+    for param in newModel.layers[0].mixer.x_proj.parameters():
+        param.requires_grad = trainableLayers[0]
+
+    for param in newModel.layers[0].mixer.dt_proj.parameters():
+        param.requires_grad = trainableLayers[1]
+
+    # probably not the best to transfer, this is the projection from the latent state space back to the output space
+    for param in newModel.layers[0].mixer.out_proj.parameters():
+        param.requires_grad = trainableLayers[2]
+
+
+    return newModel
 
 class SelfAttentionLayer(nn.Module):
    def __init__(self, feature_size):
@@ -213,41 +229,6 @@ def transferLSTM(pretrainedModel,newModel,trainableLayer = [True, True, True]):
         param.requires_grad = trainableLayer[2]
     return newModel
 
-def transferMamba(pretrainedModel,newModel,trainableLayers = [True,False,False]):
-    '''
-    custom function to transfer knowledge of a mamba network from a pretrained model to a new model
-    the mamba network is from https://github.com/alxndrTL/mamba.py
-
-    parameters: pretrainedModel - pretrained pytorch mamba model with one state space layer
-                newModel - untrained pytorch mamba model with one state space layer
-    '''
-    # deltaBC is calced simultaneously here!
-    # model.layers[0].mixer.x_proj.state_dict()
-
-    # load the parameters from the old model to the new, and set all parameters to untrainable
-    newModel.load_state_dict(pretrainedModel.state_dict())
-    for param in newModel.parameters():
-        param.requires_grad = False
-
-    for param in newModel.layers[0].mixer.conv1d.parameters():
-        param.requires_grad = False
-
-    # trainanle A matrix
-    newModel.layers[0].mixer.A_log.requires_grad = False
-
-    # trainable deltaBC matrix
-    for param in newModel.layers[0].mixer.x_proj.parameters():
-        param.requires_grad = trainableLayers[0]
-
-    for param in newModel.layers[0].mixer.dt_proj.parameters():
-        param.requires_grad = trainableLayers[1]
-
-    # probably not the best to transfer, this is the projection from the latent state space back to the output space
-    for param in newModel.layers[0].mixer.out_proj.parameters():
-        param.requires_grad = trainableLayers[2]
-
-
-    return newModel
 class CNN_LSTM_SA(nn.Module):
     def __init__(self):
         super(CNN_LSTM_SA, self).__init__()

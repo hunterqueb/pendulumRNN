@@ -11,7 +11,7 @@ from qutils.mlExtras import findDecAcc
 from qutils.plot import plotOrbitPhasePredictions
 from qutils.orbital import nonDim2Dim4
 
-from mamba import Mamba, MambaConfig
+from qutils.mamba import Mamba, MambaConfig
 
 # torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
 is_cuda = torch.cuda.is_available()

@@ -8,12 +8,13 @@ from scipy.io import loadmat,savemat
 
 from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
-from qutils.mlExtras import findDecAcc,combineReccurentPred
+from qutils.mlExtras import findDecAcc,generateTrajectoryPrediction
 from qutils.orbital import nonDim2Dim4
 from qutils.tictoc import timer
+from qutils.mamba import Mamba,MambaConfig
 
 from nets import create_dataset, LSTMSelfAttentionNetwork
-from mamba import Mamba, MambaConfig
+# from qutils.mamba import Mamba, MambaConfig
 
 DEBUG = True
 plotOn = True
@@ -123,7 +124,7 @@ with torch.no_grad():
     test_pred[train_size+lookback:sequenceLength] = model(test_in)[:, -1, :].cpu()
 predictionTime.toc()
 
-finalData = combineReccurentPred(train_pred,test_pred)
+finalData = generateTrajectoryPrediction(train_pred,test_pred)
 
 scale_factor = np.max(current_coeff)
 

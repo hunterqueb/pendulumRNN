@@ -24,7 +24,7 @@ from qutils.integrators import myRK4Py
 from qutils.mlExtras import findDecAcc
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
-from mamba import Mamba, MambaConfig
+from qutils.mamba import Mamba, MambaConfig
 
 # seed any random functions
 random.seed(123)
