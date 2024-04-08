@@ -8,34 +8,18 @@ from scipy.io import loadmat,savemat
 
 from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
+from qutils.ml import getDevice
 from qutils.mlExtras import findDecAcc,generateTrajectoryPrediction
 from qutils.orbital import nonDim2Dim4
 from qutils.tictoc import timer
 from qutils.mamba import Mamba,MambaConfig
 
 from nets import create_dataset, LSTMSelfAttentionNetwork
-# from qutils.mamba import Mamba, MambaConfig
 
 DEBUG = True
 plotOn = True
 
-is_cuda = torch.cuda.is_available()
-# torch.backends.mps.is_available() checks for metal support, used in nightly build so handled expection incase its run on different version
-try:
-    is_mps = torch.backends.mps.is_available()
-    is_mps = False
-except:
-    is_mps = False
-# If we have a GPU available, we'll set our device to GPU. We'll use this device variable later in our code.
-if is_cuda:
-    device = torch.device("cuda")
-    print("GPU is available")
-elif is_mps:
-    device = torch.device("mps")
-    print('Metal GPU is available')
-else:
-    device = torch.device("cpu")
-    print("GPU not available, CPU used")
+device = getDevice()
 
 normalized_coeff = loadmat('matlab/lowerDataMamba/normalized_coeff.mat')['normalized_coeff']
 current_coeff = loadmat('matlab/lowerDataMamba/current_coeff.mat')['current_coeff']
