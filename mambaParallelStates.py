@@ -9,25 +9,18 @@ import torchinfo
 
 from qutils.integrators import myRK4Py, ode45
 from qutils.mlExtras import findDecAcc
-from qutils.plot import plotOrbitPhasePredictions
+from qutils.plot import plotOrbitPhasePredictions,plotSolutionErrors
 from qutils.orbital import nonDim2Dim4
+from qutils.tictoc import timer
+from qutils.mamba import Mamba, MambaConfig
+from qutils.ml import getDevice
 
 from nets import LSTMSelfAttentionNetwork, create_dataset
-
-from qutils.mamba import Mamba, MambaConfig
 
 import control as ct
 # pip install control
 
-is_cuda = torch.cuda.is_available()
-
-if is_cuda:
-    device = torch.device("cuda")
-    print("GPU is available")
-else:
-    device = torch.device("cpu")
-    print("GPU not available, CPU used")
-
+device = getDevice()
 
 
 # linear system for a simple harmonic oscillator
@@ -54,19 +47,19 @@ t = np.linspace(t0,tf,int(tf/dt))
 # plt.plot(t,results.states.T)
 # plt.show()
 
-n_epochs = 50
-lr = 0.001
+n_epochs = 5000
+lr = 0.0001
 lookback = 1
 
 nDim = 2
 nLayers = 1
-config = MambaConfig(nDim,nLayers,d_state = 2,expand_factor=4)
+config = MambaConfig(nDim,nLayers,expand_factor=4)
 
-modelLSTM = LSTMSelfAttentionNetwork(2,20,2,1,0).double().to(device)
 modelMamba = Mamba(config).to(device).double()
 
 model = modelMamba
 # model = modelLSTM
+torchinfo.summary(model)
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
@@ -84,7 +77,7 @@ stateData = np.array(stateData)
 
 # TODO i dont think this is right
 
-p_motion_knowledge = 0.60
+p_motion_knowledge = 0.80
 train_size = int(totalData * p_motion_knowledge)
 test_size = totalData - train_size
 
@@ -106,6 +99,12 @@ test_out  = test_out.squeeze(1)
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
 def plotPredition(epoch):
+        '''
+        prediction changes to 
+        # i have an ic of shape 1,1,2
+        # get out data from this
+        # put out data back into itself
+        '''
         with torch.no_grad():
             # shift train predictions for plotting
             train_plot = np.ones_like(stateData) * np.nan
@@ -121,10 +120,7 @@ def plotPredition(epoch):
         ax1.plot(t,stateData[:,0], c='b',label = 'True Motion')
         ax1.plot(t,train_plot[:,0], c='r',label = 'Training Region')
         ax1.plot(t,test_plot[:,0], c='g',label = 'Predition')
-        if model == modelLSTM:
-            ax1.set_title('LSTM Solution to Linear Oscillator')
-        elif model == modelMamba:
-            ax1.set_title('Mamba Solution to Linear Oscillator')
+        ax1.set_title('Mamba Solution to Linear Oscillator')
         # ax1.xlabel('time (sec)')
         ax1.set_ylabel('x (m)')
         # plt.legend(loc="lower left")
@@ -170,13 +166,26 @@ for epoch in range(n_epochs):
 
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
-# if model == modelMamba:
-#     print(model.layers[0].mixer.A_SSM.shape)
-#     print(model.layers[0].mixer.B_SSM.shape)
-#     print(model.layers[0].mixer.C_SSM.shape)
-#     print(model.layers[0].mixer.delta)
-# A takes the a shape defined by the user, a combination of the user defined latent space size and the expansion size of the input
-# B and C take the size of the test vector? how is it doing this? how does it now
-torchinfo.summary(model)
 
-plotPredition(n_epochs)
+initialConditions = np.random.uniform(-1, 1, (1, 1, nDim))
+odeIC = np.squeeze(initialConditions)
+
+_ , y_truth = ode45(linPendulumODE,(t0,tf),odeIC,t)
+
+data_in = torch.tensor(initialConditions,device=device)
+predictionTime = timer()
+data_out_array = np.empty((1, int(tf/dt), nDim))
+
+for i in range(int(tf/dt)):
+    with torch.no_grad():
+        data_out = model(data_in)
+        data_out_array[0,i,:] = data_out.cpu().numpy()
+        data_in = data_out
+predictionTime.toc()
+y_prediction = np.squeeze(data_out_array)
+
+
+plotSolutionErrors(y_truth,y_prediction,t)
+# plotPredition(n_epochs)
+
+plt.savefig('finalError.png')

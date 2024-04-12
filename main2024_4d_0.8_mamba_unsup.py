@@ -8,21 +8,13 @@ import torch.utils.data as data
 
 from qutils.integrators import myRK4Py, ode45
 from qutils.mlExtras import findDecAcc
-from qutils.plot import plotOrbitPhasePredictions
+from qutils.plot import plotOrbitPhasePredictions, plotSolutionErrors
 from qutils.orbital import nonDim2Dim4
-
+from qutils.ml import getDevice
 from qutils.mamba import Mamba, MambaConfig
 
-# torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
-is_cuda = torch.cuda.is_available()
-
-if is_cuda:
-    device = torch.device("cuda")
-    print("GPU is available")
-else:
-    device = torch.device("cpu")
-    print("GPU not available, CPU used")
-
+from nets import create_dataset
+device = getDevice()
 
 problemDim = 4
 
@@ -43,6 +35,9 @@ mu = 1
 r = rHEO / DU
 v = vHEO * TU / DU
 T = THEO / TU
+t0, tf = 0, T
+dt = 0.01
+t = np.arange(t0, tf, dt)
 
 J2 = 1.08263e-3
 
@@ -91,7 +86,6 @@ lr = 0.001
 input_size = problemDim
 output_size = problemDim
 num_layers = 2
-p_dropout = 0.0
 lookback = 1
 p_motion_knowledge = 1/numPeriods
 
@@ -102,38 +96,49 @@ model = Mamba(config).to(device).double()
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
 
-IC = torch.tensor(IC).to(device)
+train_in = torch.tensor(IC.reshape(1,1,4)).to(device)
+t_output_seq , output_seq = ode45(twoBodyPert,(t0,tf),IC,t)
+
 
 def trainUnsupervised():
     for epoch in range(n_epochs):
 
-        # trajPredition = plotPredition(epoch,newModel,'target',t=t*TU,output_seq=pertNR)
-
         model.train()
 
         # give state to model
-        y_pred = model(IC)
+        y_pred = model(train_in)
         
         # calculate loss from complex loss function
-        loss = criterion(y_pred, twoBodyPert(0,(IC + y_pred * 0.001).cpu()))
+        sysOut = torch.tensor(twoBodyPert(0,y_pred.detach().cpu().numpy().reshape(problemDim)).reshape(1,1,problemDim)).to(device)
+        loss = criterion((train_in - y_pred)/dt, sysOut)
 
         # back prop
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-    
-        # # Validation
-        # model.eval()
-        # with torch.no_grad():
-        #     y_pred_train = model(train_in)
-        #     train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
-        #     y_pred_test = model(test_in)
-        #     test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
-
-        #     decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
-        #     decAcc, err2 = findDecAcc(test_out,y_pred_test)
-        #     err = np.concatenate((err1,err2),axis=0)
 
         print("Epoch %d: train loss %.4f" % (epoch, loss))
 
 trainUnsupervised()
+
+data_out_array = np.empty((1, int(tf/dt)+1, problemDim))
+def generateTrajectory():
+    print(len(t))
+    data_in = train_in
+    model.eval()
+    with torch.no_grad():
+        for i in range(len(t)):
+            data_out = model(data_in)
+            data_out_array[0,i,:] = data_out.cpu().numpy()
+            data_in = data_out
+            # print(i)
+    y_prediction = np.squeeze(data_out_array)
+    return y_prediction
+
+y_prediction = generateTrajectory()
+
+plotSolutionErrors(output_seq,y_prediction,t)
+plt.figure()
+plotOrbitPhasePredictions(output_seq)
+plotOrbitPhasePredictions(y_prediction)
+plt.show()
