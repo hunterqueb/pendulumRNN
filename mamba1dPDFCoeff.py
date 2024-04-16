@@ -17,7 +17,7 @@ from nets import create_dataset
 
 device = getDevice()
 
-pdf_approx_coeff = loadmat('matlab/1dPDF/asym_1D_pdf_approx_coeffs.mat')
+pdf_approx_coeff = loadmat('matlab/1dPDF/asym_1D_pdf_approx_coeffs_400.mat')
 
 learningSet = ['cheb_rbf_coeff','equi_rbf_coeff','halton_rbf_coeff','norm_cheb_rbf_coeff','norm_equi_rbf_coeff','norm_halton_rbf_coeff']
 
@@ -139,7 +139,7 @@ for set in learningSet:
     print("\ttrain loss %.4f, test loss %.4f\n" % (train_loss, test_loss))
 torchinfo.summary(model,input_size=(1,1,problemDim))
 printModelParmSize(model)
-savemat('matlab/1dPDF/asym_1D_pdf_approx_coeffs_pred.mat', all_data)
+savemat('matlab/1dPDF/asym_1D_pdf_approx_coeffs_pred_400.mat', all_data)
 
 # # save the final y_pred_test
 
