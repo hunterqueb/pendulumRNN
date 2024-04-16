@@ -112,7 +112,7 @@ ODEtime.toc()
 output_seq = numericResult
 
 # hyperparameters
-n_epochs = 50
+n_epochs = 5
 # lr = 5*(10**-5)
 # lr = 0.85
 lr = 0.001
@@ -176,17 +176,25 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         output_seq = trueMotion
         with torch.no_grad():
             # shift train predictions for plotting
+            # train_plot = np.ones_like(output_seq) * np.nan
+
+            # NNtimer = timer()
+            # y_pred = model(train_in)
+            # NNtimer.toc()
+
+            # y_pred = y_pred[:, -1, :]
+            # train_plot[lookback:train_size] = model(train_in)[:, -1, :].cpu()
+            # # shift test predictions for plotting
+            # test_plot = np.ones_like(output_seq) * np.nan
+            # test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :].cpu()
             train_plot = np.ones_like(output_seq) * np.nan
+            train_plot[lookback:train_size] = model(train_in)[:,-1,:].cpu()
+            train_plot[0,:] = output_seq[0,:]
 
-            NNtimer = timer()
-            y_pred = model(train_in)
-            NNtimer.toc()
-
-            y_pred = y_pred[:, -1, :]
-            train_plot[lookback:train_size] = model(train_in)[:, -1, :].cpu()
-            # shift test predictions for plotting
             test_plot = np.ones_like(output_seq) * np.nan
-            test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :].cpu()
+            test_plot[train_size:len(output_seq)-1] = model(test_in)[:, -1, :].cpu()
+            data_in = torch.tensor(test_plot[-2,:].reshape(1,1,problemDim),device=device)
+            test_plot[-1,:] = model(data_in)[:,-1,:].cpu().numpy()
 
         # output_seq = nonDim2Dim4(output_seq)
         # train_plot = nonDim2Dim4(train_plot)
@@ -275,7 +283,7 @@ for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg}")
 
 
-torchinfo.summary(model)
+torchinfo.summary(model,input_size=(1,1,problemDim))
 
 # TRANSFER LEARN
 
