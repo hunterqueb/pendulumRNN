@@ -8,7 +8,7 @@ from scipy.io import loadmat,savemat
 
 from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
-from qutils.ml import getDevice
+from qutils.ml import getDevice,printModelParmSize
 from qutils.mlExtras import findDecAcc,generateTrajectoryPrediction
 from qutils.orbital import nonDim2Dim4
 from qutils.mamba import Mamba,MambaConfig
@@ -33,7 +33,7 @@ all_data = {}
 
 for set in learningSet:
 
-    learningSeq =  pdf_approx_coeff[set]
+    learningSeq =  pdf_approx_coeff[set].T
 
     sequenceLength = learningSeq.shape[0]
     problemDim = learningSeq.shape[1]
@@ -50,8 +50,8 @@ for set in learningSet:
     num_layers = 1
     lookback = 1
 
-    p_motion_knowledge = 1/3
 
+    p_motion_knowledge = 1/3
     # train_size = 2
     train_size = int(sequenceLength * p_motion_knowledge)
     test_size = sequenceLength - train_size
@@ -69,7 +69,7 @@ for set in learningSet:
 
     # initilizing the model, criterion, and optimizer for the data
     # config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=256)
-    config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=256,expand_factor=4)
+    config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=32,expand_factor=4)
     model = Mamba(config).to(device).double()
 
 
@@ -120,16 +120,16 @@ for set in learningSet:
 
         test_pred = np.ones_like(learningSeq) * np.nan
         test_pred[train_size:sequenceLength-1] = model(test_in)[:, -1, :].cpu()
-        data_in = torch.tensor(learningSeq[0,:].reshape(1,1,problemDim),device=device)
+        data_in = torch.tensor(test_pred[-2,:].reshape(1,1,problemDim),device=device)
         test_pred[-1,:] = model(data_in)[:,-1,:].cpu().numpy()
     finalData = generateTrajectoryPrediction(train_pred,test_pred)
 
-    all_data[set + '_pred'] = finalData
+    all_data[set + '_pred'] = finalData.T
 
     # savemat('matlab/1dPDF/prediction/' + set + '_pred.mat',{set + '_pred': finalData})
 
     predictedCoeffNorm = finalData
-    trueCoffNorm = pdf_approx_coeff[set]
+    trueCoffNorm = pdf_approx_coeff[set].T
 
 
     error = predictedCoeffNorm - trueCoffNorm
@@ -137,7 +137,8 @@ for set in learningSet:
     
     print('Average error in for ' + set + ':',errorAvg)
     print("\ttrain loss %.4f, test loss %.4f\n" % (train_loss, test_loss))
-torchinfo.summary(model)
+torchinfo.summary(model,input_size=(1,1,problemDim))
+printModelParmSize(model)
 savemat('matlab/1dPDF/asym_1D_pdf_approx_coeffs_pred.mat', all_data)
 
 # # save the final y_pred_test
