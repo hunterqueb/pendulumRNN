@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 import torch.utils.data as data
 
-from qutils.integrators import ode45
+from qutils.integrators import ode1412, ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim4
@@ -101,14 +101,15 @@ delT = 0.001
 nSamples = int(np.ceil((tf - t0) / delT))
 t = np.linspace(t0, tf, nSamples)
 
-t , numericResult = ode45(system,[t0,tf],IC,t)
+t , numericResult = ode1412(system,[t0,tf],IC,t)
+# t , numericResult = ode45(system,[t0,tf],IC,t)
 
 t = t / tEnd
 
 output_seq = numericResult
 
 # hyperparameters
-n_epochs = 5
+n_epochs = 50
 # lr = 5*(10**-5)
 # lr = 0.85
 lr = 0.8
