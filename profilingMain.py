@@ -1,6 +1,8 @@
 from qutils import qProfile
 
-scriptName = "mambaDoublePendulum"
+# folderLocation = 'test/'
+folderLocation = './'
+scriptName = "mambaCR3BP"
 
-qProfile.runMemoryProfiling(scriptName)
-# qProfile.runPerformanceProfiling(scriptName,'profiled'+scriptName)
+# qProfile.runMemoryProfiling(scriptName)
+qProfile.runPerformanceProfiling(folderLocation+scriptName,'profiled'+scriptName)
