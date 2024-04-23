@@ -3,12 +3,14 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
 import torch.utils.data as data
+import torchinfo
 
 from qutils.integrators import ode1412, ode85
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim6
 from qutils.mamba import Mamba, MambaConfig
+from qutils.ml import printModelParmSize
 
 from nets import create_dataset, LSTMSelfAttentionNetwork
 
@@ -289,6 +291,10 @@ print("Average values of each dimension:")
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg}")
 
+
+torchinfo.summary(model)
+printModelParmSize(model)
+print('rk85 on 2 period halo orbit takes 1.199 MB of memory to solve')
 
 if plotOn is True:
     plt.show()
