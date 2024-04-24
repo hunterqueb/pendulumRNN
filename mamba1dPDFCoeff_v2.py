@@ -17,23 +17,13 @@ from nets import create_dataset
 
 device = getDevice()
 
-pathToData = 'matlab/1dPDF/'
-fileName = 'asym_steeper1D_pdf_cdf_400'
-fileExtention = '.mat'
+fileLocation = 'matlab/1dPDF/'
+fileName = "asym_steeper1D_pdf_coeffs_400"
+fileExtension = '.mat'
 
-pdf_approx_coeff = loadmat(pathToData+'asym_steeper1D_pdf_coeffs_400'+fileExtention)
-cdf_approx_coeff = loadmat(pathToData+'asym_steeper1D_pdf_cumInteg_400'+fileExtention)
+pdf_approx_coeff = loadmat(fileLocation+fileName+fileExtension)
 
-
-
-pdfSet = ['norm_cheb_rbf_coeff','norm_equi_rbf_coeff','norm_halton_rbf_coeff']
-cdfSet = ['cheb_cumInteg','equi_cumInteg','halton_cumInteg']
-combinedSet = ["cheb","equi","halton"]
-
-learningSet = {}
-for i in range(3):
-    concatenated_array = np.concatenate((pdf_approx_coeff[pdfSet[i]], cdf_approx_coeff[cdfSet[i]]))
-    learningSet[combinedSet[i]] = concatenated_array
+learningSet = ['norm_cheb_rbf_coeff','norm_equi_rbf_coeff','norm_halton_rbf_coeff']
 
 # learningSet = ['cheb_rbf_coeff']
 # learningSet = ['equi_rbf_coeff']
@@ -47,10 +37,13 @@ all_data = {}
 
 for set in learningSet:
 
-    learningSeq =  learningSet[set].T
+    learningSeq =  pdf_approx_coeff[set].T
 
     sequenceLength = learningSeq.shape[0]
     problemDim = learningSeq.shape[1]
+
+    dt = 0.1
+    tf = 3
 
     # hyperparameters
     n_epochs = 10
@@ -62,7 +55,7 @@ for set in learningSet:
     lookback = 1
 
 
-    p_motion_knowledge = 1/4
+    p_motion_knowledge = 1/3
     # train_size = 2
     train_size = int(sequenceLength * p_motion_knowledge)
     test_size = sequenceLength - train_size
@@ -135,12 +128,12 @@ for set in learningSet:
         test_pred[-1,:] = model(data_in)[:,-1,:].cpu().numpy()
     finalData = generateTrajectoryPrediction(train_pred,test_pred)
 
-    all_data['pred_' + set] = finalData.T
+    all_data[set + '_pred'] = finalData.T
 
     # savemat('matlab/1dPDF/prediction/' + set + '_pred.mat',{set + '_pred': finalData})
 
     predictedCoeffNorm = finalData
-    trueCoffNorm = learningSet[set].T
+    trueCoffNorm = pdf_approx_coeff[set].T
 
 
     error = predictedCoeffNorm - trueCoffNorm
@@ -150,7 +143,7 @@ for set in learningSet:
     print("\ttrain loss %.4f, test loss %.4f\n" % (train_loss, test_loss))
 torchinfo.summary(model,input_size=(1,1,problemDim))
 printModelParmSize(model)
-savemat(pathToData + fileName + '_pred' + fileExtention, all_data)
+savemat(fileLocation+fileName+'_pred'+fileExtension, all_data)
 
 # # save the final y_pred_test
 
