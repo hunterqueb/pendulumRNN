@@ -12,6 +12,8 @@ from qutils.orbital import nonDim2Dim6
 from qutils.mamba import Mamba, MambaConfig
 from qutils.ml import printModelParmSize
 
+from memory_profiler import profile
+
 from nets import create_dataset, LSTMSelfAttentionNetwork
 
 DEBUG = True
@@ -145,7 +147,12 @@ loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, 
 
 # initilizing the model, criterion, and optimizer for the data
 config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=16)
-model = Mamba(config).to(device).double()
+@profile
+def returnModel():
+    model = Mamba(config).to(device).double()
+    return model
+
+model = returnModel()
 # model = LSTMSelfAttentionNetwork(input_size,50,output_size,num_layers,0).double().to(device)
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
@@ -292,7 +299,7 @@ for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg}")
 
 
-torchinfo.summary(model)
+# torchinfo.summary(model)
 printModelParmSize(model)
 print('rk85 on 2 period halo orbit takes 1.199 MB of memory to solve')
 

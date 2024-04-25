@@ -5,4 +5,4 @@ folderLocation = './'
 scriptName = "mambaCR3BP6d"
 
 qProfile.runMemoryProfiling(scriptName)
-qProfile.runPerformanceProfiling(folderLocation+scriptName,'profiled'+scriptName)
+# qProfile.runPerformanceProfiling(folderLocation+scriptName,'profiled'+scriptName)
