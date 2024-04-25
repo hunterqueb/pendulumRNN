@@ -10,7 +10,7 @@ from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim4
 
 from nets import create_dataset, LSTMSelfAttentionNetwork
-from qutils.mamba import Mamba, MambaConfig
+from qutils.mambaAtt import Mamba, MambaConfig
 
 plotOn = True
 
@@ -89,7 +89,7 @@ n_epochs = 50
 lr = 0.8
 lr = 0.08
 lr = 0.004
-lr = 0.001
+lr = 0.0001
 input_size = problemDim
 output_size = problemDim
 num_layers = 1
