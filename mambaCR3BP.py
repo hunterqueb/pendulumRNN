@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 import torch.utils.data as data
 
-from qutils.integrators import ode1412, ode45
+from qutils.integrators import ode1412, ode45, ode85
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim4
@@ -92,7 +92,7 @@ else:
     device = torch.device("cpu")
     print("GPU not available, CPU used")
 
-numPeriods = 20
+numPeriods = 2
 
 
 t0 = 0; tf = numPeriods * tEnd
@@ -101,7 +101,7 @@ delT = 0.001
 nSamples = int(np.ceil((tf - t0) / delT))
 t = np.linspace(t0, tf, nSamples)
 
-t , numericResult = ode1412(system,[t0,tf],IC,t)
+t , numericResult = ode85(system,[t0,tf],IC,t)
 # t , numericResult = ode45(system,[t0,tf],IC,t)
 
 t = t / tEnd
@@ -141,7 +141,7 @@ model = Mamba(config).to(device).double()
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
-
+# criterion = torch.nn.HuberLoss()
 for epoch in range(n_epochs):
 
     # trajPredition = plotPredition(epoch,model,'target',t=t*TU,output_seq=pertNR)

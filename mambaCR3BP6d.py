@@ -10,7 +10,7 @@ from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolu
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim6
 from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import printModelParmSize
+from qutils.ml import printModelParmSize, getDevice
 
 from memory_profiler import profile
 
@@ -39,6 +39,15 @@ vx_0 = -2.1104238512337928E-12
 vy_0 = 1.5397481970828469E-1
 vz_0 = 5.4929593265750457E-12
 tEnd = 2.7783178612577766E+0
+
+# halo around l3 - id 10
+x_0 = -1.6775753144556563E-1
+y_0 = -1.1367134367998278E-25
+z_0 = 1.9153870456961195E+0
+vx_0 = 7.3594870907425127E-11
+vy_0 = 1.2311060080547762E-1
+vz_0 = -6.4297898960019798E-11
+tEnd = 5.9550558101971349E+0
 
 # vSquared = (vx_0**2 + vy_0**2)
 # xn1 = -mu
@@ -85,25 +94,10 @@ def system(t, Y,mu=mu):
 IC = np.array(x_0)
 
 
-is_cuda = torch.cuda.is_available()
-# torch.backends.mps.is_available() checks for metal support, used in nightly build so handled expection incase its run on different version
-try:
-    is_mps = torch.backends.mps.is_available()
-    is_mps = False
-except:
-    is_mps = False
-# If we have a GPU available, we'll set our device to GPU. We'll use this device variable later in our code.
-if is_cuda:
-    device = torch.device("cuda")
-    print("GPU is available")
-elif is_mps:
-    device = torch.device("mps")
-    print('Metal GPU is available')
-else:
-    device = torch.device("cpu")
-    print("GPU not available, CPU used")
+device = getDevice()
 
-numPeriods = 2
+
+numPeriods = 10
 
 
 t0 = 0; tf = numPeriods * tEnd
@@ -120,7 +114,7 @@ t = t / tEnd
 output_seq = numericResult
 
 # hyperparameters
-n_epochs = 5
+n_epochs = 50
 # lr = 5*(10**-5)
 # lr = 0.85
 lr = 0.8
@@ -157,6 +151,7 @@ model = returnModel()
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
+criterion = torch.nn.HuberLoss()
 
 for epoch in range(n_epochs):
 
@@ -278,9 +273,9 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         return trajPredition
 
 networkPrediction = plotPredition(epoch+1,model,output_seq)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1,plane='xz')
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1,plane='yz')
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=3,moon=False)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=3,plane='xz',moon=False)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=3,plane='yz',moon=False)
 
 
 DU = 384400

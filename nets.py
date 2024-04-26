@@ -71,7 +71,7 @@ def create_dataset(dataset,device,lookback):
 
 
 
-def transferMamba(pretrainedModel,newModel,trainableLayers = [True,False,False]):
+def transferMamba(pretrainedModel,newModel,trainableLayers = [True,True,False]):
     '''
     custom function to transfer knowledge of a mamba network from a pretrained model to a new model
     the mamba network is from https://github.com/alxndrTL/mamba.py

@@ -5,16 +5,18 @@ import torch.nn.functional as F
 import torch.utils.data as data
 import torchinfo
 
-from qutils.integrators import ode45
+from qutils.integrators import ode85
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
+from qutils.ml import getDevice
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim4
 from qutils.tictoc import timer
-
-from nets import create_dataset, LSTMSelfAttentionNetwork,transferMamba,transferLSTM
 from qutils.mamba import Mamba, MambaConfig
 
-modelSaved = False
+
+from nets import create_dataset, LSTMSelfAttentionNetwork,transferMamba,transferLSTM
+
+modelSaved = True
 pretrainedModelPath = 'CR3BP_L4_SP.pth'
 plotOn = True
 
@@ -78,24 +80,7 @@ def system(t, Y,mu=mu):
 IC = np.array(x_0)
 
 
-is_cuda = torch.cuda.is_available()
-# torch.backends.mps.is_available() checks for metal support, used in nightly build so handled expection incase its run on different version
-try:
-    is_mps = torch.backends.mps.is_available()
-    is_mps = False
-except:
-    is_mps = False
-# If we have a GPU available, we'll set our device to GPU. We'll use this device variable later in our code.
-if is_cuda:
-    device = torch.device("cuda")
-    print("GPU is available")
-elif is_mps:
-    device = torch.device("mps")
-    print('Metal GPU is available')
-else:
-    device = torch.device("cpu")
-    print("GPU not available, CPU used")
-
+device = getDevice()
 
 numPeriods = 5
 
@@ -106,7 +91,7 @@ nSamples = int(np.ceil((tf - t0) / delT))
 t = np.linspace(t0, tf, nSamples)
 
 ODEtime = timer()
-t , numericResult = ode45(system,[t0,tf],IC,t)
+t , numericResult = ode85(system,[t0,tf],IC,t)
 ODEtime.toc()
 
 output_seq = numericResult
@@ -141,6 +126,7 @@ model = Mamba(config).to(device).double()
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
+criterion = torch.nn.HuberLoss()
 
 if not modelSaved:
     for epoch in range(n_epochs):
@@ -356,12 +342,12 @@ delT = 0.001
 nSamples = int(np.ceil((tf - t0) / delT))
 t = np.linspace(t0, tf, nSamples)
 
-t , numericResult = ode45(system,[t0,tf],IC,t,rtol=1e-15,atol=1e-15)
+t , numericResult = ode85(system,[t0,tf],IC,t,rtol=1e-15,atol=1e-15)
 
 output_seq = numericResult
 
 
-n_epochs = 10
+n_epochs = 20
 # lr = 5*(10**-5)
 # lr = 0.85
 lr = 0.001
