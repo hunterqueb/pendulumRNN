@@ -49,6 +49,33 @@ vy_0 = 1.2311060080547762E-1
 vz_0 = -6.4297898960019798E-11
 tEnd = 5.9550558101971349E+0
 
+# butterfly id 270
+x_0 = 1.0396500770783366E+0
+y_0 = -1.9627997004828110E-27
+z_0 = 2.5485125128643876E-1
+vx_0 = -4.8969667549929713E-14
+vy_0 = -2.8617373429417120E-1
+vz_0 = -1.0568735643727322E-13
+tEnd = 9.2235616765684298E+0
+
+# dragonfly id 71
+x_0 =  1.1442729375808927E+0
+y_0 =  -2.5570518644231412E-20
+z_0 =  9.7411817634090236E-2
+vx_0 = 1.0072600603243715E-2
+vy_0 = -3.4395156291560752E-1
+vz_0 = 2.8345900193831092E-1
+tEnd = 6.9983567996146689E+0
+
+# lyapunov id 312
+x_0 = 5.9335219082124890E-1
+y_0 = 1.9799386716596461E-23
+z_0 = -4.4836817539948721E-26
+vx_0 = -1.0419834306319422E-13
+vy_0 = 8.9233311603791643E-1
+vz_0 = 6.4404464538717388E-25
+tEnd = 6.9604405499234705E+0
+
 # vSquared = (vx_0**2 + vy_0**2)
 # xn1 = -mu
 # xn2 = 1-mu
@@ -97,7 +124,7 @@ IC = np.array(x_0)
 device = getDevice()
 
 
-numPeriods = 10
+numPeriods = 5
 
 
 t0 = 0; tf = numPeriods * tEnd
@@ -273,9 +300,9 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         return trajPredition
 
 networkPrediction = plotPredition(epoch+1,model,output_seq)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=3,moon=False)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=3,plane='xz',moon=False)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=3,plane='yz',moon=False)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=3)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=3,plane='xz')
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=3,plane='yz')
 
 
 DU = 384400

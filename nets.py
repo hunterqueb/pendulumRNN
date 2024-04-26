@@ -71,7 +71,7 @@ def create_dataset(dataset,device,lookback):
 
 
 
-def transferMamba(pretrainedModel,newModel,trainableLayers = [True,True,False]):
+def transferMamba(pretrainedModel,newModel,trainableLayers = [True,False,False]):
     '''
     custom function to transfer knowledge of a mamba network from a pretrained model to a new model
     the mamba network is from https://github.com/alxndrTL/mamba.py
@@ -88,7 +88,7 @@ def transferMamba(pretrainedModel,newModel,trainableLayers = [True,True,False]):
         param.requires_grad = False
 
     for param in newModel.layers[0].mixer.conv1d.parameters():
-        param.requires_grad = False
+        param.requires_grad = True
 
     # trainanle A matrix
     newModel.layers[0].mixer.A_log.requires_grad = False
