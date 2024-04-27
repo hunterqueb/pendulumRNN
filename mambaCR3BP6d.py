@@ -6,13 +6,13 @@ import torch.utils.data as data
 import torchinfo
 
 from qutils.integrators import ode1412, ode85
-from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
+from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim6
 from qutils.mamba import Mamba, MambaConfig
 from qutils.ml import printModelParmSize, getDevice
 
-from memory_profiler import profile
+# from memory_profiler import profile
 
 from nets import create_dataset, LSTMSelfAttentionNetwork
 
@@ -68,13 +68,13 @@ vz_0 = 2.8345900193831092E-1
 tEnd = 6.9983567996146689E+0
 
 # lyapunov id 312
-x_0 = 5.9335219082124890E-1
-y_0 = 1.9799386716596461E-23
-z_0 = -4.4836817539948721E-26
-vx_0 = -1.0419834306319422E-13
-vy_0 = 8.9233311603791643E-1
-vz_0 = 6.4404464538717388E-25
-tEnd = 6.9604405499234705E+0
+# x_0 = 5.9335219082124890E-1
+# y_0 = 1.9799386716596461E-23
+# z_0 = -4.4836817539948721E-26
+# vx_0 = -1.0419834306319422E-13
+# vy_0 = 8.9233311603791643E-1
+# vz_0 = 6.4404464538717388E-25
+# tEnd = 6.9604405499234705E+0
 
 # vSquared = (vx_0**2 + vy_0**2)
 # xn1 = -mu
@@ -124,7 +124,7 @@ IC = np.array(x_0)
 device = getDevice()
 
 
-numPeriods = 5
+numPeriods = 2
 
 
 t0 = 0; tf = numPeriods * tEnd
@@ -141,7 +141,7 @@ t = t / tEnd
 output_seq = numericResult
 
 # hyperparameters
-n_epochs = 50
+n_epochs = 5
 # lr = 5*(10**-5)
 # lr = 0.85
 lr = 0.8
@@ -168,7 +168,7 @@ loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, 
 
 # initilizing the model, criterion, and optimizer for the data
 config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=16)
-@profile
+
 def returnModel():
     model = Mamba(config).to(device).double()
     return model
@@ -303,6 +303,7 @@ networkPrediction = plotPredition(epoch+1,model,output_seq)
 plotCR3BPPhasePredictions(output_seq,networkPrediction,L=3)
 plotCR3BPPhasePredictions(output_seq,networkPrediction,L=3,plane='xz')
 plotCR3BPPhasePredictions(output_seq,networkPrediction,L=3,plane='yz')
+plot3dCR3BPPredictions(output_seq,networkPrediction,L=None)
 
 
 DU = 384400
@@ -319,7 +320,6 @@ errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average values of each dimension:")
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg}")
-
 
 # torchinfo.summary(model)
 printModelParmSize(model)
