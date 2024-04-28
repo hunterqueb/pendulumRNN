@@ -141,7 +141,7 @@ t = t / tEnd
 output_seq = numericResult
 
 # hyperparameters
-n_epochs = 50
+n_epochs = 1
 # lr = 5*(10**-5)
 # lr = 0.85
 lr = 0.8
