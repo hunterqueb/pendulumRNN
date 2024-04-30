@@ -8,7 +8,7 @@ import torchinfo
 from qutils.integrators import ode1412, ode85
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions
 from qutils.mlExtras import findDecAcc
-from qutils.orbital import nonDim2Dim6
+from qutils.orbital import nonDim2Dim6, returnCR3BPIC
 from qutils.mamba import Mamba, MambaConfig
 from qutils.ml import printModelParmSize, getDevice
 
@@ -85,11 +85,14 @@ tEnd = 6.9983567996146689E+0
 # C0 = (x_0**2 + y_0**2) + 2*(1-mu)/rho1 + 2*mu/rho2 - vSquared
 # print('Jacobi Constant: {}'.format(C0))
 
-# Then stack everything together into the state vector
-r_0 = np.array((x_0, y_0,z_0))
-v_0 = np.array((vx_0, vy_0,vz_0))
-x_0 = np.hstack((r_0, v_0))
 
+orbitFamily = 'dragonfly'
+
+CR3BPIC = returnCR3BPIC(orbitFamily,id=71,stable=False)
+
+x_0,tEnd = CR3BPIC()
+
+IC = np.array(x_0)
 
 def system(t, Y,mu=mu):
     """Solve the CR3BP in nondimensional coordinates.
@@ -118,14 +121,11 @@ def system(t, Y,mu=mu):
 
     return np.array([dydt1, dydt2,dydt3,dydt4,dydt5,dydt6])
 
-IC = np.array(x_0)
 
 
 device = getDevice()
 
-
 numPeriods = 2
-
 
 t0 = 0; tf = numPeriods * tEnd
 
