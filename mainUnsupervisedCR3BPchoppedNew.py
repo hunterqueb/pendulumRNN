@@ -9,8 +9,8 @@ from qutils.mlExtras import findDecAcc as findDecimalAccuracy
 from qutils.tictoc import timer
 from qutils.pinn import PINN,FeedforwardSin,FeedforwardCos
 from qutils.integrators import ode85
-from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors, plotEnergy
-from qutils.orbital import jacobiConstant
+from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors, plotEnergy, plot3dCR3BPPredictions
+from qutils.orbital import  returnCR3BPIC,nonDim2Dim6
 
 arg1 = None
 if sys.argv[1:]:   # test if there are atleast 1 argument
@@ -24,7 +24,7 @@ else:
 
 DEBUG = True
 
-problemDim = 4 
+problemDim = 6
 m_1 = 5.974E24  # kg
 m_2 = 7.348E22 # kg
 mu = m_2/(m_1 + m_2)
@@ -48,18 +48,8 @@ tEnd = 6.2858346244258847
 
 
 # # Distant Retrograde Orbit id 1  - Stability: 1.0000656297257782E+0 
-# x_0 = 3.0680940168765748E-2	
-# y_0 = 0
-# vx_0 = -1.9798683479304902E-12	
-# vy_0 = 6.6762053214726942E+0	
-# tEnd = 6.3044730125061266E+0	
 
 # # short period l4 liberation point id 1062
-# x_0 = 4.8784941344943100E-1	
-# y_0 = 1.0231615681834254E+0	
-# vx_0 = 2.4100203799532632E-1	
-# vy_0 = -1.0386356858552348E-1	
-# tEnd = 6.5699439082821405
 
 # # Low Prograde Orbit id 1336 "moon orbit"
 # x_0 = 1.0676492111091758E+0
@@ -69,53 +59,43 @@ tEnd = 6.2858346244258847
 # tEnd = 1.3463994791934020E+0	
 
 # # Long Period L4 id 123 Stability: 6.1992765524940317E+1
-# x_0 = 4.8784941344943100E-1
-# y_0 = 3.5889770411166416E-1
-# vx_0 = -8.5012625872098058E-1
-# vy_0 = 3.0599104949396405E-1
-# tEnd = 2.5791531978360762E+1	
 
 # # Long Period L4 id 1173
-# x_0 = 4.8784941344943100E-1
-# y_0 = 6.7241857567449559E-1
-# vx_0 = -2.4475661452281838E-1
-# vy_0 = 1.3812226057131133E-1
-# tEnd = 2.4047875532062960E+1
 
 # # Lyapunov Orbit Family around L2 id 972: stability - 5.9998680574258844E+2
-# x_0 =  1.1192937490150918E+0
-# y_0 =  0.0000000000000000E+0
-# vx_0 = 2.6418584656601576E-15
-# vy_0 = 1.8122474967618102E-1
-# tEnd = 3.4181096055680626E+0	
-
 # # Lyapunov Orbit Family around L2 id 540 : stability - 5.2052887366713769E+1
-# x_0 = 9.9963706922393214E-1
-# y_0 = 0.0000000000000000E+0
-# vx_0 = -1.1109531673642259E-14
-# vy_0 = 1.4398178227943141E+0
-# tEnd = 6.2560355541392445E+0	
 
-vSquared = (vx_0**2 + vy_0**2)
-xn1 = -mu
-xn2 = 1-mu
-rho1 = np.sqrt((x_0-xn1)**2+y_0**2)
-rho2 = np.sqrt((x_0-xn2)**2+y_0**2)
 
-C0 = (x_0**2 + y_0**2) + 2*(1-mu)/rho1 + 2*mu/rho2 - vSquared
-print('Jacobi Constant: {}'.format(C0))
-
-# mu = 0.012277471
-# x_0 = 0.994
-# y_0 = 0
-# vx_0 = 0
-# vy_0 = -2.0317326295573368357302057924
-
+def jacobiConstant(Y):
+    mu = 0.012277471  # Mass ratio (m_2 / (m_1 + m_2))
+    x = Y[0]
+    y = Y[1]
+    z = Y[2]
+    xdot = Y[3]
+    ydot = Y[4]
+    zdot = Y[5]
+    
+    vSquared = (xdot**2 + ydot**2 + zdot**2)
+    
+    xn1 = -mu
+    xn2 = 1 - mu
+    
+    rho1 = np.sqrt((x - xn1)**2 + y**2 + z**2)
+    rho2 = np.sqrt((x - xn2)**2 + y**2 + z**2)
+    
+    C = (x**2 + y**2 + z**2) + 2 * (1 - mu) / rho1 + 2 * mu / rho2 - vSquared
+    
+    return C
 
 # Then stack everything together into the state vector
-r_0 = np.array((x_0, y_0))
-v_0 = np.array((vx_0, vy_0))
-x_0 = np.hstack((r_0, v_0))
+
+orbitFamily = 'halo'
+
+CR3BPIC = returnCR3BPIC(orbitFamily,L=1,id=894,stable=True)
+
+x_0,tEnd = CR3BPIC()
+
+C0 = jacobiConstant(x_0)
 
 netptr = FeedforwardSin
 netptrd = FeedforwardCos
@@ -129,35 +109,48 @@ def system(t, Y,mu=mu):
     The solution is parameterized on $\\pi_2$, the mass ratio.
     """
     # Get the position and velocity from the solution vector
-    x, y = Y[:2]
-    xdot, ydot = Y[2:]
+    x, y, z = Y[:3]
+    xdot, ydot, zdot = Y[3:]
 
     # Define the derivative vector
 
     dydt1 = xdot
     dydt2 = ydot
-    sigma = np.sqrt(np.sum(np.square([x + mu, y])))
-    psi = np.sqrt(np.sum(np.square([x - 1 + mu, y])))
-    dydt3 = 2 * ydot + x - (1 - mu) * (x + mu) / sigma**3 - mu * (x - 1 + mu) / psi**3
-    dydt4 = -2 * xdot + y - (1 - mu) * y / sigma**3 - mu * y / psi**3
-    return np.array([dydt1, dydt2,dydt3,dydt4])
+    dydt3 = zdot
+
+    r1 = np.sqrt((x + mu)**2 + y**2 + z**2)
+    r2 = np.sqrt((x - 1 + mu)**2 + y**2 + z**2)
+
+    dydt4 = 2 * ydot + x - (1 - mu) * (x + mu) / r1**3 - mu * (x - 1 + mu) / r2**3
+    dydt5 = -2 * xdot + y - (1 - mu) * y / r1**3 - mu * y / r2**3
+    dydt6 = -(1 - mu) * z / r1**3 - mu * z / r2**3
+
+    return np.array([dydt1, dydt2,dydt3,dydt4,dydt5,dydt6])
 
 def systemTensor(t, Y, mu=mu):
     # Get the position and velocity from the solution vector
     x = Y[:,0].reshape(-1,1)
     y = Y[:,1].reshape(-1,1)
-    xdot = Y[:,2].reshape(-1,1)
-    ydot = Y[:,3].reshape(-1,1)
+    z = Y[:,2].reshape(-1,1)
+    xdot = Y[:,3].reshape(-1,1)
+    ydot = Y[:,4].reshape(-1,1)
+    zdot = Y[:,5].reshape(-1,1)
 
     # Define the derivative vector
     Ydot1 = xdot
     Ydot2 = ydot
+    Ydot3 = zdot
+
+    r1 = torch.sqrt(torch.sum(torch.square(torch.cat([x + mu, y, z], dim=1)), dim=1)).reshape(-1, 1)
+    r2 = torch.sqrt(torch.sum(torch.square(torch.cat([x - 1 + mu, y, z], dim=1)), dim=1)).reshape(-1, 1)
 
     sigma = torch.sqrt(torch.sum(torch.square(torch.cat([x + mu, y],dim=1)),dim=1)).reshape(-1,1)
     psi = torch.sqrt(torch.sum(torch.square(torch.cat([x - 1 + mu, y],dim=1)),dim=1)).reshape(-1,1)
-    Ydot3 = 2 * ydot + x - (1 - mu) * (x + mu) / sigma**3 - mu * (x - 1 + mu) / psi**3
-    Ydot4 = -2 * xdot + y - (1 - mu) * y / sigma**3 - mu * y / psi**3
-    return torch.cat((Ydot1,Ydot2,Ydot3,Ydot4),1)
+
+    Ydot4 = 2 * ydot + x - (1 - mu) * (x + mu) / r1**3 - mu * (x - 1 + mu) / r2**3
+    Ydot5 = -2 * xdot + y - (1 - mu) * y / r1**3 - mu * y / r2**3
+    Ydot6 = -(1 - mu) * z / r1**3 - mu * z / r2**3
+    return torch.cat((Ydot1,Ydot2,Ydot3,Ydot4,Ydot5,Ydot6),1)
 
 
 IC = x_0
@@ -168,8 +161,12 @@ device = getDevice()
 y0Tensor = torch.from_numpy(y0).to(device)
 
 dataSet = 10 * 50
-epochs = 100
+epochs = 10000
 learningRate = 6e-4
+
+numPeriods = 5
+
+tEnd = tEnd * numPeriods
 
 tStart = 0
 delT = 0.001
@@ -180,7 +177,7 @@ t = np.linspace(tStart, tEnd, nSamples)
 tParts = [tStart, T/4, T/2, 3*T/4, tEnd]
 
 # or automatically set them
-desiredSegs = 5
+desiredSegs = 20 * numPeriods
 
 tParts = np.linspace(tStart,tEnd, desiredSegs + 1)
 
@@ -233,6 +230,8 @@ pinnSolution.setToEvaluate()
 # evaluate networks
 t,yTest = pinnSolution()
 
+t=t/tEnd
+
 yTruth = pinnSolution.getTrueSolution()
 
 # full trajectory accuracy
@@ -240,25 +239,39 @@ print('\nFull Trajectory')
 decAcc, avg = findDecimalAccuracy(yTruth, yTest)
 print("Final State Error",(yTruth-yTest)[-1],' in normalized units')
 
-netTime = timer()
-netTime.tic()
-tTest = torch.tensor(np.ones((nTest,1)) * tEnd,device=device)
-pinnSolution.testEvaulation(tTest)
-finalNet = netTime.tocVal()
-print('Time to evaluate {} ODES with NN: {}'.format(nTest,finalNet))
 
-odeTime = timer()
-odeTime.tic()
-for i in range(nTest):
-    tSeg, numericalResult  = ode85(system, (0, tEnd), y0, rtol=1e-8,atol=1e-10)
-finalOde = odeTime.tocVal()
-print('Time to evaluate {} ODES with RK45: {}'.format(nTest,finalOde))
+DU = 384400
+G = 6.67430e-11
+TU = np.sqrt(DU**3 / (G*(m_1+m_2)))
+
+
+# netTime = timer()
+# netTime.tic()
+# tTest = torch.tensor(np.ones((nTest,1)) * tEnd,device=device)
+# pinnSolution.testEvaulation(tTest)
+# finalNet = netTime.tocVal()
+# print('Time to evaluate {} ODES with NN: {}'.format(nTest,finalNet))
+
+# odeTime = timer()
+# odeTime.tic()
+# for i in range(nTest):
+#     tSeg, numericalResult  = ode85(system, (0, tEnd), y0, rtol=1e-8,atol=1e-10)
+# finalOde = odeTime.tocVal()
+# print('Time to evaluate {} ODES with RK45: {}'.format(nTest,finalOde))
+
 
 plotCR3BPPhasePredictions(yTruth,yTest)
-plotOrbitPredictions(yTruth,yTest,t=t)
-plotEnergy(yTruth,yTest,t,jacobiConstant,yLabel='Jacobi Constant')
+plot3dCR3BPPredictions(yTruth,yTest,L=1)
+
+yTruth = nonDim2Dim6(yTruth,DU,TU)
+yTest = nonDim2Dim6(yTest,DU,TU)
 
 plotSolutionErrors(yTruth,yTest,t,problemDim)
+
+errorAvg = np.nanmean(abs(yTest-yTruth), axis=0)
+print("Average values of each dimension:")
+for i, avg in enumerate(errorAvg, 1):
+    print(f"Dimension {i}: {avg}")
 
 if(not plotOff):
     plt.show()

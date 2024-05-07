@@ -12,7 +12,7 @@ from qutils.ml import getDevice
 from qutils.mlExtras import findDecAcc,generateTrajectoryPrediction
 from qutils.orbital import nonDim2Dim4
 from qutils.tictoc import timer
-from qutils.mamba import Mamba,MambaConfig
+from qutils.mambaAtt import Mamba,MambaConfig
 
 from nets import create_dataset, LSTMSelfAttentionNetwork
 
@@ -35,7 +35,7 @@ dt = 0.1
 tf = 7.4
 
 # hyperparameters
-n_epochs = 10
+n_epochs = 20
 # lr = 0.0007
 lr = 0.001
 input_size = problemDim
@@ -43,7 +43,7 @@ output_size = problemDim
 num_layers = 1
 lookback = 1
 
-p_motion_knowledge = 0.1
+p_motion_knowledge = 0.4
 
 # train_size = 2
 train_size = int(sequenceLength * p_motion_knowledge)
@@ -62,7 +62,7 @@ loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, 
 
 # initilizing the model, criterion, and optimizer for the data
 # config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=256)
-config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=1024,expand_factor=1)
+config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=512,expand_factor=1)
 model = Mamba(config).to(device).double()
 
 torchinfo.summary(model)

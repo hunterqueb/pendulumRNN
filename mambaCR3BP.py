@@ -92,7 +92,7 @@ else:
     device = torch.device("cpu")
     print("GPU not available, CPU used")
 
-numPeriods = 2
+numPeriods = 5
 
 
 t0 = 0; tf = numPeriods * tEnd
