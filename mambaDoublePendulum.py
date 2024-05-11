@@ -6,33 +6,18 @@ import torch.utils.data as data
 
 from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
+from qutils.ml import printModelParmSize, getDevice
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim4
 
-from nets import create_dataset, LSTMSelfAttentionNetwork
+from nets import create_dataset, LSTMSelfAttentionNetwork, LSTM
 from qutils.mamba import Mamba, MambaConfig
 
 plotOn = True
 
 problemDim = 4 
 
-is_cuda = torch.cuda.is_available()
-# torch.backends.mps.is_available() checks for metal support, used in nightly build so handled expection incase its run on different version
-try:
-    is_mps = torch.backends.mps.is_available()
-    is_mps = False
-except:
-    is_mps = False
-# If we have a GPU available, we'll set our device to GPU. We'll use this device variable later in our code.
-if is_cuda:
-    device = torch.device("cuda")
-    print("GPU is available")
-elif is_mps:
-    device = torch.device("mps")
-    print('Metal GPU is available')
-else:
-    device = torch.device("cpu")
-    print("GPU not available, CPU used")
+device = getDevice()
 
 m1 = 1
 m2 = m1
@@ -111,7 +96,7 @@ loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, 
 # initilizing the model, criterion, and optimizer for the data
 config = MambaConfig(d_model=problemDim, n_layers=num_layers)
 model = Mamba(config).to(device).double()
-# model = LSTMSelfAttentionNetwork(input_size,50,output_size,num_layers,0).double().to(device)
+model = LSTM(input_size,10,output_size,num_layers,0).double().to(device)
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
@@ -225,7 +210,7 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
 
 networkPrediction = plotPredition(epoch+1,model,output_seq)
 
-plotSolutionErrors(output_seq,networkPrediction,t,problemDim)
+plotSolutionErrors(output_seq,networkPrediction,t,problemDim,units='rad',states=('\\theta_1','\\theta_2'))
 # plotDecAccs(decAcc,t,problemDim)
 errorAvg = np.nanmean(abs(networkPrediction-output_seq) * 90 / np.pi, axis=0)
 print("Average error of each dimension:")
@@ -233,6 +218,7 @@ unitLabels = ['deg','deg/s','deg','deg/s']
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg} {unitLabels[i-1]}")
 
+printModelParmSize(model)
 
 if plotOn is True:
     plt.figure()
@@ -242,7 +228,7 @@ if plotOn is True:
     plt.xlabel('Theta 1')
     plt.ylabel('Theta 1 Dot')
     plt.axis('equal')
-
+    plt.grid()
 
     plt.subplot(2, 1, 2)
     plt.plot(output_seq[:,1],output_seq[:,3],'r',label = "Truth")
@@ -251,6 +237,7 @@ if plotOn is True:
     plt.ylabel('Theta 2 Dot')
     plt.axis('equal')
     plt.legend()
+    plt.grid()
 
     plt.show()
 
