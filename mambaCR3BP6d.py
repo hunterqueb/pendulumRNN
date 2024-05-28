@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch.utils.data as data
 import torchinfo
 
-from qutils.integrators import ode1412, ode85
+from qutils.integrators import ode85
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC
@@ -54,6 +54,10 @@ mu = m_2/(m_1 + m_2)
 orbitFamily = 'halo'
 
 CR3BPIC = returnCR3BPIC(orbitFamily,L=1,id=894,stable=True)
+
+orbitFamily = 'butterfly'
+
+CR3BPIC = returnCR3BPIC(orbitFamily,id=1080,stable=True)
 
 x_0,tEnd = CR3BPIC()
 
@@ -288,8 +292,8 @@ print("Average values of each dimension:")
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg}")
 
-# torchinfo.summary(model)
 printModelParmSize(model)
+torchinfo.summary(model)
 print('rk85 on 2 period halo orbit takes 1.199 MB of memory to solve')
 
 if plotOn is True:

@@ -10,7 +10,7 @@ from qutils.ml import printModelParmSize, getDevice
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim4
 
-from nets import create_dataset, LSTMSelfAttentionNetwork, LSTM
+from nets import create_dataset, LSTMSelfAttentionNetwork, LSTM, TransformerModel
 from qutils.mamba import Mamba, MambaConfig
 
 plotOn = True
@@ -49,12 +49,12 @@ def doublePendulumODE(t,y,p=parameters):
 
     return np.array((dydt1,dydt2,dydt3,dydt4))
 
-theta1_0 = np.radians(80)
-theta2_0 = np.radians(135)
-thetadot1_0 = np.radians(-1)
-thetadot2_0 = np.radians(0.7)
+# theta1_0 = np.radians(80)
+# theta2_0 = np.radians(135)
+# thetadot1_0 = np.radians(-1)
+# thetadot2_0 = np.radians(0.7)
 
-initialConditions = np.array([theta1_0,thetadot1_0,theta2_0,thetadot2_0],dtype=np.float64)
+# initialConditions = np.array([theta1_0,thetadot1_0,theta2_0,thetadot2_0],dtype=np.float64)
 initialConditions = np.radians(np.random.uniform(-180, 180, (problemDim,)))
 
 tStart = 0
@@ -96,7 +96,7 @@ loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, 
 # initilizing the model, criterion, and optimizer for the data
 config = MambaConfig(d_model=problemDim, n_layers=num_layers)
 model = Mamba(config).to(device).double()
-model = LSTM(input_size,10,output_size,num_layers,0).double().to(device)
+# model = LSTM(input_size,10,output_size,num_layers,0).double().to(device)
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss

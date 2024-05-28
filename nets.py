@@ -267,3 +267,24 @@ class CNN_LSTM_SA(nn.Module):
         # Regression output
         out = self.fc(attention_out)
         return out
+
+
+class TransformerModel(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers, dropout_value, heads=1):
+        super(TransformerModel, self).__init__()
+
+        # Transformer layer
+        self.transformer = nn.Transformer(d_model=input_dim, nhead=heads, num_encoder_layers=num_layers, dropout=dropout_value)
+
+        # Fully connected layer
+        self.fc = nn.Linear(input_dim, output_dim)
+
+    def forward(self, x):
+        # Pass data through Transformer layer
+        transformer_out = self.transformer(x)
+
+        # Pass data through fully connected layer
+        final_out = self.fc(transformer_out)
+
+        return final_out
+
