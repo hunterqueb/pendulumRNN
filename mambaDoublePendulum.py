@@ -49,13 +49,13 @@ def doublePendulumODE(t,y,p=parameters):
 
     return np.array((dydt1,dydt2,dydt3,dydt4))
 
-# theta1_0 = np.radians(80)
-# theta2_0 = np.radians(135)
-# thetadot1_0 = np.radians(-1)
-# thetadot2_0 = np.radians(0.7)
+theta1_0 = np.radians(80)
+theta2_0 = np.radians(135)
+thetadot1_0 = np.radians(-1)
+thetadot2_0 = np.radians(0.7)
+initialConditions = np.array([theta1_0,thetadot1_0,theta2_0,thetadot2_0],dtype=np.float64)
 
-# initialConditions = np.array([theta1_0,thetadot1_0,theta2_0,thetadot2_0],dtype=np.float64)
-initialConditions = np.radians(np.random.uniform(-180, 180, (problemDim,)))
+# initialConditions = np.radians(np.random.uniform(-180, 180, (problemDim,)))
 
 tStart = 0
 tEnd = 20
@@ -223,16 +223,16 @@ printModelParmSize(model)
 if plotOn is True:
     plt.figure()
     plt.subplot(2, 1, 1)
-    plt.plot(output_seq[:,0],output_seq[:,2],'r',label = "Truth")
-    plt.plot(networkPrediction[:,0],networkPrediction[:,2],'b',label = "NN")
+    plt.plot(output_seq[:,0],output_seq[:,1],'r',label = "Truth")
+    plt.plot(networkPrediction[:,0],networkPrediction[:,1],'b',label = "NN")
     plt.xlabel('Theta 1')
     plt.ylabel('Theta 1 Dot')
     plt.axis('equal')
     plt.grid()
 
     plt.subplot(2, 1, 2)
-    plt.plot(output_seq[:,1],output_seq[:,3],'r',label = "Truth")
-    plt.plot(networkPrediction[:,1],networkPrediction[:,3],'b',label = "NN")
+    plt.plot(output_seq[:,2],output_seq[:,3],'r',label = "Truth")
+    plt.plot(networkPrediction[:,2],networkPrediction[:,3],'b',label = "NN")
     plt.xlabel('Theta 2')
     plt.ylabel('Theta 2 Dot')
     plt.axis('equal')
