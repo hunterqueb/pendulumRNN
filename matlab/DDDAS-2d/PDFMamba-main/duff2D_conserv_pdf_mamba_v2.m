@@ -17,23 +17,6 @@
 
 clear all; close all; clc;
 
-addpath('C:\Users\pu410292\CloudStation\SynologyDrive\Drive\LM_MATLABscripts\ChebFuncs')
-addpath('C:\Users\pu410292\CloudStation\SynologyDrive\Drive\LM_MATLABscripts\ProbFuncs')
-addpath('C:\Users\pu410292\CloudStation\SynologyDrive\Drive\LM_MATLABscripts\ForceFuncs')
-addpath('C:\Users\pu410292\CloudStation\SynologyDrive\Drive\LM_MATLABscripts\Utilities')
-
-% To include the computeDistMat():
-addpath('C:\Users\pu410292\CloudStation\SynologyDrive\Drive\HigherDimensionalApproximation\RBF-PDF\vvraPaperScript')
-
-% To include RBF related functions:
-addpath('C:\Users\pu410292\CloudStation\SynologyDrive\Drive\HigherDimensionalApproximation\RBF-PDF')
-
-% To include the create_extremal_bounds(), inhull2():
-addpath('C:\Users\pu410292\CloudStation\SynologyDrive\Drive\OPA-main\FireOPALvalidation\fireopal_ucf_data')
-
-% To use Ryan's alpha functions:
-addpath('C:\Users\pu410292\CloudStation\SynologyDrive\Drive\LM_MATLABscripts\ryan_alpha')
-
 % For random number reproducibility:
 rng('default')  
 
@@ -358,8 +341,8 @@ end
 % create_video_from_images(length(tspan), fig4_str)
 
 % Interpolate the PDF using the RBF coefficients:
-figure_save = 0;
-create_video = 0;
+figure_save = 1;
+create_video = 1;
 [finalPdf, integ_1d, cumInteg] = interpolate_PDF_with_pred_coeff_v1(integ_output,...
     norm_factor_quarter, double_norm_coeff_quarter, tspan, inter_grid_res,...
     initial_pdf, figure_save, create_video);
