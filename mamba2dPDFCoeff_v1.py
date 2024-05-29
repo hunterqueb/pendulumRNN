@@ -12,6 +12,7 @@ from qutils.ml import getDevice,printModelParmSize
 from qutils.mlExtras import findDecAcc,generateTrajectoryPrediction
 from qutils.orbital import nonDim2Dim4
 from qutils.mamba import Mamba,MambaConfig
+from qutils.tictoc import timer
 
 from nets import create_dataset
 
@@ -79,6 +80,8 @@ for set in learningSet:
     optimizer = torch.optim.Adam(model.parameters(),lr=lr)
     criterion = F.smooth_l1_loss
 
+    trainTime = timer()
+
     for epoch in range(n_epochs):
 
         # trajPredition = plotPredition(epoch,model,'target',t=t*TU,output_seq=pertNR)
@@ -102,6 +105,8 @@ for set in learningSet:
             decAcc, err2 = findDecAcc(test_out,y_pred_test,printOut=False)
             err = np.concatenate((err1,err2),axis=0)
 
+    trainTime.toc()
+    
     model.eval()
 
     # testTime = timer()
