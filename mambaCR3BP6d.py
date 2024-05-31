@@ -55,9 +55,9 @@ orbitFamily = 'halo'
 
 CR3BPIC = returnCR3BPIC(orbitFamily,L=1,id=894,stable=True)
 
-orbitFamily = 'butterfly'
+orbitFamily = 'longPeriod'
 
-CR3BPIC = returnCR3BPIC(orbitFamily,id=1080,stable=True)
+CR3BPIC = returnCR3BPIC(orbitFamily,L=4,id=751,stable=True)
 
 x_0,tEnd = CR3BPIC()
 
@@ -94,7 +94,7 @@ def system(t, Y,mu=mu):
 
 device = getDevice()
 
-numPeriods = 5
+numPeriods = 1
 
 t0 = 0; tf = numPeriods * tEnd
 
@@ -126,6 +126,7 @@ p_motion_knowledge = 1/numPeriods
 
 
 train_size = int(len(output_seq) * p_motion_knowledge)
+train_size = 2
 test_size = len(output_seq) - train_size
 
 train, test = output_seq[:train_size], output_seq[train_size:]
@@ -138,11 +139,11 @@ loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, 
 # initilizing the model, criterion, and optimizer for the data
 config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=16)
 
-def returnModel(modelString = 'mamba'):
+def returnModel(modelString = 'lstm'):
     if modelString == 'mamba':
         model = Mamba(config).to(device).double()
     elif modelString == 'lstm':
-        model = LSTMSelfAttentionNetwork(input_size,50,output_size,num_layers,0).double().to(device)
+        model = LSTMSelfAttentionNetwork(input_size,30,output_size,num_layers,0).double().to(device)
     return model
 
 model = returnModel()
@@ -271,10 +272,10 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         return trajPredition
 
 networkPrediction = plotPredition(epoch+1,model,output_seq)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1,plane='xz')
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1,plane='yz')
-plot3dCR3BPPredictions(output_seq,networkPrediction,L=1)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=4)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=4,plane='xz')
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=4,plane='yz')
+plot3dCR3BPPredictions(output_seq,networkPrediction,L=4)
 
 
 DU = 384400
