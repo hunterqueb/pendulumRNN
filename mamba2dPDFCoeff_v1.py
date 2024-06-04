@@ -20,6 +20,9 @@ device = getDevice()
 
 fileLocation = 'matlab/DDDAS-2d/'
 fileName = 'duff2D_conserv_pdfCoeff_mamba'
+fileName = 'linOsc_conserv_pdfCoeff_mamba'
+fileName = 'duff2D_doubleUncer_pdfCoeff_mamba'
+fileName = 'duff2D_2xUncer_0_0005_pdfCoeff_mamba'
 fileExtension = '.mat'
 
 pdf_approx_coeff = loadmat(fileLocation+fileName+fileExtension)
@@ -44,7 +47,7 @@ for set in learningSet:
     problemDim = learningSeq.shape[1]
 
     # hyperparameters
-    n_epochs = 10
+    n_epochs = 20
     # lr = 0.0007
     lr = 0.01
     input_size = problemDim
@@ -73,7 +76,7 @@ for set in learningSet:
 
     # initilizing the model, criterion, and optimizer for the data
     # config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=256)
-    config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=32,expand_factor=4)
+    config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=32,expand_factor=1)
     model = Mamba(config).to(device).double()
 
 
@@ -104,6 +107,8 @@ for set in learningSet:
             decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
             decAcc, err2 = findDecAcc(test_out,y_pred_test,printOut=False)
             err = np.concatenate((err1,err2),axis=0)
+
+        print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
     trainTime.toc()
     
