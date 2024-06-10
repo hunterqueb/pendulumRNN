@@ -16,7 +16,7 @@ import torch.nn.functional as F
 import torch.utils.data as data
 import torchinfo
 
-from qutils.integrators import myRK4Py, ode45
+from qutils.integrators import myRK4Py, ode85
 from qutils.mlExtras import findDecAcc
 from qutils.plot import plotOrbitPhasePredictions,plotSolutionErrors
 from qutils.orbital import nonDim2Dim4
@@ -162,7 +162,7 @@ def twoBodyPert(t, y, p=pam):
 
     return np.array([dydt1, dydt2,dydt3,dydt4])
 
-numPeriods = 20
+numPeriods = 5
 
 n_epochs = 10
 lr = 0.001
@@ -181,7 +181,7 @@ t = np.arange(t0, tf, TIME_STEP)
 
 IC = np.concatenate((r,v))
 
-t , numericResult = ode45(sysfuncptr,[t0,tf],IC,t)
+t , numericResult = ode85(sysfuncptr,[t0,tf],IC,t)
 
 output_seq = numericResult
 
@@ -244,25 +244,25 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         fig, axes = plt.subplots(2,2)
 
         axes[0,0].plot(t,output_seq[:,0], c='b',label = 'True Motion')
-        axes[0,0].plot(t,train_plot[:,0], c='r',label = 'Training Region')
+        # axes[0,0].plot(t,train_plot[:,0], c='r',label = 'Training Region')
         axes[0,0].plot(t,test_plot[:,0], c='g',label = 'Predition')
         axes[0,0].set_xlabel('time (sec)')
         axes[0,0].set_ylabel('x (km)')
 
         axes[0,1].plot(t,output_seq[:,1], c='b',label = 'True Motion')
-        axes[0,1].plot(t,train_plot[:,1], c='r',label = 'Training Region')
+        # axes[0,1].plot(t,train_plot[:,1], c='r',label = 'Training Region')
         axes[0,1].plot(t,test_plot[:,1], c='g',label = 'Predition')
         axes[0,1].set_xlabel('time (sec)')
         axes[0,1].set_ylabel('y (km)')
 
         axes[1,0].plot(t,output_seq[:,2], c='b',label = 'True Motion')
-        axes[1,0].plot(t,train_plot[:,2], c='r',label = 'Training Region')
+        # axes[1,0].plot(t,train_plot[:,2], c='r',label = 'Training Region')
         axes[1,0].plot(t,test_plot[:,2], c='g',label = 'Predition')
         axes[1,0].set_xlabel('time (sec)')
         axes[1,0].set_ylabel('xdot (km/s)')
 
         axes[1,1].plot(t,output_seq[:,3], c='b',label = 'True Motion')
-        axes[1,1].plot(t,train_plot[:,3], c='r',label = 'Training Region')
+        # axes[1,1].plot(t,train_plot[:,3], c='r',label = 'Training Region')
         axes[1,1].plot(t,test_plot[:,3], c='g',label = 'Predition')
         axes[1,1].set_xlabel('time (sec)')
         axes[1,1].set_ylabel('ydot (km/s)')
@@ -275,7 +275,7 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
             plt.savefig('predict/predict%d.png' % epoch)
         if prediction == 'target':
             plt.savefig('predict/newPredict%d.png' % epoch)
-        plt.close()
+        # plt.close()
 
         if err is not None:
             fig, (ax1, ax2) = plt.subplots(2,1)
@@ -313,6 +313,9 @@ networkPrediction = nonDim2Dim4(networkPrediction)
 plt.figure()
 plotOrbitPhasePredictions(networkPrediction,'NN')
 plotOrbitPhasePredictions(pertNR,'Truth')
+plt.grid()
+plt.tight_layout()
+t = t / T
 plotSolutionErrors(pertNR,networkPrediction,t,problemDim)
 
 plt.show()
