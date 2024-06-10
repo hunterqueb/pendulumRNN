@@ -55,9 +55,9 @@ orbitFamily = 'halo'
 
 CR3BPIC = returnCR3BPIC(orbitFamily,L=1,id=894,stable=True)
 
-orbitFamily = 'longPeriod'
+# orbitFamily = 'longPeriod'
 
-CR3BPIC = returnCR3BPIC(orbitFamily,L=4,id=751,stable=True)
+# CR3BPIC = returnCR3BPIC(orbitFamily,L=4,id=751,stable=True)
 
 x_0,tEnd = CR3BPIC()
 
@@ -94,7 +94,7 @@ def system(t, Y,mu=mu):
 
 device = getDevice()
 
-numPeriods = 1
+numPeriods = 5
 
 t0 = 0; tf = numPeriods * tEnd
 
@@ -139,7 +139,7 @@ loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, 
 # initilizing the model, criterion, and optimizer for the data
 config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=16)
 
-def returnModel(modelString = 'lstm'):
+def returnModel(modelString = 'mamba'):
     if modelString == 'mamba':
         model = Mamba(config).to(device).double()
     elif modelString == 'lstm':
@@ -272,10 +272,10 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         return trajPredition
 
 networkPrediction = plotPredition(epoch+1,model,output_seq)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=4)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=4,plane='xz')
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=4,plane='yz')
-plot3dCR3BPPredictions(output_seq,networkPrediction,L=4)
+plotCR3BPPhasePredictions(output_seq,networkPrediction)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,plane='xz')
+plotCR3BPPhasePredictions(output_seq,networkPrediction,plane='yz')
+plot3dCR3BPPredictions(output_seq,networkPrediction)
 
 
 DU = 384400
