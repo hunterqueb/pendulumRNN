@@ -240,9 +240,8 @@ decAcc, avg = findDecimalAccuracy(yTruth, yTest)
 print("Final State Error",(yTruth-yTest)[-1],' in normalized units')
 
 
-DU = 384400
-G = 6.67430e-11
-TU = np.sqrt(DU**3 / (G*(m_1+m_2)))
+DU = 389703
+TU = 382981
 
 
 # netTime = timer()

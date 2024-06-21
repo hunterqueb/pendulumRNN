@@ -107,7 +107,7 @@ for file in fileName:
                 decAcc, err2 = findDecAcc(test_out,y_pred_test,printOut=False)
                 err = np.concatenate((err1,err2),axis=0)
 
-            print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
+            # print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
         trainTime.toc()
         

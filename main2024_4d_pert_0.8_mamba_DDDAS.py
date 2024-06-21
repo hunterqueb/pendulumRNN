@@ -58,33 +58,7 @@ vLEO = np.sqrt(muR/np.linalg.norm(rLEO))
 vLEO = np.array([0,vLEO])
 TLEO = 2*np.pi * np.sqrt(np.linalg.norm(rLEO)**3 / muR)
 
-# dimensionalized units
-mu = 1
-r = rLEO/DU
-v = vLEO * TU / DU
-T = TLEO / TU
-pam = mu
-a = np.linalg.norm(r)
-h = np.cross(r,v)
 
-def twoBodyCirc(t, y, p=pam):
-    r = y[0:2]
-    R = np.linalg.norm(r)
-
-    dydt1 = y[2]
-    dydt2 = y[3]
-
-    dydt3 = -p / R**3 * y[0]
-    dydt4 = -p / R**3 * y[1]
-
-    return np.array([dydt1, dydt2,dydt3,dydt4])
-
-
-sysfuncptr = twoBodyCirc
-# sim time
-t0, tf = 0, 5*T
-
-t = np.arange(t0, tf, TIME_STEP)
 degreesOfFreedom = problemDim
 
 criterion = F.smooth_l1_loss
@@ -117,11 +91,13 @@ a = p/(1-e**2)
 rHEO = np.array([(p/(1+e)),0])
 vHEO = np.array([0,np.sqrt(muR*((2/rHEO[0])-(1/a)))])
 THEO = 2*np.pi*np.sqrt(a**3/muR)
-
+print(THEO)
 mu = 1
 r = rHEO / DU
 v = vHEO * TU / DU
 T = THEO / TU
+print(TU)
+print(T)
 
 J2 = 1.08263e-3
 
@@ -162,7 +138,7 @@ def twoBodyPert(t, y, p=pam):
 
     return np.array([dydt1, dydt2,dydt3,dydt4])
 
-numPeriods = 5
+numPeriods = 10
 
 n_epochs = 10
 lr = 0.001
@@ -325,3 +301,7 @@ printModelParmSize(newModel)
 torchinfo.summary(newModel)
 print(numericResult[0,:])
 print(numericResult[1,:])
+errorAvg = np.nanmean(abs(networkPrediction-pertNR), axis=0)
+print("Average values of each dimension:")
+for i, avg in enumerate(errorAvg, 1):
+    print(f"Dimension {i}: {avg}")

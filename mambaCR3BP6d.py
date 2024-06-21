@@ -278,9 +278,14 @@ plotCR3BPPhasePredictions(output_seq,networkPrediction,plane='yz')
 plot3dCR3BPPredictions(output_seq,networkPrediction,L=1,earth=False)
 
 
-DU = 384400
+DU = 389703
 G = 6.67430e-11
-TU = np.sqrt(DU**3 / (G*(m_1+m_2)))
+# TU = np.sqrt(DU**3 / (G*(m_1+m_2)))
+TU = 382981
+print(DU)
+print(TU)
+print(tf)
+print(TU*tf)
 
 networkPrediction = nonDim2Dim6(networkPrediction,DU,TU)
 output_seq = nonDim2Dim6(output_seq,DU,TU)
