@@ -11,6 +11,7 @@ from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC
 from qutils.mamba import Mamba, MambaConfig
 from qutils.ml import printModelParmSize, getDevice
+from nets import Adam_mini
 
 # from memory_profiler import profile
 
@@ -126,7 +127,7 @@ p_motion_knowledge = 1/numPeriods
 
 
 train_size = int(len(output_seq) * p_motion_knowledge)
-train_size = 2
+# train_size = 2
 test_size = len(output_seq) - train_size
 
 train, test = output_seq[:train_size], output_seq[train_size:]
@@ -149,6 +150,8 @@ def returnModel(modelString = 'mamba'):
 model = returnModel()
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
+optimizer = Adam_mini(model,lr=lr)
+
 criterion = F.smooth_l1_loss
 criterion = torch.nn.HuberLoss()
 
@@ -199,37 +202,37 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         fig, axes = plt.subplots(2,3)
 
         axes[0,0].plot(t,output_seq[:,0], c='b',label = 'True Motion')
-        # axes[0,0].plot(t,train_plot[:,0], c='r',label = 'Training Region')
+        axes[0,0].plot(t,train_plot[:,0], c='r',label = 'Training Region')
         axes[0,0].plot(t,test_plot[:,0], c='g',label = 'Predition')
         axes[0,0].set_xlabel('time (sec)')
         axes[0,0].set_ylabel('x (km)')
 
         axes[0,1].plot(t,output_seq[:,1], c='b',label = 'True Motion')
-        # axes[0,1].plot(t,train_plot[:,1], c='r',label = 'Training Region')
+        axes[0,1].plot(t,train_plot[:,1], c='r',label = 'Training Region')
         axes[0,1].plot(t,test_plot[:,1], c='g',label = 'Predition')
         axes[0,1].set_xlabel('time (sec)')
         axes[0,1].set_ylabel('y (km)')
 
         axes[0,2].plot(t,output_seq[:,2], c='b',label = 'True Motion')
-        # axes[0,2].plot(t,train_plot[:,2], c='r',label = 'Training Region')
+        axes[0,2].plot(t,train_plot[:,2], c='r',label = 'Training Region')
         axes[0,2].plot(t,test_plot[:,2], c='g',label = 'Predition')
         axes[0,2].set_xlabel('time (sec)')
         axes[0,2].set_ylabel('z (km)')
 
         axes[1,0].plot(t,output_seq[:,0], c='b',label = 'True Motion')
-        # axes[1,0].plot(t,train_plot[:,0], c='r',label = 'Training Region')
+        axes[1,0].plot(t,train_plot[:,0], c='r',label = 'Training Region')
         axes[1,0].plot(t,test_plot[:,0], c='g',label = 'Predition')
         axes[1,0].set_xlabel('time (sec)')
         axes[1,0].set_ylabel('xdot (km/s)')
 
         axes[1,1].plot(t,output_seq[:,1], c='b',label = 'True Motion')
-        # axes[1,1].plot(t,train_plot[:,1], c='r',label = 'Training Region')
+        axes[1,1].plot(t,train_plot[:,1], c='r',label = 'Training Region')
         axes[1,1].plot(t,test_plot[:,1], c='g',label = 'Predition')
         axes[1,1].set_xlabel('time (sec)')
         axes[1,1].set_ylabel('ydot (km/s)')
 
         axes[1,2].plot(t,output_seq[:,2], c='b',label = 'True Motion')
-        # axes[1,2].plot(t,train_plot[:,2], c='r',label = 'Training Region')
+        axes[1,2].plot(t,train_plot[:,2], c='r',label = 'Training Region')
         axes[1,2].plot(t,test_plot[:,2], c='g',label = 'Predition')
         axes[1,2].set_xlabel('time (sec)')
         axes[1,2].set_ylabel('zdot (km/s)')
