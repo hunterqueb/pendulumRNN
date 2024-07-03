@@ -10,8 +10,9 @@ from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolu
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC
 from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import printModelParmSize, getDevice
-from nets import Adam_mini
+from qutils.ml import printModelParmSize, getDevice, Adam_mini
+from qutils.tictoc import timer
+# from nets import Adam_mini
 
 # from memory_profiler import profile
 
@@ -127,7 +128,7 @@ p_motion_knowledge = 1/numPeriods
 
 
 train_size = int(len(output_seq) * p_motion_knowledge)
-# train_size = 2
+train_size = 2
 test_size = len(output_seq) - train_size
 
 train, test = output_seq[:train_size], output_seq[train_size:]
@@ -149,12 +150,13 @@ def returnModel(modelString = 'mamba'):
 
 model = returnModel()
 
-optimizer = torch.optim.Adam(model.parameters(),lr=lr)
+optimizer = torch.optim.AdamW(model.parameters(),lr=lr)
 optimizer = Adam_mini(model,lr=lr)
 
 criterion = F.smooth_l1_loss
 criterion = torch.nn.HuberLoss()
 
+trainTime = timer()
 for epoch in range(n_epochs):
 
     # trajPredition = plotPredition(epoch,model,'target',t=t*TU,output_seq=pertNR)
@@ -180,6 +182,7 @@ for epoch in range(n_epochs):
 
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
+trainTime.toc()
 
 
 

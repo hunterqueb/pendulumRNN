@@ -120,7 +120,7 @@ def twoBodyPert(t, y, p=pam):
     dydt1 = y[2]
     dydt2 = y[3]
 
-    factor = 1.5 * J2 * (1 / R)**2 / R**3
+    factor =  (- mu) * 1.5 * J2 * (1 / R)**2 / R**3
     j2_accel_x = factor * (1) * r[0]
     j2_accel_y = factor * (3) * r[1]
 
