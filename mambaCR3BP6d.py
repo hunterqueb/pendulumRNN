@@ -128,7 +128,7 @@ p_motion_knowledge = 1/numPeriods
 
 
 train_size = int(len(output_seq) * p_motion_knowledge)
-train_size = 2
+# train_size = 2
 test_size = len(output_seq) - train_size
 
 train, test = output_seq[:train_size], output_seq[train_size:]
@@ -151,7 +151,7 @@ def returnModel(modelString = 'mamba'):
 model = returnModel()
 
 optimizer = torch.optim.AdamW(model.parameters(),lr=lr)
-optimizer = Adam_mini(model,lr=lr)
+# optimizer = Adam_mini(model,lr=lr)
 
 criterion = F.smooth_l1_loss
 criterion = torch.nn.HuberLoss()

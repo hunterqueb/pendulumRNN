@@ -15,6 +15,7 @@ import random
 import torch.nn.functional as F
 import torch.utils.data as data
 
+from qutils.ml import Adam_mini
 from qutils.integrators import myRK4Py, ode45
 from qutils.mlExtras import findDecAcc
 from qutils.plot import plotOrbitPhasePredictions
@@ -321,7 +322,7 @@ def twoBodyPert(t, y, p=pam):
 
     return np.array([dydt1, dydt2,dydt3,dydt4])
 
-numPeriods = 20
+numPeriods = 100
 
 n_epochs = 50
 lr = 0.001
@@ -342,7 +343,7 @@ IC = np.concatenate((r,v))
 
 
 odeSol = timer()
-tSol , numericResultDefault = ode45(sysfuncptr,[t0,tf],IC,t,rtol = 1e-8,atol = 1e-8)
+tSol , numericResultDefault = ode45(sysfuncptr,[t0,tf],IC,t,rtol = 1e-12,atol = 1e-12)
 odeSol.toc()
 t , numericResultHigh = ode45(sysfuncptr,[t0,tf],IC,t,rtol = 1e-15,atol = 1e-15)
 
