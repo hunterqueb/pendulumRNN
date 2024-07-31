@@ -51,7 +51,7 @@ initialConditions = np.array([theta1_0,thetadot1_0],dtype=np.float64)
 # initialConditions = np.radians(np.random.uniform(-180, 180, (problemDim,)))
 
 tStart = 0
-tEnd = 200
+tEnd = 20
 tSpan = np.array([tStart,tEnd])
 dt = 0.01
 tSpanExplicit = np.linspace(tStart,tEnd,int(tEnd / dt))
@@ -105,6 +105,7 @@ for epoch in range(n_epochs):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        print(model.layers[0].mixer.A_SSM)
     # Validation
     model.eval()
     with torch.no_grad():
@@ -202,7 +203,7 @@ printModelParmSize(model)
 
 print(model.layers[0].mixer.A_SSM.shape)
 print(model.layers[0].mixer.A_SSM)
-print(pendulumLinearODE(0,initialConditions))
+# print(pendulumLinearODE(0,initialConditions))
 print(model.layers[0].mixer.B_SSM.shape)
 print(model.layers[0].mixer.C_SSM.shape)
 
