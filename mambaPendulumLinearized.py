@@ -6,12 +6,15 @@ import torch.utils.data as data
 
 from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
-from qutils.ml import printModelParmSize, getDevice, Adam_mini
+from qutils.ml import printModelParmSize, printModelParameters, getDevice, Adam_mini
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim4
 
 from nets import create_dataset, LSTMSelfAttentionNetwork, LSTM, TransformerModel
 from qutils.mamba import Mamba, MambaConfig
+
+torch.use_deterministic_algorithms(True)
+torch.backends.cudnn.deterministic = True
 
 plotOn = True
 
@@ -199,13 +202,14 @@ unitLabels = ['deg','deg/s','deg','deg/s']
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg} {unitLabels[i-1]}")
 
-printModelParmSize(model)
+# printModelParmSize(model)
+# printModelParameters(model)
 
-print(model.layers[0].mixer.A_SSM.shape)
-print(model.layers[0].mixer.A_SSM)
-# print(pendulumLinearODE(0,initialConditions))
-print(model.layers[0].mixer.B_SSM.shape)
-print(model.layers[0].mixer.C_SSM.shape)
+# print(model.layers[0].mixer.A_SSM.shape)
+# print(model.layers[0].mixer.A_SSM)
+# # print(pendulumLinearODE(0,initialConditions))
+# print(model.layers[0].mixer.B_SSM.shape)
+# print(model.layers[0].mixer.C_SSM.shape)
 
 if plotOn is True:
     plt.figure()

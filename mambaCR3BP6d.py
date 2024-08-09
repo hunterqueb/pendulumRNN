@@ -112,7 +112,7 @@ t = t / tEnd
 output_seq = numericResult
 
 # hyperparameters
-n_epochs = 50
+n_epochs = 5
 # lr = 5*(10**-5)
 # lr = 0.85
 lr = 0.8
@@ -281,9 +281,6 @@ networkPrediction = plotPredition(epoch+1,model,output_seq)
 plotCR3BPPhasePredictions(output_seq,networkPrediction)
 plotCR3BPPhasePredictions(output_seq,networkPrediction,plane='xz')
 plotCR3BPPhasePredictions(output_seq,networkPrediction,plane='yz')
-plot3dCR3BPPredictions(output_seq,networkPrediction,L=1,earth=False)
-
-
 DU = 389703
 G = 6.67430e-11
 # TU = np.sqrt(DU**3 / (G*(m_1+m_2)))
@@ -295,6 +292,13 @@ print(TU*tf)
 
 networkPrediction = nonDim2Dim6(networkPrediction,DU,TU)
 output_seq = nonDim2Dim6(output_seq,DU,TU)
+
+plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
+
+
+
+# networkPrediction = nonDim2Dim6(networkPrediction,DU,TU)
+# output_seq = nonDim2Dim6(output_seq,DU,TU)
 
 # plotOrbitPredictions(output_seq,networkPrediction,t=t)
 plotSolutionErrors(output_seq,networkPrediction,t,problemDim)
