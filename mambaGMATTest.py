@@ -25,7 +25,7 @@ problemDim = 6
 
 device = getDevice()
 
-gmatImport = readGMATReport("gmat/data/report5050Prop.txt")
+gmatImport = readGMATReport("gmat/data/reportHEO360Prop.txt")
 # gmat propagation uses 50/70 50/70 JGM-2 with MSISE90 spherical drag model w/ SRP
 
 t = gmatImport[:,-1]
@@ -50,7 +50,7 @@ input_size = problemDim
 output_size = problemDim
 num_layers = 1
 lookback = 1
-p_motion_knowledge = 0.5
+p_motion_knowledge = 0.1
 
 
 train_size = int(len(output_seq) * p_motion_knowledge)
@@ -204,13 +204,13 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         return trajPredition
 
 networkPrediction = plotPredition(epoch+1,model,output_seq)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=0)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,plane='xz',L=0)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,plane='yz',L=0)
-
-
 networkPrediction = nonDim2Dim6(networkPrediction,DU,TU)
 output_seq = nonDim2Dim6(output_seq,DU,TU)
+
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=0,moon=False)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,plane='xz',L=0,moon=False)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,plane='yz',L=0,moon=False)
+
 
 plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
 
