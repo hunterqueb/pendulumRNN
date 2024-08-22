@@ -25,8 +25,8 @@ problemDim = 6
 
 device = getDevice()
 
-gmatImport = readGMATReport("gmat/data/reportHEO360Prop.txt")
-# gmat propagation uses 50/70 50/70 JGM-2 with MSISE90 spherical drag model w/ SRP
+gmatImport = readGMATReport("gmat/data/reportKeplarianHEO360.txt")
+# gmat propagation uses 360/360 360/360 EGM with MSISE90 spherical drag model w/ SRP
 
 t = gmatImport[:,-1]
 
@@ -35,8 +35,6 @@ output_seq = gmatImport[:,0:problemDim]
 muR = 396800
 DU = 6378.1 # radius of earth in km
 TU = ((DU)**3 / muR)**0.5
-
-output_seq = dim2NonDim6(output_seq,DU,TU)
 
 # hyperparameters
 n_epochs = 50
@@ -204,8 +202,18 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         return trajPredition
 
 networkPrediction = plotPredition(epoch+1,model,output_seq)
-networkPrediction = nonDim2Dim6(networkPrediction,DU,TU)
-output_seq = nonDim2Dim6(output_seq,DU,TU)
+# convert network prediction and output sequence to cartesian
+networkPrediction[:,2:] = np.deg2rad(networkPrediction[:,2:])
+output_seq[:,2:] = np.deg2rad(output_seq[:,2:])
+
+from qutils.orbital import OE2ECI
+
+for i in range(len(networkPrediction)):
+    networkPrediction[i,:] = OE2ECI(networkPrediction[i,:])
+    output_seq[i,:] = OE2ECI(output_seq[i,:])
+
+# networkPrediction = nonDim2Dim6(networkPrediction,DU,TU)
+# output_seq = nonDim2Dim6(output_seq,DU,TU)
 
 plotOrbitPhasePredictions(output_seq,networkPrediction)
 plotOrbitPhasePredictions(output_seq,networkPrediction,plane='xz')
@@ -220,7 +228,7 @@ plot3dOrbitPredictions(output_seq,networkPrediction)
 # output_seq = nonDim2Dim6(output_seq,DU,TU)
 
 # plotOrbitPredictions(output_seq,networkPrediction,t=t)
-plotSolutionErrors(output_seq,networkPrediction,t)
+plotSolutionErrors(output_seq,networkPrediction,t,units=('km',' ','deg','deg','deg','deg'),states=('a','e','i','Omega','omega','f'))
 # plotDecAccs(decAcc,t,problemDim)
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average values of each dimension:")

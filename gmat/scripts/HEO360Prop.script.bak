@@ -56,6 +56,7 @@ GMAT Sat1.EulerAngleSequence = '321';
 
 
 
+
 %----------------------------------------
 %---------- ForceModels
 %----------------------------------------
@@ -106,9 +107,9 @@ GMAT EarthProp.StopIfAccuracyIsViolated = true;
 
 Create OrbitView DefaultOrbitView;
 GMAT DefaultOrbitView.SolverIterations = Current;
-GMAT DefaultOrbitView.UpperLeft = [ -0.001764705882352941 0 ];
+GMAT DefaultOrbitView.UpperLeft = [ -0.001176470588235294 0 ];
 GMAT DefaultOrbitView.Size = [ 0.41 0.6286057692307693 ];
-GMAT DefaultOrbitView.RelativeZOrder = 153;
+GMAT DefaultOrbitView.RelativeZOrder = 24;
 GMAT DefaultOrbitView.Maximized = false;
 GMAT DefaultOrbitView.Add = {Sat1, Earth};
 GMAT DefaultOrbitView.CoordinateSystem = EarthMJ2000Eq;
@@ -138,9 +139,9 @@ GMAT DefaultOrbitView.EnableConstellations = On;
 
 Create GroundTrackPlot DefaultGroundTrackPlot;
 GMAT DefaultGroundTrackPlot.SolverIterations = Current;
-GMAT DefaultGroundTrackPlot.UpperLeft = [ 0.4505882352941176 0.03485576923076923 ];
+GMAT DefaultGroundTrackPlot.UpperLeft = [ 0.45 0.03365384615384615 ];
 GMAT DefaultGroundTrackPlot.Size = [ 0.5141176470588236 0.4699519230769231 ];
-GMAT DefaultGroundTrackPlot.RelativeZOrder = 9;
+GMAT DefaultGroundTrackPlot.RelativeZOrder = 11;
 GMAT DefaultGroundTrackPlot.Maximized = false;
 GMAT DefaultGroundTrackPlot.Add = {Sat1};
 GMAT DefaultGroundTrackPlot.DataCollectFrequency = 1;
@@ -157,7 +158,7 @@ GMAT report5050.UpperLeft = [ 0.0611764705882353 0.1238095238095238 ];
 GMAT report5050.Size = [ 0.5994117647058823 0.7988095238095239 ];
 GMAT report5050.RelativeZOrder = 102;
 GMAT report5050.Maximized = false;
-GMAT report5050.Filename = 'C:\Users\hu650776\Desktop\GMAT\output\report5050Prop.txt';
+GMAT report5050.Filename = 'E:\gmat-win-R2022a\GMAT\output\report5050Prop.txt';
 GMAT report5050.Precision = 16;
 GMAT report5050.Add = {Sat1.A1ModJulian, Sat1.EarthMJ2000Eq.X, Sat1.EarthMJ2000Eq.Y, Sat1.EarthMJ2000Eq.Z, Sat1.EarthMJ2000Eq.VX, Sat1.EarthMJ2000Eq.VY, Sat1.EarthMJ2000Eq.VZ, Sat1.ElapsedSecs};
 GMAT report5050.WriteHeaders = true;
@@ -172,6 +173,7 @@ GMAT report5050.WriteReport = true;
 %---------- Arrays, Variables, Strings
 %----------------------------------------
 Create Variable I;
+
 
 
 

@@ -57,6 +57,7 @@ GMAT Sat1.EulerAngleSequence = '321';
 
 
 
+
 %----------------------------------------
 %---------- ForceModels
 %----------------------------------------
@@ -107,9 +108,9 @@ GMAT EarthProp.StopIfAccuracyIsViolated = true;
 
 Create OrbitView DefaultOrbitView;
 GMAT DefaultOrbitView.SolverIterations = Current;
-GMAT DefaultOrbitView.UpperLeft = [ -0.001176470588235294 0 ];
-GMAT DefaultOrbitView.Size = [ 0.41 0.6286057692307693 ];
-GMAT DefaultOrbitView.RelativeZOrder = 24;
+GMAT DefaultOrbitView.UpperLeft = [ 0.03058823529411765 0 ];
+GMAT DefaultOrbitView.Size = [ 0.4794117647058824 0.6285714285714286 ];
+GMAT DefaultOrbitView.RelativeZOrder = 82;
 GMAT DefaultOrbitView.Maximized = false;
 GMAT DefaultOrbitView.Add = {Sat1, Earth};
 GMAT DefaultOrbitView.CoordinateSystem = EarthMJ2000Eq;
@@ -123,7 +124,7 @@ GMAT DefaultOrbitView.ShowLabels = true;
 GMAT DefaultOrbitView.ViewPointReference = Earth;
 GMAT DefaultOrbitView.ViewPointVector = [ 30000 0 0 ];
 GMAT DefaultOrbitView.ViewDirection = Earth;
-GMAT DefaultOrbitView.ViewScaleFactor = 1;
+GMAT DefaultOrbitView.ViewScaleFactor = 1.5;
 GMAT DefaultOrbitView.ViewUpCoordinateSystem = EarthMJ2000Eq;
 GMAT DefaultOrbitView.ViewUpAxis = Z;
 GMAT DefaultOrbitView.EclipticPlane = Off;
@@ -139,9 +140,9 @@ GMAT DefaultOrbitView.EnableConstellations = On;
 
 Create GroundTrackPlot DefaultGroundTrackPlot;
 GMAT DefaultGroundTrackPlot.SolverIterations = Current;
-GMAT DefaultGroundTrackPlot.UpperLeft = [ 0.45 0.03365384615384615 ];
-GMAT DefaultGroundTrackPlot.Size = [ 0.5141176470588236 0.4699519230769231 ];
-GMAT DefaultGroundTrackPlot.RelativeZOrder = 11;
+GMAT DefaultGroundTrackPlot.UpperLeft = [ 0.4494117647058823 0.03333333333333333 ];
+GMAT DefaultGroundTrackPlot.Size = [ 0.5141176470588236 0.4702380952380952 ];
+GMAT DefaultGroundTrackPlot.RelativeZOrder = 8;
 GMAT DefaultGroundTrackPlot.Maximized = false;
 GMAT DefaultGroundTrackPlot.Add = {Sat1};
 GMAT DefaultGroundTrackPlot.DataCollectFrequency = 1;
@@ -158,7 +159,7 @@ GMAT report5050.UpperLeft = [ 0.0611764705882353 0.1238095238095238 ];
 GMAT report5050.Size = [ 0.5994117647058823 0.7988095238095239 ];
 GMAT report5050.RelativeZOrder = 102;
 GMAT report5050.Maximized = false;
-GMAT report5050.Filename = 'C:\Users\hu650776\Desktop\GMAT\output\report5050Prop.txt';
+GMAT report5050.Filename = 'E:\gmat-win-R2022a\GMAT\output\report5050Prop.txt';
 GMAT report5050.Precision = 16;
 GMAT report5050.Add = {Sat1.A1ModJulian, Sat1.EarthMJ2000Eq.X, Sat1.EarthMJ2000Eq.Y, Sat1.EarthMJ2000Eq.Z, Sat1.EarthMJ2000Eq.VX, Sat1.EarthMJ2000Eq.VY, Sat1.EarthMJ2000Eq.VZ, Sat1.ElapsedSecs};
 GMAT report5050.WriteHeaders = true;
@@ -169,10 +170,28 @@ GMAT report5050.Delimiter = ' ';
 GMAT report5050.ColumnWidth = 23;
 GMAT report5050.WriteReport = true;
 
+Create ReportFile report5051;
+GMAT report5051.SolverIterations = Current;
+GMAT report5051.UpperLeft = [ 0.0611764705882353 0.1238095238095238 ];
+GMAT report5051.Size = [ 0.5994117647058823 0.7988095238095239 ];
+GMAT report5051.RelativeZOrder = 102;
+GMAT report5051.Maximized = false;
+GMAT report5051.Filename = 'E:\gmat-win-R2022a\GMAT\output\reportKeplarian.txt';
+GMAT report5051.Precision = 16;
+GMAT report5051.Add = {Sat1.A1ModJulian, Sat1.Earth.SMA, Sat1.Earth.ECC, Sat1.EarthMJ2000Eq.INC, Sat1.EarthMJ2000Eq.RAAN, Sat1.EarthMJ2000Eq.AOP, Sat1.Earth.TA, Sat1.ElapsedSecs};
+GMAT report5051.WriteHeaders = true;
+GMAT report5051.LeftJustify = On;
+GMAT report5051.ZeroFill = Off;
+GMAT report5051.FixedWidth = true;
+GMAT report5051.Delimiter = ' ';
+GMAT report5051.ColumnWidth = 23;
+GMAT report5051.WriteReport = true;
+
 %----------------------------------------
 %---------- Arrays, Variables, Strings
 %----------------------------------------
 Create Variable I;
+
 
 
 
