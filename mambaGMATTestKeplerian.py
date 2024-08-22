@@ -25,7 +25,7 @@ problemDim = 6
 
 device = getDevice()
 
-gmatImport = readGMATReport("gmat/data/reportKeplarianHEO360.txt")
+gmatImport = readGMATReport("gmat/data/reportKeplerianHEO360.txt")
 # gmat propagation uses 360/360 360/360 EGM with MSISE90 spherical drag model w/ SRP
 
 t = gmatImport[:,-1]
@@ -205,6 +205,7 @@ networkPrediction = plotPredition(epoch+1,model,output_seq)
 # convert network prediction and output sequence to cartesian
 networkPrediction[:,2:] = np.deg2rad(networkPrediction[:,2:])
 output_seq[:,2:] = np.deg2rad(output_seq[:,2:])
+plotSolutionErrors(output_seq,networkPrediction,t,units=('km',' ','deg','deg','deg','deg'),states=('a','e','i','Omega','omega','f'))
 
 from qutils.orbital import OE2ECI
 
@@ -228,7 +229,7 @@ plot3dOrbitPredictions(output_seq,networkPrediction)
 # output_seq = nonDim2Dim6(output_seq,DU,TU)
 
 # plotOrbitPredictions(output_seq,networkPrediction,t=t)
-plotSolutionErrors(output_seq,networkPrediction,t,units=('km',' ','deg','deg','deg','deg'),states=('a','e','i','Omega','omega','f'))
+plotSolutionErrors(output_seq,networkPrediction,t)
 # plotDecAccs(decAcc,t,problemDim)
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average values of each dimension:")
