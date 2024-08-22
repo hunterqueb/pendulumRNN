@@ -261,7 +261,7 @@ output_seq = nonDim2Dim4(output_seq,DU,TU)
 t = t / tEnd
 
 plotOrbitPredictions(output_seq,networkPrediction,t=t)
-plotSolutionErrors(output_seq,networkPrediction,t,problemDim)
+plotSolutionErrors(output_seq,networkPrediction,t)
 # plotDecAccs(decAcc,t,problemDim)
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average values of each dimension:")
@@ -416,7 +416,7 @@ networkPrediction = nonDim2Dim4(networkPrediction,DU,TU)
 output_seq = nonDim2Dim4(output_seq,DU,TU)
 t = t / tEnd
 plotOrbitPredictions(output_seq,networkPrediction,t=t)
-plotSolutionErrors(output_seq,networkPrediction,t,problemDim)
+plotSolutionErrors(output_seq,networkPrediction,t)
 # plotDecAccs(decAcc,t,problemDim)
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average error of each dimension:")

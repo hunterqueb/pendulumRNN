@@ -292,7 +292,7 @@ plotOrbitPhasePredictions(pertNR,'Truth')
 plt.grid()
 plt.tight_layout()
 t = t / T
-plotSolutionErrors(pertNR,networkPrediction,t,problemDim)
+plotSolutionErrors(pertNR,networkPrediction,t)
 
 plt.show()
 

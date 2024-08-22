@@ -301,7 +301,7 @@ plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=Fals
 # output_seq = nonDim2Dim6(output_seq,DU,TU)
 
 # plotOrbitPredictions(output_seq,networkPrediction,t=t)
-plotSolutionErrors(output_seq,networkPrediction,t,problemDim)
+plotSolutionErrors(output_seq,networkPrediction,t)
 # plotDecAccs(decAcc,t,problemDim)
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average values of each dimension:")

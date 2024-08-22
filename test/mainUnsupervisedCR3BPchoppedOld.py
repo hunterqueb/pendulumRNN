@@ -324,7 +324,7 @@ print('Time to evaluate {} ODES with RK45: {}'.format(nTest,finalOde))
 
 plotCR3BPPhasePredictions(yTruth,yTest)
 plotOrbitPredictions(yTruth,yTest,t=t)
-plotSolutionErrors(yTruth,yTest,t,problemDim)
+plotSolutionErrors(yTruth,yTest,t)
 plotEnergy(yTruth,yTest,t,jacobiConstant,yLabel='Jacobi Constant')
 
 if(not plotOff):

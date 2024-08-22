@@ -265,7 +265,7 @@ plot3dCR3BPPredictions(yTruth,yTest,L=1)
 yTruth = nonDim2Dim6(yTruth,DU,TU)
 yTest = nonDim2Dim6(yTest,DU,TU)
 
-plotSolutionErrors(yTruth,yTest,t,problemDim)
+plotSolutionErrors(yTruth,yTest,t)
 
 errorAvg = np.nanmean(abs(yTest-yTruth), axis=0)
 print("Average values of each dimension:")

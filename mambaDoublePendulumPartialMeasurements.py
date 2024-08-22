@@ -220,7 +220,7 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
 
 networkPrediction = plotPredition(epoch+1,model,output_seq)
 
-plotSolutionErrors(output_seq,networkPrediction,t,problemDim)
+plotSolutionErrors(output_seq,networkPrediction,t)
 # plotDecAccs(decAcc,t,problemDim)
 errorAvg = np.nanmean(abs(networkPrediction-output_seq) * 90 / np.pi, axis=0)
 print("Average error of each dimension:")
