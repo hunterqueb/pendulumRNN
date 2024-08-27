@@ -6,7 +6,7 @@ import torch.utils.data as data
 import torchinfo
 
 from qutils.integrators import ode85
-from qutils.plot import plot3dOrbitPredictions,plotOrbitPhasePredictions, plotSolutionErrors
+from qutils.plot import plot3dOrbitPredictions,plotOrbitPhasePredictions, plotSolutionErrors, plotStatePredictions
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC, readGMATReport, dim2NonDim6
 from qutils.mamba import Mamba, MambaConfig
@@ -202,6 +202,8 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         return trajPredition
 
 networkPrediction = plotPredition(epoch+1,model,output_seq)
+trajPredition = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,lookback = lookback,states = ('a','e','i','Omega','omega','f'),units=('km',' ','deg','deg','deg','deg'))
+
 # convert network prediction and output sequence to cartesian
 networkPrediction[:,2:] = np.deg2rad(networkPrediction[:,2:])
 output_seq[:,2:] = np.deg2rad(output_seq[:,2:])

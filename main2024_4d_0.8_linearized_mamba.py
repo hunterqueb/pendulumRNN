@@ -17,8 +17,8 @@ import torch.utils.data as data
 
 from qutils.integrators import myRK4Py, ode45
 from qutils.ml import Adam_mini,printModelParameters
-from qutils.mlExtras import findDecAcc
-from qutils.plot import plotOrbitPhasePredictions
+from qutils.mlExtras import findDecAcc, generateTrajectoryPrediction
+from qutils.plot import plotOrbitPhasePredictions, plotStatePredictions
 from qutils.orbital import nonDim2Dim4
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM,LSTMSelfAttentionNetwork2
@@ -197,7 +197,6 @@ def twoBodyLinearized(t, y, p=pam):
 
     return np.array([dydt1, dydt2,dydt3,dydt4])
 
-numPeriods = 20
 
 n_epochs = 5
 lr = 0.001
@@ -206,12 +205,12 @@ output_size = problemDim
 num_layers = 1
 p_dropout = 0.0
 lookback = 1
-p_motion_knowledge = 1/numPeriods
+p_motion_knowledge = 1/2
 
 sysfuncptr = twoBodyLinearized
 # sim time
 
-t0, tf = 0, 0.01 * T
+t0, tf = 0, .01 * T
 
 t_range = np.arange(t0, tf, TIME_STEP)
 
@@ -241,9 +240,6 @@ test_in,test_out = create_dataset(test,device,lookback=lookback)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
-
-optimizer = torch.optim.Adam(newModel.parameters(),lr=lr)
-
 for epoch in range(n_epochs):
 
     trajPredition = plotPredition(epoch,newModel,'target',t=t*TU,output_seq=pertNR)
@@ -269,10 +265,12 @@ for epoch in range(n_epochs):
 
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
+trajPredition = plotStatePredictions(newModel,t,numericResult_sol,train_in,test_in,train_size,lookback = lookback)
 
 pertNR = nonDim2Dim4(pertNR)
 output_seq = nonDim2Dim4(output_seq)
 numericResult_sol = nonDim2Dim4(numericResult_sol)
+trajPredition = nonDim2Dim4(trajPredition)
 
 printModelParameters(newModel)
 
@@ -285,7 +283,7 @@ print(newModel.layers[0].mixer.B_SSM.shape)
 
 print('rank of (A - eig*I) = %i with n = %i' % (np.linalg.matrix_rank(np.concatenate((A_mamba - (np.eye(problemDim) * eigVals), B_mamba), axis=0)),problemDim))
 
-plotOrbitPhasePredictions(output_seq,pertNR)
+plotOrbitPhasePredictions(output_seq,trajPredition,earth=None)
 plt.plot(numericResult_sol[:, 0], numericResult_sol[:, 1], label='Nonlinear Solution')
 plt.legend()
 

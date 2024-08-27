@@ -6,7 +6,7 @@ import torch.utils.data as data
 import torchinfo
 
 from qutils.integrators import ode85
-from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions
+from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions,plotStatePredictions
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC
 from qutils.mamba import Mamba, MambaConfig
@@ -294,6 +294,7 @@ networkPrediction = nonDim2Dim6(networkPrediction,DU,TU)
 output_seq = nonDim2Dim6(output_seq,DU,TU)
 
 plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
+trajPredition = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,lookback = lookback,DU=DU,TU=TU)
 
 
 
