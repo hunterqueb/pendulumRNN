@@ -14,11 +14,12 @@ import torch
 import random
 import torch.nn.functional as F
 import torch.utils.data as data
+import scipy as sp
 
 from qutils.integrators import myRK4Py, ode45
-from qutils.ml import Adam_mini,printModelParameters
+from qutils.ml import Adam_mini,printModelParameters, getDevice
 from qutils.mlExtras import findDecAcc, generateTrajectoryPrediction
-from qutils.plot import plotOrbitPhasePredictions, plotStatePredictions
+from qutils.plot import plotOrbitPhasePredictions, plotStatePredictions, plotSolutionErrors
 from qutils.orbital import nonDim2Dim4
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM,LSTMSelfAttentionNetwork2
@@ -27,93 +28,13 @@ from qutils.mamba import Mamba, MambaConfig
 
 # seed any random functions
 random.seed(123)
+device = getDevice()
 
-# torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
-is_cuda = torch.cuda.is_available()
 
-# If we have a GPU available, we'll set our device to GPU. We'll use this device variable later in our code.
-if is_cuda:
-    device = torch.device("cuda")
-    print("GPU is available")
-else:
-    device = torch.device("cpu")
-    print("GPU not available, CPU used")
+plot = False
 
-# ------------------------------------------------------------------------
-## NUMERICAL SOLUTION
 
 problemDim = 4 
-
-def plotPredition(epoch,model,prediction='source',err=None,t=None,output_seq = None):
-        with torch.no_grad():
-            # shift train predictions for plotting
-            train_plot = np.ones_like(output_seq) * np.nan
-            y_pred = model(train_in)
-            y_pred = y_pred[:, -1, :]
-            train_plot[lookback:train_size] = model(train_in)[:, -1, :].cpu()
-            # shift test predictions for plotting
-            test_plot = np.ones_like(output_seq) * np.nan
-            test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :].cpu()
-
-        output_seq = nonDim2Dim4(output_seq)
-        train_plot = nonDim2Dim4(train_plot)
-        test_plot = nonDim2Dim4(test_plot)
-    
-        fig, axes = plt.subplots(2,2)
-
-        axes[0,0].plot(t,output_seq[:,0], c='b',label = 'True Motion')
-        axes[0,0].plot(t,train_plot[:,0], c='r',label = 'Training Region')
-        axes[0,0].plot(t,test_plot[:,0], c='g',label = 'Predition')
-        axes[0,0].set_xlabel('time (sec)')
-        axes[0,0].set_ylabel('x (km)')
-
-        axes[0,1].plot(t,output_seq[:,1], c='b',label = 'True Motion')
-        axes[0,1].plot(t,train_plot[:,1], c='r',label = 'Training Region')
-        axes[0,1].plot(t,test_plot[:,1], c='g',label = 'Predition')
-        axes[0,1].set_xlabel('time (sec)')
-        axes[0,1].set_ylabel('y (km)')
-
-        axes[1,0].plot(t,output_seq[:,2], c='b',label = 'True Motion')
-        axes[1,0].plot(t,train_plot[:,2], c='r',label = 'Training Region')
-        axes[1,0].plot(t,test_plot[:,2], c='g',label = 'Predition')
-        axes[1,0].set_xlabel('time (sec)')
-        axes[1,0].set_ylabel('xdot (km/s)')
-
-        axes[1,1].plot(t,output_seq[:,3], c='b',label = 'True Motion')
-        axes[1,1].plot(t,train_plot[:,3], c='r',label = 'Training Region')
-        axes[1,1].plot(t,test_plot[:,3], c='g',label = 'Predition')
-        axes[1,1].set_xlabel('time (sec)')
-        axes[1,1].set_ylabel('ydot (km/s)')
-
-
-        plt.legend(loc='upper left', bbox_to_anchor=(1,0.5))
-        plt.tight_layout()
-
-        if prediction == 'source':
-            plt.savefig('predict/predict%d.png' % epoch)
-        if prediction == 'target':
-            plt.savefig('predict/newPredict%d.png' % epoch)
-        plt.close()
-
-        if err is not None:
-            fig, (ax1, ax2) = plt.subplots(2,1)
-            ax1.plot(err[:,0:2],label=('x','y'))
-            ax1.set_xlabel('node #')
-            ax1.set_ylabel('error (km)')
-            ax1.legend()
-            ax2.plot(err[:,2:4],label=('xdot','ydot'))
-            ax2.set_xlabel('node #')
-            ax2.set_ylabel('error (km/s)')
-            ax2.legend()
-            # ax2.plot(np.average(err,axis=0)*np.ones(err.shape))
-            plt.show()
-        # filter out nan values for better post processing
-        train_plot = train_plot[~np.isnan(train_plot)]
-        test_plot = test_plot[~np.isnan(test_plot)]
-
-        trajPredition = np.concatenate((train_plot,test_plot))
-
-        return trajPredition.reshape((len(trajPredition),1))
 
 TIME_STEP = 0.05
 
@@ -207,10 +128,10 @@ p_dropout = 0.0
 lookback = 1
 p_motion_knowledge = 1/2
 
-sysfuncptr = twoBodyLinearized
+sysfuncptr = twoBodyPert
 # sim time
 
-t0, tf = 0, .01 * T
+t0, tf = 0, 1 * T
 
 t_range = np.arange(t0, tf, TIME_STEP)
 
@@ -242,8 +163,6 @@ loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, 
 
 for epoch in range(n_epochs):
 
-    trajPredition = plotPredition(epoch,newModel,'target',t=t*TU,output_seq=pertNR)
-
     newModel.train()
     for X_batch, y_batch in loader:
         y_pred = newModel(X_batch)
@@ -265,27 +184,52 @@ for epoch in range(n_epochs):
 
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
-trajPredition = plotStatePredictions(newModel,t,numericResult_sol,train_in,test_in,train_size,lookback = lookback)
+if plot:
+    trajPredition = plotStatePredictions(newModel,t,numericResult_sol,train_in,test_in,train_size,lookback = lookback)
+    trajPredition = nonDim2Dim4(trajPredition)
 
 pertNR = nonDim2Dim4(pertNR)
 output_seq = nonDim2Dim4(output_seq)
 numericResult_sol = nonDim2Dim4(numericResult_sol)
-trajPredition = nonDim2Dim4(trajPredition)
 
 printModelParameters(newModel)
 
+if plot:
+    plotOrbitPhasePredictions(output_seq,trajPredition,earth=None)
+    plt.plot(numericResult_sol[:, 0], numericResult_sol[:, 1], label='Nonlinear Solution')
+    plt.legend()
+
+    plotSolutionErrors(output_seq,trajPredition,t)
+
+    plt.show()
+
+
+
+A_mamba_t = newModel.layers[0].mixer.A_SSM
+B_mamba_t = newModel.layers[0].mixer.B_SSM
+C_mamba_t = newModel.layers[0].mixer.C_SSM
+D_mamba_t = newModel.layers[0].mixer.D_SSM
+delta_mamba = newModel.layers[0].mixer.delta
+
 A_mamba=newModel.layers[0].mixer.A_SSM.cpu().numpy()
-print(A_mamba)
-eigVals,eigVects = np.linalg.eig(A_mamba)
 B_mamba = newModel.layers[0].mixer.B_SSM[:,-1,:].cpu().numpy()
-print(B_mamba)
+C_mamba = newModel.layers[0].mixer.C_SSM[:,-1,:].cpu().numpy()
+D_mamba = newModel.layers[0].mixer.D_SSM.cpu().numpy()
+
+eigVals,eigVects = np.linalg.eig(A_mamba)
 print(newModel.layers[0].mixer.B_SSM.shape)
 
 print('rank of (A - eig*I) = %i with n = %i' % (np.linalg.matrix_rank(np.concatenate((A_mamba - (np.eye(problemDim) * eigVals), B_mamba), axis=0)),problemDim))
 
-plotOrbitPhasePredictions(output_seq,trajPredition,earth=None)
-plt.plot(numericResult_sol[:, 0], numericResult_sol[:, 1], label='Nonlinear Solution')
-plt.legend()
+# dr_mamba = sp.linalg.expm(A_mamba) @ IC.reshape((problemDim,1))
 
-err = nonDim2Dim4(err)
-plotPredition(epoch+1,newModel,'target',err,t*TU,pertNR)
+# print(C_mamba @ dr_mamba)
+
+y = newModel.layers[0].mixer.selective_scan(train_in,delta_mamba,A_mamba_t,B_mamba_t,C_mamba_t,D_mamba_t).cpu().numpy()
+
+print("Initial Conditions",train_in.cpu().numpy())
+print("SSM Output at t = 0.05 TU",y[0,0,:])
+
+dr = sp.linalg.expm(np.asarray(((0,0,1,0),(0,0,0,1),(-mu/np.linalg.norm(r)**3,0,0,0),(0,-mu/np.linalg.norm(r)**3,0,0)))) @ IC.reshape((problemDim,1))
+
+print("STM Solution at t = 0.05 TU",dr.T)
