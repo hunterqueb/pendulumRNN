@@ -1,12 +1,4 @@
 
-# https://machinelearningmastery.com/lstm-for-time-series-prediction-in-pytorch/
-'''
-usually, time seties oreduction is done on a window.
-given data from time [t - w,t], you predict t + m where m is any timestep into the future.
-w governs how much data you can look at to make a predition, called the look back period.
-
-
-'''
 import numpy as np
 import matplotlib.pyplot as plt
 import math
@@ -22,7 +14,7 @@ from qutils.mlExtras import findDecAcc, generateTrajectoryPrediction
 from qutils.plot import plotOrbitPhasePredictions, plotStatePredictions, plotSolutionErrors
 from qutils.orbital import nonDim2Dim4
 
-from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM,LSTMSelfAttentionNetwork2
+from nets import create_dataset
 
 from qutils.mamba import Mamba, MambaConfig
 
@@ -66,7 +58,8 @@ T = THEO / TU
 J2 = 1.08263e-3
 
 IC = np.concatenate((r,v))
-pam = [mu,IC]
+pam = [mu,J2]
+linPam = [mu,IC]
 
 m_sat = 1
 c_d = 2.1 #shperical model
@@ -93,20 +86,20 @@ def twoBodyPert(t, y, p=pam):
     a_drag_x = drag_factor * y[2]
     a_drag_y = drag_factor *  y[3]
 
-    a_drag_x = 0
-    a_drag_y = 0
-    j2_accel_x = 0
-    j2_accel_y = 0
+    # a_drag_x = 0
+    # a_drag_y = 0
+    # j2_accel_x = 0
+    # j2_accel_y = 0
     dydt3 = -mu / R**3 * y[0] + j2_accel_x + a_drag_x
     dydt4 = -mu / R**3 * y[1] + j2_accel_y + a_drag_y
 
     return np.array([dydt1, dydt2,dydt3,dydt4])
 
 
-def twoBodyLinearized(t, y, p=pam):
+def twoBodyLinearized(t, y, p=linPam):
     r = y[0:2]
     R = np.linalg.norm(r)
-    IC = pam[1]
+    IC = p[1]
     r0 = np.linalg.norm(IC[0:2])
 
     mu = p[0]
@@ -128,10 +121,10 @@ p_dropout = 0.0
 lookback = 1
 p_motion_knowledge = 1/2
 
-sysfuncptr = twoBodyLinearized
+sysfuncptr = twoBodyPert
 # sim time
 
-t0, tf = 0, 0.1 * T
+t0, tf = 0, 1 * T
 
 t_range = np.arange(t0, tf, TIME_STEP)
 
@@ -187,7 +180,7 @@ for epoch in range(n_epochs):
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
 if plot:
-    trajPredition = plotStatePredictions(newModel,t,numericResult_sol,train_in,test_in,train_size,lookback = lookback)
+    trajPredition = plotStatePredictions(newModel,t,numericResult_sol,train_in,test_in,train_size,lookback = lookback,units=("DU","DU","DU/TU","DU/TU"))
     trajPredition_norm = trajPredition
     trajPredition = nonDim2Dim4(trajPredition)
 
@@ -230,19 +223,60 @@ y = newModel.layers[0].mixer.selective_scan(train_in,delta_mamba,A_mamba_t,B_mam
 
 dr = sp.linalg.expm(np.asarray(((0,0,1,0),(0,0,0,1),(-mu/np.linalg.norm(r)**3,0,0,0),(0,-mu/np.linalg.norm(r)**3,0,0))) * t[1]) @ IC.reshape((problemDim,1))
 
+
+nondim_initial = IC
+nondim_stm = dr.T.reshape(problemDim)
+nondim_ssm = y[0,0,:]
+nondim_network = trajPredition_norm[1,:]
+nondim_nonlinear = numericResult_sol_nonDim[1,:]
+
+
+
+dim_initial = nonDim2Dim4(IC.reshape(1,problemDim)).reshape(problemDim)
+dim_stm = nonDim2Dim4(dr.T[0].reshape(1,problemDim)).reshape(problemDim)
+dim_ssm = nonDim2Dim4(y[0,0,:].reshape(1,problemDim)).reshape(problemDim)
+dim_network = nonDim2Dim4(trajPredition_norm[1,:].reshape(1,problemDim)).reshape(problemDim)
+dim_nonlinear = numericResult_sol[1,:]
+
 print('\nIn Nondimensional')
-print("Initial Conditions",IC)
-print("STM Solution at t = 0.05 TU",dr.T)
-print("SSM Output at t = 0.05 TU",y[0,0,:])
-print("Network Prediction provided by full mamba at t = 0.05 TU: ",trajPredition_norm[1,:])
-print("Nonlinear Solution at t = 0.05 TU: ",numericResult_sol_nonDim[1,:])
+print("Initial Conditions",nondim_initial)
+print("STM Solution at t = 0.05 TU",nondim_stm)
+print("SSM Output at t = 0.05 TU",nondim_ssm)
+print("Network Prediction provided by full mamba at t = 0.05 TU: ",nondim_network)
+print("Nonlinear Solution at t = 0.05 TU: ",nondim_nonlinear)
 
 print('\nIn Dimensional')
-print("Initial Conditions",nonDim2Dim4(IC.reshape(1,problemDim)))
-print("STM Solution at t = 0.05 TU",nonDim2Dim4(dr.T[0].reshape(1,problemDim)))
-print("SSM Output at t = 0.05 TU",nonDim2Dim4(y[0,0,:].reshape(1,problemDim)))
-print("Network Prediction provided by full mamba at t = 0.05 TU: ",nonDim2Dim4(trajPredition_norm[1,:].reshape(1,problemDim)))
-print("Nonlinear Solution at t = 0.05 TU: ",numericResult_sol[1,:])
+print("Initial Conditions",dim_initial)
+print("STM Solution at t = 0.05 TU",dim_stm)
+print("SSM Output at t = 0.05 TU",dim_ssm)
+print("Network Prediction provided by full mamba at t = 0.05 TU: ",dim_network)
+print("Nonlinear Solution at t = 0.05 TU: ",dim_nonlinear)
+
+
+labels = ['x','y','xdot','ydot']
+
 
 if plot:
+    # Plotting Nondimensional Data
+    plt.figure(figsize=(12, 6))
+    plt.plot(labels, nondim_initial, marker='o', label='Initial Conditions')
+    plt.plot(labels, nondim_stm, marker='o', label='STM Solution')
+    plt.plot(labels, nondim_ssm, marker='o', label='SSM Output')
+    plt.plot(labels, nondim_network, marker='o', label='Network Prediction')
+    plt.plot(labels, nondim_nonlinear, marker='o', label='Nonlinear Solution')
+    plt.title('Nondimensional Data at t = 0.05 TU')
+    plt.legend()
+    plt.grid(True)
+
+    # Plotting Dimensional Data
+    plt.figure(figsize=(12, 6))
+    plt.plot(labels, dim_initial, marker='o', label='Initial Conditions')
+    plt.plot(labels, dim_stm, marker='o', label='STM Solution')
+    plt.plot(labels, dim_ssm, marker='o', label='SSM Output')
+    plt.plot(labels, dim_network, marker='o', label='Network Prediction')
+    plt.plot(labels, dim_nonlinear, marker='o', label='Nonlinear Solution')
+    plt.title('Dimensional Data at t = 0.05 TU')
+    plt.legend()
+    plt.grid(True)
+
     plt.show()
