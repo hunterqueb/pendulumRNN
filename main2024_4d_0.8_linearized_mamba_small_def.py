@@ -253,30 +253,29 @@ print("Network Prediction provided by full mamba at t = 0.05 TU: ",dim_network)
 print("Nonlinear Solution at t = 0.05 TU: ",dim_nonlinear)
 
 
-labels = ['x','y','xdot','ydot']
+nondim_ssm_mamba_diff = nondim_network - nondim_ssm
+dim_ssm_mamba_diff = dim_network - dim_ssm
+
+nondim_mamba_nonlin_diff = nondim_network - nondim_nonlinear
+dim_mamba_nonlin_diff = dim_network - dim_nonlinear
+
+nondim_ssm_nonlin_diff = nondim_ssm - nondim_nonlinear
+dim_ssm_nonlin_diff = dim_ssm - dim_nonlinear
 
 
+nondim_stm_nonlinear_diff = nondim_stm - nondim_nonlinear
+dim_stm_nonlinear_diff = dim_stm - dim_nonlinear
+
+print('\nNondim difference btwn ssm & mamba',nondim_ssm_mamba_diff)
+print('Dim difference btwn ssm & mamba',dim_ssm_mamba_diff)
+
+print('\nNondim difference btwn mamba & nonlinear soln',nondim_mamba_nonlin_diff)
+print('Dim difference btwn mamba & nonlinear soln',dim_mamba_nonlin_diff)
+
+print('\nNondim difference btwn ssm & nonlinear soln',nondim_ssm_nonlin_diff)
+print('Dim difference btwn ssm & nonlinear soln',dim_ssm_nonlin_diff)
+
+print('\nNondim Difference btwn STM & nonlinear soln',nondim_stm_nonlinear_diff)
+print('Dim Difference btwn STM & nonlinear soln',dim_stm_nonlinear_diff)
 if plot:
-    # Plotting Nondimensional Data
-    plt.figure(figsize=(12, 6))
-    plt.plot(labels, nondim_initial, marker='o', label='Initial Conditions')
-    plt.plot(labels, nondim_stm, marker='o', label='STM Solution')
-    plt.plot(labels, nondim_ssm, marker='o', label='SSM Output')
-    plt.plot(labels, nondim_network, marker='o', label='Network Prediction')
-    plt.plot(labels, nondim_nonlinear, marker='o', label='Nonlinear Solution')
-    plt.title('Nondimensional Data at t = 0.05 TU')
-    plt.legend()
-    plt.grid(True)
-
-    # Plotting Dimensional Data
-    plt.figure(figsize=(12, 6))
-    plt.plot(labels, dim_initial, marker='o', label='Initial Conditions')
-    plt.plot(labels, dim_stm, marker='o', label='STM Solution')
-    plt.plot(labels, dim_ssm, marker='o', label='SSM Output')
-    plt.plot(labels, dim_network, marker='o', label='Network Prediction')
-    plt.plot(labels, dim_nonlinear, marker='o', label='Nonlinear Solution')
-    plt.title('Dimensional Data at t = 0.05 TU')
-    plt.legend()
-    plt.grid(True)
-
     plt.show()
