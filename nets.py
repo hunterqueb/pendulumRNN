@@ -9,6 +9,23 @@ import torch.distributed as dist
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'     
 
+def create_sequences(data, seq_length,train_size,device):
+    xs, ys = [], []
+    for i in range (len(data) - seq_length - 1):
+        x = data[i:(i + seq_length)]
+        y = data[i + seq_length]
+        xs.append(x)
+        ys.append(y)
+    
+    X_train, X_test = xs[:train_size], xs[train_size:]
+    Y_train, Y_test = ys[:train_size], ys[train_size:]
+    # Convert to PyTorch tensors
+    X_train = torch.tensor(X_train).double().to(device)
+    Y_train = torch.tensor(Y_train).double().to(device)
+    X_test = torch.tensor(X_test).double().to(device)
+    Y_test = torch.tensor(Y_test).double().to(device)
+
+    return X_train,Y_train,X_test,Y_test
 def create_dataset(dataset,device,lookback):
     """Transform a time series into a prediction dataset
     

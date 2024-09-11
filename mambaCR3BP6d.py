@@ -16,7 +16,7 @@ from qutils.tictoc import timer
 
 # from memory_profiler import profile
 
-from nets import create_dataset, LSTMSelfAttentionNetwork
+from nets import create_dataset, LSTMSelfAttentionNetwork,create_sequences
 
 DEBUG = True
 plotOn = True
@@ -135,6 +135,8 @@ train, test = output_seq[:train_size], output_seq[train_size:]
 
 train_in,train_out = create_dataset(train,device,lookback=lookback)
 test_in,test_out = create_dataset(test,device,lookback=lookback)
+
+train_in_new,train_out_new,test_in_new,test_out_new = create_sequences(output_seq,5,train_size,device)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
