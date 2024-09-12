@@ -22,6 +22,7 @@ import torch.utils.data as data
 
 from qutils.integrators import myRK4Py
 from qutils.mlExtras import findDecAcc
+from qutils.ml import create_datasets, genPlotPrediction
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
 from qutils.mamba import Mamba, MambaConfig
@@ -135,10 +136,7 @@ In each time step, there can be multiple features.
 train_size = int(len(output_seq) * p_motion_knowledge)
 test_size = len(output_seq) - train_size
 
-train, test = output_seq[:train_size], output_seq[train_size:]
-
-train_in,train_out = create_dataset(train,device,lookback=lookback)
-test_in,test_out = create_dataset(test,device,lookback=lookback)
+train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
@@ -160,15 +158,7 @@ criterion = F.smooth_l1_loss
 # huber_loss = F.smooth_l1_loss(predicted, target, reduction='mean', delta=1.0)
 
 def plotPredition(epoch):
-        with torch.no_grad():
-            # shift train predictions for plotting
-            train_plot = np.ones_like(output_seq) * np.nan
-            y_pred = model(train_in)
-            y_pred = y_pred[:, -1, :]
-            train_plot[lookback:train_size] = model(train_in)[:, -1, :].cpu()
-            # shift test predictions for plotting
-            test_plot = np.ones_like(output_seq) * np.nan
-            test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :].cpu()
+        train_plot, test_plot = genPlotPrediction(model,output_seq,train_in,test_in,train_size,1)
 
         fig, (ax1, ax2) = plt.subplots(2,1)
         # plot

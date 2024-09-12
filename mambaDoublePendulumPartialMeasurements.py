@@ -141,15 +141,7 @@ for epoch in range(n_epochs):
 
 def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         output_seq = trueMotion
-        with torch.no_grad():
-            # shift train predictions for plotting
-            train_plot = np.ones_like(output_seq) * np.nan
-            y_pred = model(train_in)
-            y_pred = y_pred[:, -1, :]
-            train_plot[lookback:train_size] = model(train_in)[:, -1, :].cpu()
-            # shift test predictions for plotting
-            test_plot = np.ones_like(output_seq) * np.nan
-            test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :].cpu()
+        train_plot, test_plot = genPlotPrediction(model,output_seq,train_in,test_in,train_size,1)
 
         # output_seq = nonDim2Dim4(output_seq)
         # train_plot = nonDim2Dim4(train_plot)

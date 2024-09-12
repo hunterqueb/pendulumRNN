@@ -15,7 +15,7 @@ import random
 import torch.nn.functional as F
 import torch.utils.data as data
 
-from qutils.ml import Adam_mini
+from qutils.ml import Adam_mini, create_datasets, genPlotPrediction
 from qutils.integrators import myRK4Py, ode45
 from qutils.mlExtras import findDecAcc
 from qutils.plot import plotOrbitPhasePredictions
@@ -124,10 +124,7 @@ In each time step, there can be multiple features.
 train_size = int(len(circNR) * p_motion_knowledge)
 test_size = len(circNR) - train_size
 
-train, test = circNR[:train_size], circNR[train_size:]
-
-train_in,train_out = create_dataset(train,device,lookback=lookback)
-test_in,test_out = create_dataset(test,device,lookback=lookback)
+train_in,train_out,test_in,test_out = create_datasets(circNR,1,train_size,device)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
@@ -145,15 +142,7 @@ criterion = F.smooth_l1_loss
 # huber_loss = F.smooth_l1_loss(predicted, target, reduction='mean', delta=1.0)
 
 def plotPredition(epoch,model,prediction='source',err=None,t=t * TU,output_seq = circNR):
-        with torch.no_grad():
-            # shift train predictions for plotting
-            train_plot = np.ones_like(output_seq) * np.nan
-            y_pred = model(train_in)
-            y_pred = y_pred[:, -1, :]
-            train_plot[lookback:train_size] = model(train_in)[:, -1, :].cpu()
-            # shift test predictions for plotting
-            test_plot = np.ones_like(output_seq) * np.nan
-            test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :].cpu()
+        train_plot, test_plot = genPlotPrediction(model,output_seq,train_in,test_in,train_size,1)
 
         output_seq = nonDim2Dim4(output_seq)
         train_plot = nonDim2Dim4(train_plot)
@@ -407,10 +396,7 @@ plotPreditionODE(numericResultDefault,numericResultHigh)
 train_size = int(len(pertNR) * p_motion_knowledge)
 test_size = len(pertNR) - train_size
 
-train, test = pertNR[:train_size], pertNR[train_size:]
-
-train_in,train_out = create_dataset(train,device,lookback=lookback)
-test_in,test_out = create_dataset(test,device,lookback=lookback)
+train_in,train_out,test_in,test_out = create_datasets(pertNR,1,train_size,device)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
@@ -446,8 +432,8 @@ for epoch in range(n_epochs):
 circNR = nonDim2Dim4(circNR)
 pertNR = nonDim2Dim4(pertNR)
 
-plotOrbitPhasePredictions(circNR,'circular')
-plotOrbitPhasePredictions(pertNR,'perturbed')
+# plotOrbitPhasePredictions(circNR,'circular')
+# plotOrbitPhasePredictions(pertNR,'perturbed')
 # plt.show()
 
 err = nonDim2Dim4(err)

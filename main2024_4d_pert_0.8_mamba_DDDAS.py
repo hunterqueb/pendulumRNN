@@ -20,7 +20,7 @@ from qutils.integrators import myRK4Py, ode85
 from qutils.mlExtras import findDecAcc
 from qutils.plot import plotOrbitPhasePredictions,plotSolutionErrors
 from qutils.orbital import nonDim2Dim4
-from qutils.ml import printModelParmSize
+from qutils.ml import printModelParmSize, create_datasets, genPlotPrediction
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM,LSTMSelfAttentionNetwork2
 
@@ -167,10 +167,7 @@ train_size = int(len(pertNR) * p_motion_knowledge)
 train_size = 2
 test_size = len(pertNR) - train_size
 
-train, test = pertNR[:train_size], pertNR[train_size:]
-
-train_in,train_out = create_dataset(train,device,lookback=lookback)
-test_in,test_out = create_dataset(test,device,lookback=lookback)
+train_in,train_out,test_in,test_out = create_datasets(pertNR,1,train_size,device)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
@@ -203,15 +200,7 @@ for epoch in range(n_epochs):
 
 def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         output_seq = trueMotion
-        with torch.no_grad():
-            # shift train predictions for plotting
-            train_plot = np.ones_like(output_seq) * np.nan
-            y_pred = model(train_in)
-            y_pred = y_pred[:, -1, :]
-            train_plot[lookback:train_size] = model(train_in)[:, -1, :].cpu()
-            # shift test predictions for plotting
-            test_plot = np.ones_like(output_seq) * np.nan
-            test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :].cpu()
+        train_plot, test_plot = genPlotPrediction(model,output_seq,train_in,test_in,train_size,1)
 
         # output_seq = nonDim2Dim4(output_seq)
         # train_plot = nonDim2Dim4(train_plot)
@@ -286,9 +275,7 @@ networkPrediction = plotPredition(epoch+1,newModel,output_seq)
 pertNR = nonDim2Dim4(pertNR)
 networkPrediction = nonDim2Dim4(networkPrediction)
 
-plt.figure()
-plotOrbitPhasePredictions(networkPrediction,'NN')
-plotOrbitPhasePredictions(pertNR,'Truth')
+plotOrbitPhasePredictions(pertNR,networkPrediction)
 plt.grid()
 plt.tight_layout()
 t = t / T

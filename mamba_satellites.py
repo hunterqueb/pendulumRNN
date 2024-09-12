@@ -11,7 +11,7 @@ from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolu
 from qutils.mlExtras import findDecAcc,generateTrajectoryPrediction
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC
 from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import printModelParmSize, getDevice, Adam_mini
+from qutils.ml import printModelParmSize, getDevice, Adam_mini, create_datasets
 from qutils.tictoc import timer
 # from nets import Adam_mini
 
@@ -56,10 +56,7 @@ train_size = int(len(output_seq) * p_motion_knowledge)
 # train_size = 2
 test_size = len(output_seq) - train_size
 
-train, test = output_seq[:train_size], output_seq[train_size:]
-
-train_in,train_out = create_dataset(train,device,lookback=lookback)
-test_in,test_out = create_dataset(test,device,lookback=lookback)
+train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 

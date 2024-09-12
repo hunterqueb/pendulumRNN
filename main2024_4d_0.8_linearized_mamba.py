@@ -17,7 +17,7 @@ import torch.utils.data as data
 import scipy as sp
 
 from qutils.integrators import myRK4Py, ode45
-from qutils.ml import Adam_mini,printModelParameters, getDevice
+from qutils.ml import Adam_mini,printModelParameters, getDevice, create_datasets
 from qutils.mlExtras import findDecAcc, generateTrajectoryPrediction
 from qutils.plot import plotOrbitPhasePredictions, plotStatePredictions, plotSolutionErrors
 from qutils.orbital import nonDim2Dim4
@@ -156,10 +156,7 @@ train_size = int(len(pertNR) * p_motion_knowledge)
 train_size = 2
 test_size = len(pertNR) - train_size
 
-train, test = pertNR[:train_size], pertNR[train_size:]
-
-train_in,train_out = create_dataset(train,device,lookback=lookback)
-test_in,test_out = create_dataset(test,device,lookback=lookback)
+train_in,train_out,test_in,test_out = create_datasets(pertNR,1,train_size,device)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
@@ -187,7 +184,7 @@ for epoch in range(n_epochs):
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
 if plot:
-    trajPredition = plotStatePredictions(newModel,t,numericResult_sol,train_in,test_in,train_size,lookback = lookback)
+    trajPredition = plotStatePredictions(newModel,t,numericResult_sol,train_in,test_in,train_size,test_size)
     trajPredition_norm = trajPredition
     trajPredition = nonDim2Dim4(trajPredition)
 

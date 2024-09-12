@@ -26,6 +26,7 @@ import torch.utils.data as data
 
 from qutils.integrators import myRK4Py
 from qutils.mlExtras import findDecAcc
+from qutils.ml import create_datasets
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
 
@@ -143,10 +144,7 @@ In each time step, there can be multiple features.
 train_size = int(len(output_seq) * p_motion_knowledge)
 test_size = len(output_seq) - train_size
 
-train, test = output_seq[:train_size], output_seq[train_size:]
-
-train_in,train_out = create_dataset(train,device,lookback=lookback)
-test_in,test_out = create_dataset(test,device,lookback=lookback)
+train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 

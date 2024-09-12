@@ -10,7 +10,7 @@ from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolu
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC
 from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import printModelParmSize, getDevice, Adam_mini
+from qutils.ml import printModelParmSize, getDevice, Adam_mini, genPlotPrediction, create_datasets
 from qutils.tictoc import timer
 # from nets import Adam_mini
 
@@ -131,12 +131,7 @@ train_size = int(len(output_seq) * p_motion_knowledge)
 # train_size = 2
 test_size = len(output_seq) - train_size
 
-train, test = output_seq[:train_size], output_seq[train_size:]
-
-train_in,train_out = create_dataset(train,device,lookback=lookback)
-test_in,test_out = create_dataset(test,device,lookback=lookback)
-
-train_in_new,train_out_new,test_in_new,test_out_new = create_sequences(output_seq,5,train_size,device)
+train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
@@ -152,7 +147,7 @@ def returnModel(modelString = 'mamba'):
 
 model = returnModel()
 
-optimizer = torch.optim.AdamW(model.parameters(),lr=lr)
+optimizer = Adam_mini(model,lr=lr)
 # optimizer = Adam_mini(model,lr=lr)
 
 criterion = F.smooth_l1_loss
@@ -190,15 +185,8 @@ trainTime.toc()
 
 def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         output_seq = trueMotion
-        with torch.no_grad():
-            # shift train predictions for plotting
-            train_plot = np.ones_like(output_seq) * np.nan
-            y_pred = model(train_in)
-            y_pred = y_pred[:, -1, :]
-            train_plot[lookback:train_size] = model(train_in)[:, -1, :].cpu()
-            # shift test predictions for plotting
-            test_plot = np.ones_like(output_seq) * np.nan
-            test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :].cpu()
+
+        train_plot, test_plot = genPlotPrediction(model,output_seq,train_in,test_in,train_size,1)
 
         # output_seq = nonDim2Dim4(output_seq)
         # train_plot = nonDim2Dim4(train_plot)
@@ -296,7 +284,7 @@ networkPrediction = nonDim2Dim6(networkPrediction,DU,TU)
 output_seq = nonDim2Dim6(output_seq,DU,TU)
 
 plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
-trajPredition = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,lookback = lookback,DU=DU,TU=TU)
+trajPredition = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
 
 
 

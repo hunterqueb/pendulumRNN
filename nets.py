@@ -9,7 +9,7 @@ import torch.distributed as dist
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'     
 
-def create_sequences(data, seq_length,train_size,device):
+def create_sequences(data,seq_length,train_size,device):
     xs, ys = [], []
     for i in range (len(data) - seq_length - 1):
         x = data[i:(i + seq_length)]
