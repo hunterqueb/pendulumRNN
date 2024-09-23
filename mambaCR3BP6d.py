@@ -56,6 +56,7 @@ mu = m_2/(m_1 + m_2)
 orbitFamily = 'halo'
 
 CR3BPIC = returnCR3BPIC(orbitFamily,L=1,id=894,stable=True)
+# CR3BPIC = returnCR3BPIC(orbitFamily,L=2,id=150,stable=True)
 
 # orbitFamily = 'longPeriod'
 
@@ -268,9 +269,9 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         return trajPredition
 
 networkPrediction = plotPredition(epoch+1,model,output_seq)
-plotCR3BPPhasePredictions(output_seq,networkPrediction)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,plane='xz')
-plotCR3BPPhasePredictions(output_seq,networkPrediction,plane='yz')
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1,plane='xz')
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1,plane='yz')
 DU = 389703
 G = 6.67430e-11
 # TU = np.sqrt(DU**3 / (G*(m_1+m_2)))
