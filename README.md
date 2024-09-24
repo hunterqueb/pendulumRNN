@@ -5,8 +5,8 @@ Implementing a trained recurrent neural network to solve the equations of motion
 numpy, scipy, matplotlib, pytorch, qutils, control
 
 ### Latest Script
-mambaCR3BP6d.py, mambaGMATTest.py,main2024_4d_pert_0.8_mamba_DDDAS.py -> latest mamba implementations
+mambaCR3BP6d.py, mambaGMATTest.py,main2024_4d_pert_0.8_mamba_DDDAS.py -> latest mamba implementations: start here
 
-mainUnsupervisedCR3BPchoppedNew.py -> physics informed networks, training completely unsupervised training. this relies on old methods
+mainUnsupervisedCR3BPchoppedNew.py -> physics informed networks, training completely unsupervised training. this relies on old methods from my masters thesis
 
 all other scripts should run
