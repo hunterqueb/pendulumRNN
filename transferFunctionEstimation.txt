@@ -1,0 +1,65 @@
+train_size 2
+
+Estimated Transfer Function for Dimension 1:
+Numerator coefficients: [ 1.88177341 -1.36310878]
+Denominator coefficients: [ 1.         -1.23583777  0.23572355]
+
+
+Estimated Transfer Function for Dimension 2:
+Numerator coefficients: [0.12128663 0.12017239]
+Denominator coefficients: [ 1.         -0.00694828 -0.99241257]
+
+
+Estimated Transfer Function for Dimension 3:
+Numerator coefficients: [0.11512611 0.11514422]
+Denominator coefficients: [ 1.          0.00500766 -0.99495791]
+
+
+Estimated Transfer Function for Dimension 4:
+Numerator coefficients: [-2.42735252  0.69507149]
+Denominator coefficients: [ 1.         -1.13429576  0.13413501]
+
+
+Estimated Transfer Function for Dimension 5:
+Numerator coefficients: [0.74176325 0.72179065]
+Denominator coefficients: [ 1.         -0.38815128 -0.61091942]
+
+
+Estimated Transfer Function for Dimension 6:
+Numerator coefficients: [ 0.11671608 -0.11390155]
+Denominator coefficients: [ 1.         -1.99513553  0.99648262]
+
+
+
+
+
+train_size  == 1 orbit
+
+Estimated Transfer Function for Dimension 1:
+Numerator coefficients: [ 0.95845939 -0.89635377]
+Denominator coefficients: [ 1.         -1.32655245  0.32643783]
+
+
+Estimated Transfer Function for Dimension 2:
+Numerator coefficients: [0.02589872 0.02187673]
+Denominator coefficients: [ 1.         -0.39235369 -0.60710598]
+
+
+Estimated Transfer Function for Dimension 3:
+Numerator coefficients: [-0.00896104  0.00134371]
+Denominator coefficients: [ 1.         -1.21477459  0.25957779]
+
+
+Estimated Transfer Function for Dimension 4:
+Numerator coefficients: [-1.44361987  1.23517315]
+Denominator coefficients: [ 1.         -1.19759298  0.19743719]
+
+
+Estimated Transfer Function for Dimension 5:
+Numerator coefficients: [-0.07867674 -0.06632433]
+Denominator coefficients: [ 1.         -0.39443007 -0.60465311]
+
+
+Estimated Transfer Function for Dimension 6:
+Numerator coefficients: [ 0.83180541 -0.91999582]
+Denominator coefficients: [ 1.         -1.07029448  0.07012513]

@@ -4,14 +4,16 @@ import torch
 import torch.nn.functional as F
 import torch.utils.data as data
 import torchinfo
+from scipy.io import savemat
 
 from qutils.integrators import ode85
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions,plotStatePredictions
-from qutils.mlExtras import findDecAcc
+from qutils.mlExtras import findDecAcc,generateTrajectoryPrediction
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC
 from qutils.mamba import Mamba, MambaConfig
 from qutils.ml import printModelParmSize, getDevice, Adam_mini, genPlotPrediction, create_datasets
 from qutils.tictoc import timer
+from qutils.tf import estimateTranferFunction
 # from nets import Adam_mini
 
 # from memory_profiler import profile
@@ -137,7 +139,8 @@ train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,de
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
 # initilizing the model, criterion, and optimizer for the data
-config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=16)
+# config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=16)
+config = MambaConfig(d_model=problemDim, n_layers=1,d_state=problemDim,expand_factor=1)
 
 def returnModel(modelString = 'mamba'):
     if modelString == 'mamba':
@@ -285,12 +288,13 @@ networkPrediction = nonDim2Dim6(networkPrediction,DU,TU)
 output_seq = nonDim2Dim6(output_seq,DU,TU)
 
 plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
+
+train_plot, test_plot = genPlotPrediction(model,output_seq,train_in,test_in,train_size,1)
+trajNorm = generateTrajectoryPrediction(train_plot,test_plot)
+
 trajPredition = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
 
-
-
-# networkPrediction = nonDim2Dim6(networkPrediction,DU,TU)
-# output_seq = nonDim2Dim6(output_seq,DU,TU)
+savemat("mambaCR3BPoutput.mat",{"traj":trajPredition,'trajNorm':trajNorm})
 
 # plotOrbitPredictions(output_seq,networkPrediction,t=t)
 plotSolutionErrors(output_seq,networkPrediction,t)
@@ -305,6 +309,8 @@ torchinfo.summary(model)
 print('rk85 on 2 period halo orbit takes 1.199 MB of memory to solve')
 print(numericResult[0,:])
 print(numericResult[1,:])
+
+# estimateTranferFunction(model,device,IC,t)
 
 if plotOn is True:
     plt.show()

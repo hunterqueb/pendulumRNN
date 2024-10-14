@@ -12,10 +12,9 @@ from qutils.mlExtras import findDecAcc
 from qutils.plot import plotOrbitPhasePredictions
 from qutils.orbital import nonDim2Dim4
 
-from nets import LSTMSelfAttentionNetwork, create_dataset
-
 from qutils.mamba import Mamba, MambaConfig
-
+from qutils.ml import create_datasets,genPlotPrediction
+from qutils.tf import estimateTranferFunction,estimateMIMOsys
 import control as ct
 # pip install control
 
@@ -50,7 +49,7 @@ C = np.eye(2)
 
 D = 0
 
-t0 = 0; tf = 100
+t0 = 0; tf = 10
 dt = 0.01
 t = np.linspace(t0,tf,int(tf/dt))
 
@@ -77,11 +76,9 @@ problemDim = nDim
 nLayers = 1
 config = MambaConfig(nDim,nLayers,d_state = 2,expand_factor=4)
 
-modelLSTM = LSTMSelfAttentionNetwork(2,20,2,1,0).double().to(device)
 modelMamba = Mamba(config).to(device).double()
 
 model = modelMamba
-# model = modelLSTM
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
@@ -98,31 +95,19 @@ test_size = len(numericalResult) - train_size
 
 train, test = numericalResult[:train_size], numericalResult[train_size:]
 
-train_in,train_out = create_dataset(train,device,lookback=lookback)
-test_in,test_out = create_dataset(test,device,lookback=lookback)
+train_in,train_out,test_in,test_out = create_datasets(numericalResult,1,train_size,device)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
 def plotPredition(epoch):
-        with torch.no_grad():
-            # shift train predictions for plotting
-            train_plot = np.ones_like(numericalResult) * np.nan
-            y_pred = model(train_in)
-            y_pred = y_pred[:, -1, :]
-            train_plot[lookback:train_size] = model(train_in)[:, -1, :].cpu()
-            # shift test predictions for plotting
-            test_plot = np.ones_like(numericalResult) * np.nan
-            test_plot[train_size+lookback:len(numericalResult)] = model(test_in)[:, -1, :].cpu()
+        train_plot, test_plot = genPlotPrediction(model,numericalResult,train_in,test_in,train_size,1)
 
         fig, (ax1, ax2) = plt.subplots(2,1)
         # plot
         ax1.plot(t,numericalResult[:,0], c='b',label = 'True Motion')
         ax1.plot(t,train_plot[:,0], c='r',label = 'Training Region')
         ax1.plot(t,test_plot[:,0], c='g',label = 'Predition')
-        if model == modelLSTM:
-            ax1.set_title('LSTM Solution to Linear Oscillator')
-        elif model == modelMamba:
-            ax1.set_title('Mamba Solution to Linear Oscillator')
+        ax1.set_title('Mamba Solution to Linear Oscillator')
         # ax1.xlabel('time (sec)')
         ax1.set_ylabel('x (m)')
         # plt.legend(loc="lower left")
@@ -176,113 +161,8 @@ if model == modelMamba:
 # A takes the a shape defined by the user, a combination of the user defined latent space size and the expansion size of the input
 # B and C take the size of the test vector? how is it doing this? how does it now
 torchinfo.summary(model)
-
-from scipy.optimize import least_squares
-from scipy import signal
-
-
-# 1. Generate input signal
-np.random.seed(0)
-u = np.random.randn(len(t), problemDim)  # Random input signal
-
-# 2. Collect output data from the RNN model
-model.eval()
-u_tensor = torch.tensor(u, dtype=torch.double).to(device)
-Y0 = torch.tensor(IC, dtype=torch.double).unsqueeze(0).to(device).reshape((1,1,problemDim))
-Y_pred = []
-
-with torch.no_grad():
-    Y_t = Y0
-    for i in range(len(u)):
-        Y_t = model(Y_t)
-        Y_pred.append(Y_t.cpu().numpy().squeeze())
-
-Y_pred = np.array(Y_pred)
-
-# 3. Prepare data for system identification
-u_sysid = u[lookback:]
-y_sysid = Y_pred[lookback:]
-
-# 4. Define model orders
-na = 2  # Order of the autoregressive part
-nb = 2  # Order of the input
-nk = 1  # Input delay
-
-# 5. Define ARX model and error function
-def arx_model(params, u, y, na, nb):
-    a = params[:na]
-    b = params[na:na+nb]
-    y_pred = np.zeros_like(y)
-    for t in range(max(na, nb), len(y)):
-        y_past = y_pred[t-na:t][::-1]
-        u_past = u[t-nk-nb+1:t-nk+1][::-1]
-        y_pred[t] = -np.dot(a, y_past) + np.dot(b, u_past)
-    return y_pred
-
-def error_function(params, u, y, na, nb):
-    y_pred = arx_model(params, u, y, na, nb)
-    error = y[max(na, nb):] - y_pred[max(na, nb):]
-    return error.flatten()
-
-# 6. Perform parameter estimation
-initial_params = np.zeros(na + nb)
-params_estimated = []
-for dim in range(problemDim):
-    res = least_squares(
-        error_function,
-        initial_params,
-        args=(u_sysid[:, dim], y_sysid[:, dim], na, nb),
-        verbose=1
-    )
-    params_estimated.append(res.x)
-
-params_estimated = np.array(params_estimated)
-
-# 7. Construct the transfer function
-transfer_functions = []
-for dim in range(problemDim):
-    a_estimated = params_estimated[dim][:na]
-    b_estimated = params_estimated[dim][na:na+nb]
-
-    num = b_estimated
-    den = np.hstack(([1], a_estimated))
-
-    system = signal.dlti(num, den, dt=dt)
-    transfer_functions.append(system)
-
-# 8. Validate the estimated model
-u_val = u_sysid
-y_val_true = y_sysid
-
-y_val_pred = []
-for dim in range(problemDim):
-    system = transfer_functions[dim]
-    _, y_out = signal.dlsim(system, u_val[:, dim])
-    y_val_pred.append(y_out.squeeze())
-
-y_val_pred = np.array(y_val_pred).T
-
-# Calculate validation error
-validation_error = y_val_true - y_val_pred
-
-# Plot validation results
-for dim in range(problemDim):
-    plt.figure(figsize=(10, 4))
-    plt.plot(y_val_true[:, dim], label='Mamba Output')
-    plt.plot(y_val_pred[:, dim], label='TF Output', linestyle='--')
-    plt.title(f'Dimension {dim+1} Validation')
-    plt.xlabel('Time Steps')
-    plt.ylabel('Output')
-    plt.legend()
-
-# 9. Print the estimated transfer functions
-for dim in range(problemDim):
-    system = transfer_functions[dim]
-    print(f"Estimated Transfer Function for Dimension {dim+1}:")
-    print(f"Numerator coefficients: {system.num}")
-    print(f"Denominator coefficients: {system.den}")
-    print("\n")
-
+estimateMIMOsys(model,device,IC,t)
+# estimateTranferFunction(model,device,IC,t)
 
 plotPredition(n_epochs)
 
