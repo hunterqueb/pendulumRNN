@@ -6,9 +6,9 @@ import torch.utils.data as data
 import torchinfo
 
 from qutils.integrators import ode85
-from qutils.plot import plot3dOrbitPredictions,plotOrbitPhasePredictions, plotSolutionErrors
+from qutils.plot import plot3dOrbitPredictions,plotOrbitPhasePredictions, plotSolutionErrors,plotPercentSolutionErrors, plotEnergy
 from qutils.mlExtras import findDecAcc
-from qutils.orbital import nonDim2Dim6, returnCR3BPIC, readGMATReport, dim2NonDim6
+from qutils.orbital import nonDim2Dim6, returnCR3BPIC, readGMATReport, dim2NonDim6, orbitalEnergy
 from qutils.mamba import Mamba, MambaConfig
 from qutils.ml import printModelParmSize, getDevice, Adam_mini, create_datasets, genPlotPrediction
 from qutils.tictoc import timer
@@ -26,6 +26,8 @@ problemDim = 6
 device = getDevice()
 
 gmatImport = readGMATReport("gmat/data/reportHEO360Prop.txt")
+semimajorAxis = 67903.82797675686
+tPeriod = 175587.6732104912
 # gmat propagation uses 50/70 50/70 JGM-2 with MSISE90 spherical drag model w/ SRP
 
 t = gmatImport[:,-1]
@@ -203,13 +205,15 @@ plotOrbitPhasePredictions(output_seq,networkPrediction,plane='yz')
 
 plot3dOrbitPredictions(output_seq,networkPrediction)
 
-
+print('total prop time',gmatImport[-1,-1])
 
 # networkPrediction = nonDim2Dim6(networkPrediction,DU,TU)
 # output_seq = nonDim2Dim6(output_seq,DU,TU)
 
 # plotOrbitPredictions(output_seq,networkPrediction,t=t)
-plotSolutionErrors(output_seq,networkPrediction,t)
+plotSolutionErrors(output_seq,networkPrediction,t/tPeriod)
+plotPercentSolutionErrors(output_seq,networkPrediction,t/tPeriod,semimajorAxis,max(np.linalg.norm(gmatImport[:,3:6],axis=1)))
+plotEnergy(output_seq,networkPrediction,t/tPeriod,orbitalEnergy,xLabel='Number of Periods (T)',yLabel='Specific Energy')
 # plotDecAccs(decAcc,t,problemDim)
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average values of each dimension:")
