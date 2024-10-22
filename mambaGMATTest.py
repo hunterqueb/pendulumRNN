@@ -6,7 +6,7 @@ import torch.utils.data as data
 import torchinfo
 
 from qutils.integrators import ode85
-from qutils.plot import plot3dOrbitPredictions,plotOrbitPhasePredictions, plotSolutionErrors,plotPercentSolutionErrors, plotEnergy
+from qutils.plot import plot3dOrbitPredictions,plotOrbitPhasePredictions, plotSolutionErrors,plotPercentSolutionErrors, plotEnergy,plotStatePredictions
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC, readGMATReport, dim2NonDim6, orbitalEnergy
 from qutils.mamba import Mamba, MambaConfig
@@ -41,13 +41,14 @@ TU = ((DU)**3 / muR)**0.5
 output_seq = dim2NonDim6(output_seq,DU,TU)
 
 # hyperparameters
-n_epochs = 50
+n_epochs = 5
 # lr = 5*(10**-5)
 # lr = 0.85
 lr = 0.8
 lr = 0.08
 lr = 0.004
 lr = 0.001
+lr = 0.01
 input_size = problemDim
 output_size = problemDim
 num_layers = 1
@@ -194,9 +195,12 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
 
         return trajPredition
 
-networkPrediction = plotPredition(epoch+1,model,output_seq)
-networkPrediction = nonDim2Dim6(networkPrediction,DU,TU)
+# networkPrediction = plotPredition(epoch+1,model,output_seq)
+
+networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
 output_seq = nonDim2Dim6(output_seq,DU,TU)
+
+# networkPrediction = nonDim2Dim6(networkPrediction,DU,TU)
 
 plotOrbitPhasePredictions(output_seq,networkPrediction)
 plotOrbitPhasePredictions(output_seq,networkPrediction,plane='xz')
