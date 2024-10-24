@@ -11,6 +11,7 @@ from qutils.mlExtras import findDecAcc
 from qutils.mamba import Mamba, MambaConfig
 from qutils.ml import printModelParmSize, getDevice, Adam_mini, genPlotPrediction, create_datasets
 from qutils.tictoc import timer
+from nets import LSTMSelfAttentionNetwork,LSTM
 # from nets import Adam_mini
 
 # from memory_profiler import profile
@@ -25,6 +26,12 @@ problemDim = 3
 sigma = 10
 rho = 28
 beta = 8/3
+
+sigma = 10
+rho = 28
+beta = 0.55
+beta = 0.56
+
 
 parameters = np.array([sigma,rho,beta])
 randomized_parameters = np.random.uniform(0.1, 30, parameters.shape)
@@ -66,23 +73,24 @@ p_motion_knowledge = 0.5
 # solve system numerically
 np.random.seed()
 IC = np.array((1.1, 2, 7))
-randomized_IC = np.random.uniform(0.1, 5, IC.shape)
+IC = np.array((0.1,0.1,0.1))
+randomized_IC = np.random.uniform(-5, 5, IC.shape)
 
 if randomIC:
     IC = randomized_IC
 
 t0 = 0; tf = 100
 
-delT = 0.01
+delT = 0.001
 nSamples = int(np.ceil((tf - t0) / delT))
 t = np.linspace(t0, tf, nSamples)
 
-t , numericResult = ode45(lorenzAttractor,[t0,tf],IC,t)
+t , numericResult = ode45(lorenzAttractor,[t0,tf],IC,t,rtol=1e-15,atol=1e-15)
 
 # generate data sets
 
 train_size = int(p_motion_knowledge*len(t))
-# train_size = 2
+train_size = 2
 test_size = len(t) - train_size
 
 train_in,train_out,test_in,test_out = create_datasets(numericResult,1,train_size,device)
@@ -90,7 +98,14 @@ train_in,train_out,test_in,test_out = create_datasets(numericResult,1,train_size
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
 config = MambaConfig(d_model=problemDim, n_layers=num_layers)
-model = Mamba(config).to(device).double()
+
+modelLSTMAtt = LSTMSelfAttentionNetwork(problemDim,20,problemDim,1,0).double().to(device)
+modelLSTM = LSTM(problemDim,20,problemDim,1,0).double().to(device)
+modelMamba = Mamba(config).to(device).double()
+
+model = modelLSTM 
+model = modelLSTMAtt
+model = modelMamba
 
 optimizer = Adam_mini(model,lr=lr)
 criterion = F.smooth_l1_loss
