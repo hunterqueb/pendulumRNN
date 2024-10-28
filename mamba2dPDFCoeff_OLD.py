@@ -79,10 +79,10 @@ for set in learningSet:
     train_in2,train_out2 = create_dataset(train2,device,lookback=lookback)
     test_in2,test_out2 = create_dataset(test2,device,lookback=lookback)
 
-    train_in = torch.concatenate((train_in1,train_in2),axis=1)
-    train_out = torch.concatenate((train_out1,train_out2),axis=1)
-    test_in = torch.concatenate((test_in1,test_in2),axis=1)
-    test_out = torch.concatenate((test_out1,test_out2),axis=1)
+    train_in = torch.cat((train_in1,train_in2),axis=1)
+    train_out = torch.cat((train_out1,train_out2),axis=1)
+    test_in = torch.cat((test_in1,test_in2),axis=1)
+    test_out = torch.cat((test_out1,test_out2),axis=1)
 
     # testing can be the final matrix
 
