@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import torch.utils.data as data
 import torchinfo
 from scipy.io import loadmat,savemat
+import matplotlib.lines as mlines
 
 from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
@@ -20,6 +21,7 @@ device = getDevice()
 
 fileLocation = 'matlab/DDDAS-2d/newData/'
 fileName = ['duff2D_2xUncer_pdfCoeff_del_t_0_1_tf_2_4_mamba',"duff2D_2xUncer_pdfCoeff_del_t_0_01_tf_2_4_mamba","duff2D_2xUncer_pdfCoeff_del_t_0_1_tf_4_8_mamba","duff2D_2xUncer_pdfCoeff_del_t_0_01_tf_4_8_mamba","linOsc_pdfCoeff_del_t_0_1_tf_2_4_mamba",'linOsc_pdfCoeff_del_t_0_01_tf_2_4_mamba',"linOsc_pdfCoeff_del_t_0_1_tf_4_8_mamba","linOsc_pdfCoeff_del_t_0_01_tf_4_8_mamba"]
+fileName = ["duff2D_2xUncer_pdfCoeff_del_t_0_1_tf_4_8_mamba","duff2D_2xUncer_pdfCoeff_del_t_0_01_tf_4_8_mamba","linOsc_pdfCoeff_del_t_0_1_tf_4_8_mamba","linOsc_pdfCoeff_del_t_0_01_tf_4_8_mamba"]
 fileExtension = '.mat'
 
 for file in fileName:
@@ -141,6 +143,28 @@ for file in fileName:
         
         print('Average error in for ' + set + ':',errorAvg)
         print("\ttrain loss %.4f, test loss %.4f\n" % (train_loss, test_loss))
+
+        # train_plot = np.empty(learningSeq.shape)
+        # train_plot[:] = np.nan
+        train_plot = np.pad(train, ((0, learningSeq.shape[0] - train.shape[0]), (0, 0)), mode='constant', constant_values=np.nan)
+        test_plot = np.pad(predictedCoeffNorm, ((0, learningSeq.shape[0] - predictedCoeffNorm.shape[0]), (0, 0)), mode='constant', constant_values=np.nan)
+
+        
+        t = pdf_approx_coeff['tspan'].T
+        plt.figure()
+        for i in range(problemDim):
+            plt.plot(t,learningSeq[:,i])
+        plt.plot(t,train_plot,'k', linestyle='dashed',label='_nolegend_')
+        plt.plot(t,test_plot,'grey', linestyle=':',label='_nolegend_')
+        training_region_line = mlines.Line2D([], [], color='k', linestyle='dashed', label='Training Region')
+        test_region_line = mlines.Line2D([], [], color='grey', linestyle=':', label='Prediction')
+        truth_region_line = mlines.Line2D([], [], color='blue', label='Truth')
+        plt.legend(handles=[training_region_line,test_region_line,truth_region_line])
+        plt.grid()
+        plt.xlabel('Time (sec)')
+        plt.ylabel('RBF Coefficent Values (none)')
+        plt.show()
+
     torchinfo.summary(model,input_size=(1,1,problemDim))
     printModelParmSize(model)
     savemat(fileLocation+file+'_pred'+fileExtension, all_data)
