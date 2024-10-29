@@ -236,7 +236,7 @@ if compareLSTM:
 
     criterion = F.smooth_l1_loss
     # criterion = torch.nn.HuberLoss()
-
+    trainTime = timer()
     for epoch in range(n_epochs):
 
         # trajPredition = plotPredition(epoch,model,'target',t=t*TU,output_seq=pertNR)
@@ -261,6 +261,7 @@ if compareLSTM:
             err = np.concatenate((err1,err2),axis=0)
 
         print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
+    trainTime.toc()
 
 
     output_seq = dim2NonDim6(output_seq,DU,TU)
@@ -272,7 +273,7 @@ if compareLSTM:
     plt.plot(networkPredictionLSTM[:, 0], networkPredictionLSTM[:, 1], networkPredictionLSTM[:, 2], label='LSTM')
     plt.legend(fontsize=10)
     plt.tight_layout()
-    
+
     plotOrbitPhasePredictions(output_seq,networkPredictionLSTM)
     plotOrbitPhasePredictions(output_seq,networkPredictionLSTM,plane='xz')
     plotOrbitPhasePredictions(output_seq,networkPredictionLSTM,plane='yz')
