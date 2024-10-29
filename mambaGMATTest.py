@@ -229,6 +229,11 @@ printModelParmSize(model)
 torchinfo.summary(model)
 
 if compareLSTM:
+    del model
+    del optimizer
+    torch.cuda.empty_cache()
+    import gc
+    gc.collect()
     modelLSTM = returnModel('lstm')
 
     # optimizer = torch.optim.AdamW(model.parameters(),lr=lr)
