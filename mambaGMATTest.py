@@ -18,8 +18,9 @@ from qutils.tictoc import timer
 
 from nets import create_dataset, LSTMSelfAttentionNetwork
 
-DEBUG = True
+compareLSTM = True
 plotOn = True
+
 
 problemDim = 6
 
@@ -59,7 +60,7 @@ p_motion_knowledge = 0.1
 train_size = int(len(output_seq) * p_motion_knowledge)
 # train_size = 2
 test_size = len(output_seq) - train_size
-
+print(train_size)
 train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
@@ -226,6 +227,67 @@ for i, avg in enumerate(errorAvg, 1):
 
 printModelParmSize(model)
 torchinfo.summary(model)
+
+if compareLSTM:
+    modelLSTM = returnModel('lstm')
+
+    # optimizer = torch.optim.AdamW(model.parameters(),lr=lr)
+    optimizer = Adam_mini(modelLSTM,lr=lr)
+
+    criterion = F.smooth_l1_loss
+    # criterion = torch.nn.HuberLoss()
+
+    for epoch in range(n_epochs):
+
+        # trajPredition = plotPredition(epoch,model,'target',t=t*TU,output_seq=pertNR)
+
+        modelLSTM.train()
+        for X_batch, y_batch in loader:
+            y_pred = modelLSTM(X_batch)
+            loss = criterion(y_pred, y_batch)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        # Validation
+        modelLSTM.eval()
+        with torch.no_grad():
+            y_pred_train = modelLSTM(train_in)
+            train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
+            y_pred_test = modelLSTM(test_in)
+            test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
+
+            decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
+            decAcc, err2 = findDecAcc(test_out,y_pred_test)
+            err = np.concatenate((err1,err2),axis=0)
+
+        print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
+
+
+    output_seq = dim2NonDim6(output_seq,DU,TU)
+
+    networkPredictionLSTM = plotStatePredictions(modelLSTM,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
+    output_seq = nonDim2Dim6(output_seq,DU,TU)
+
+    plot3dOrbitPredictions(output_seq,networkPrediction,earth=False)
+    plt.plot(networkPredictionLSTM[:, 0], networkPredictionLSTM[:, 1], networkPredictionLSTM[:, 2], label='LSTM')
+    plt.legend(fontsize=10)
+    plt.tight_layout()
+    
+    plotOrbitPhasePredictions(output_seq,networkPredictionLSTM)
+    plotOrbitPhasePredictions(output_seq,networkPredictionLSTM,plane='xz')
+    plotOrbitPhasePredictions(output_seq,networkPredictionLSTM,plane='yz')
+
+    plotSolutionErrors(output_seq,networkPredictionLSTM,t/tPeriod)
+    plotPercentSolutionErrors(output_seq,networkPredictionLSTM,t/tPeriod,semimajorAxis,max(np.linalg.norm(gmatImport[:,3:6],axis=1)))
+    plotEnergy(output_seq,networkPredictionLSTM,t/tPeriod,orbitalEnergy,xLabel='Number of Periods (T)',yLabel='Specific Energy')
+
+    errorAvg = np.nanmean(abs(networkPredictionLSTM-output_seq), axis=0)
+    print("Average values of each dimension:")
+    for i, avg in enumerate(errorAvg, 1):
+        print(f"Dimension {i}: {avg}")
+
+    printModelParmSize(modelLSTM)
+    torchinfo.summary(modelLSTM)
 
 if plotOn is True:
     plt.show()
