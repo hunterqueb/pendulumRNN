@@ -27,10 +27,10 @@ sigma = 10
 rho = 28
 beta = 8/3
 
-sigma = 10
-rho = 28
-beta = 0.55
-beta = 0.56
+# sigma = 10
+# rho = 28
+# beta = 0.55
+# beta = 0.56
 
 
 parameters = np.array([sigma,rho,beta])

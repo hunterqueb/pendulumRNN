@@ -18,7 +18,8 @@ import torchinfo
 
 from qutils.integrators import myRK4Py, ode85
 from qutils.mlExtras import findDecAcc
-from qutils.plot import plotOrbitPhasePredictions,plotSolutionErrors
+from qutils.plot import plotOrbitPhasePredictions,plotSolutionErrors, plotStatePredictions,newPlotSolutionErrors
+
 from qutils.orbital import nonDim2Dim4
 from qutils.ml import printModelParmSize, create_datasets, genPlotPrediction
 
@@ -76,7 +77,7 @@ TIME_STEP = 0.05
 hidden_size = 30
 config = MambaConfig(d_model=degreesOfFreedom, n_layers=1)
 newModel = Mamba(config).to(device).double()
-# newModel = LSTMSelfAttentionNetwork(problemDim,hidden_size,problemDim,1, 0).double().to(device)
+newModel = LSTMSelfAttentionNetwork(problemDim,hidden_size,problemDim,1, 0).double().to(device)
 
 
 muR = 396800
@@ -138,7 +139,7 @@ def twoBodyPert(t, y, p=pam):
 
     return np.array([dydt1, dydt2,dydt3,dydt4])
 
-numPeriods = 10
+numPeriods = 5
 
 n_epochs = 10
 lr = 0.001
@@ -270,16 +271,19 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         return trajPredition
 
 
-networkPrediction = plotPredition(epoch+1,newModel,output_seq)
-
 pertNR = nonDim2Dim4(pertNR)
-networkPrediction = nonDim2Dim4(networkPrediction)
+t = t / T
+
+# networkPrediction = plotPredition(epoch+1,newModel,output_seq)
+networkPrediction = plotStatePredictions(newModel,t,pertNR,train_in,test_in,train_size,test_size,DU=DU,TU=TU,timeLabel='Periods')
+
+# networkPrediction = nonDim2Dim4(networkPrediction)
 
 plotOrbitPhasePredictions(pertNR,networkPrediction)
 plt.grid()
 plt.tight_layout()
-t = t / T
-plotSolutionErrors(pertNR,networkPrediction,t)
+# plotSolutionErrors(pertNR,networkPrediction,t)
+newPlotSolutionErrors(pertNR,networkPrediction,t,timeLabel='Periods')
 
 plt.show()
 

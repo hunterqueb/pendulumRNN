@@ -16,7 +16,7 @@ from qutils.tictoc import timer
 
 # from memory_profiler import profile
 
-from nets import create_dataset, LSTMSelfAttentionNetwork,create_sequences
+from nets import create_dataset, LSTMSelfAttentionNetwork,create_sequences, LSTM
 
 DEBUG = True
 plotOn = True
@@ -113,7 +113,7 @@ t = t / tEnd
 output_seq = numericResult
 
 # hyperparameters
-n_epochs = 5
+n_epochs = 50
 # lr = 5*(10**-5)
 # lr = 0.85
 lr = 0.8
@@ -128,8 +128,7 @@ lookback = 1
 p_motion_knowledge = 1/numPeriods
 
 
-train_size = int(len(output_seq) * p_motion_knowledge)
-# train_size = 2
+train_size = 2
 test_size = len(output_seq) - train_size
 
 train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
@@ -143,7 +142,7 @@ def returnModel(modelString = 'mamba'):
     if modelString == 'mamba':
         model = Mamba(config).to(device).double()
     elif modelString == 'lstm':
-        model = LSTMSelfAttentionNetwork(input_size,30,output_size,num_layers,0).double().to(device)
+        model = LSTM(input_size,30,output_size,num_layers,0).double().to(device)
     return model
 
 model = returnModel()
@@ -267,11 +266,6 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
                     trajPredition[i, j] = np.nan
 
         return trajPredition
-
-networkPrediction = plotPredition(epoch+1,model,output_seq)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1,plane='xz')
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1,plane='yz')
 DU = 389703
 G = 6.67430e-11
 # TU = np.sqrt(DU**3 / (G*(m_1+m_2)))
@@ -281,11 +275,15 @@ print(TU)
 print(tf)
 print(TU*tf)
 
-networkPrediction = nonDim2Dim6(networkPrediction,DU,TU)
 output_seq = nonDim2Dim6(output_seq,DU,TU)
 
+networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,timeLabel='Periods')
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1,plane='xz')
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1,plane='yz')
+
+
 plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
-trajPredition = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
 
 
 
@@ -294,7 +292,7 @@ trajPredition = plotStatePredictions(model,t,output_seq,train_in,test_in,train_s
 
 # plotOrbitPredictions(output_seq,networkPrediction,t=t)
 from qutils.plot import newPlotSolutionErrors
-newPlotSolutionErrors(output_seq,networkPrediction,t)
+newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel='Periods')
 # plotDecAccs(decAcc,t,problemDim)
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average values of each dimension:")
