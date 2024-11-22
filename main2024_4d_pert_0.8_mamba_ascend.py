@@ -14,12 +14,13 @@ import torch
 import random
 import torch.nn.functional as F
 import torch.utils.data as data
+import torchinfo
 
 from qutils.integrators import myRK4Py, ode45
 from qutils.mlExtras import findDecAcc
 from qutils.plot import plot3dOrbitPredictions,plotOrbitPhasePredictions, plotSolutionErrors,plotPercentSolutionErrors, plotEnergy,plotStatePredictions
 from qutils.orbital import nonDim2Dim4, orbitalEnergy
-from qutils.ml import create_datasets, genPlotPrediction
+from qutils.ml import create_datasets, genPlotPrediction, printModelParmSize
 from qutils.pinn import PINN,FeedforwardSin,FeedforwardCos
 from qutils.tictoc import timer
 
@@ -79,7 +80,7 @@ DU = 6378.1 # radius of earth in km
 TU = ((DU)**3 / muR)**0.5
 
 p = 20410 # km
-e = 0.8
+e = 0.2
 
 a = p/(1-e**2)
 
@@ -131,7 +132,7 @@ def twoBodyPert(t, y, p=pam):
 
     return np.array([dydt1, dydt2,dydt3,dydt4])
 
-numPeriods = 5
+numPeriods = 2
 
 n_epochs = 10
 
@@ -154,7 +155,7 @@ t = np.arange(t0, tf, TIME_STEP)
 IC = np.concatenate((r,v))
 
 t , numericResult = ode45(sysfuncptr,[t0,tf],IC,t)
-
+t = t * TU
 output_seq = numericResult
 
 pertNR = numericResult
@@ -208,12 +209,15 @@ plot3dOrbitPredictions(output_seq,networkPrediction)
 # plotOrbitPredictions(output_seq,networkPrediction,t=t)
 plotSolutionErrors(output_seq,networkPrediction,t)
 # plotPercentSolutionErrors(output_seq,networkPrediction,t/tPeriod,semimajorAxis,max(np.linalg.norm(gmatImport[:,3:6],axis=1)))
-plotEnergy(output_seq,networkPrediction,t,orbitalEnergy,xLabel='Number of Periods (T)',yLabel='Specific Energy')
+plotEnergy(output_seq,networkPrediction,t,orbitalEnergy,xLabel='time (TU)',yLabel='Specific Energy')
 # plotDecAccs(decAcc,t,problemDim)
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average values of each dimension:")
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg}")
+
+printModelParmSize(model)
+torchinfo.summary(model)
 
 # plt.show()
 
@@ -252,7 +256,7 @@ desiredSegs = numPeriods * 20
 
 tParts = np.linspace(t0,tf, desiredSegs + 1)
 
-epochs = 20000
+epochs = 10000
 
 numSegs = len(tParts) - 1
 
@@ -281,10 +285,32 @@ pinnSolution.setToEvaluate()
 
 # evaluate networks
 t,yTest = pinnSolution()
-
+t = t * TU
 yTruth = pinnSolution.getTrueSolution()
 
+yTruth = nonDim2Dim4(yTruth,DU,TU)
+yTest = nonDim2Dim4(yTest,DU,TU)
+
+
 plotOrbitPhasePredictions(yTruth,yTest)
+
+states = ['x', 'y', 'xdot', 'ydot']
+units = ['km', 'km', 'km/s','km/s']
+paired_labels = [f'{label} ({unit})' for label, unit in zip(states, units)]
+
+fig, axes = plt.subplots(2,problemDim // 2)
+
+for i, ax in enumerate(axes.flat):
+    ax.plot(t, yTruth[:, i], c='b', label='True Motion')
+    ax.plot(t, yTest[:, i], c='g', label='Prediction')
+    ax.set_xlabel('time (sec)')
+    ax.set_ylabel(paired_labels[i])
+    ax.grid()
+
+plt.legend(loc='upper left', bbox_to_anchor=(1,0.5))
+plt.tight_layout()
+
+
 plotSolutionErrors(yTruth,yTest,t)
 # plotPercentSolutionErrors(output_seq,networkPrediction,t/tPeriod,semimajorAxis,max(np.linalg.norm(gmatImport[:,3:6],axis=1)))
 plotEnergy(yTruth,yTest,t,orbitalEnergy,xLabel='Number of Periods (T)',yLabel='Specific Energy')
