@@ -21,10 +21,8 @@ import torch.nn.functional as F
 import torch.utils.data as data
 
 from qutils.integrators import myRK4Py
-from qutils.mlExtras import findDecAcc
-from qutils.ml import create_datasets, genPlotPrediction
-
-from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM
+from qutils.mlExtras import findDecAcc, plotSuperWeight
+from qutils.ml import create_datasets, genPlotPrediction,LSTMSelfAttentionNetwork, transferLSTM
 
 # seed any random functions
 random.seed(123)
@@ -229,7 +227,7 @@ TIME_STEP = 0.005
 # transfer to different system
 newModel = LSTMSelfAttentionNetwork(input_size,hidden_size,output_size,num_layers, p_dropout).double().to(device)
 trainableLayer = [True, True, False]
-newModel = transferLSTM(model,newModel,trainableLayer)
+newModel = transferLSTM(model,newModel)
 
 sysfuncptr = duffingOscillatorODE
 # sim time
@@ -271,14 +269,13 @@ optimizer = torch.optim.Adam(newModel.parameters(),lr=lr)
 
 def plotNewPredition(epoch,err=None):
         with torch.no_grad():
-            # shift train predictions for plotting
             train_plot = np.ones_like(output_seq) * np.nan
-            y_pred = newModel(train_in)
+            y_pred = model(train_in)
             y_pred = y_pred[:, -1, :]
-            train_plot[lookback:train_size] = newModel(train_in)[:, -1, :].cpu()
+            train_plot[1:train_size+1] = model(train_in)[:, -1, :].cpu()
             # shift test predictions for plotting
             test_plot = np.ones_like(output_seq) * np.nan
-            test_plot[train_size+lookback:len(output_seq)] = newModel(test_in)[:, -1, :].cpu()
+            test_plot[train_size+1:] = model(test_in)[:, -1, :].cpu()
 
         fig, (ax1, ax2) = plt.subplots(2,1)
         # plot
@@ -341,3 +338,10 @@ for epoch in range(n_epochs):
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
 plotNewPredition(epoch+1,err)
+
+plt.figure()
+plotSuperWeight(model,newPlot=False)
+plotSuperWeight(newModel,newPlot=False)
+plt.grid()
+plt.tight_layout()
+plt.show()
