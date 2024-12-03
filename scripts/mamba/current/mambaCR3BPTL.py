@@ -7,14 +7,12 @@ import torchinfo
 
 from qutils.integrators import ode85
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
-from qutils.ml import getDevice, create_datasets, genPlotPrediction
-from qutils.mlExtras import findDecAcc
+from qutils.ml import getDevice, create_datasets, genPlotPrediction,transferMamba
+from qutils.mlExtras import findDecAcc, plotSuperWeight
 from qutils.orbital import nonDim2Dim4
 from qutils.tictoc import timer
 from qutils.mamba import Mamba, MambaConfig
 
-
-from nets import create_dataset, LSTMSelfAttentionNetwork,transferMamba,transferLSTM
 
 modelSaved = False
 pretrainedModelPath = 'CR3BP_L4_SP.pth'
@@ -337,7 +335,7 @@ t , numericResult = ode85(system,[t0,tf],IC,t,rtol=1e-15,atol=1e-15)
 output_seq = numericResult
 
 
-n_epochs = 20
+n_epochs = 10
 # lr = 5*(10**-5)
 # lr = 0.85
 lr = 0.001
@@ -359,7 +357,7 @@ loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, 
 config = MambaConfig(d_model=problemDim, n_layers=num_layers)
 newModel = Mamba(config).to(device).double()
 
-newModel = transferMamba(model,newModel)
+newModel = transferMamba(model,newModel,[True,True,True])
 
 # newModel = LSTMSelfAttentionNetwork(input_size,50,output_size,num_layers,0).double().to(device)
 
@@ -410,6 +408,12 @@ print("Average error of each dimension:")
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg}")
 
+plt.figure()
+plotSuperWeight(model,newPlot=False)
+plotSuperWeight(newModel,newPlot=False)
+plt.grid()
+plt.tight_layout()
 
 if plotOn is True:
     plt.show()
+
