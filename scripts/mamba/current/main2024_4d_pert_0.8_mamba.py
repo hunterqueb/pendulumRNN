@@ -24,6 +24,11 @@ from qutils.ml import create_datasets, genPlotPrediction,LSTMSelfAttentionNetwor
 
 from qutils.mamba import Mamba, MambaConfig
 
+from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight,plotMinWeight
+
+printoutSuperweight = True
+plotOn = True
+
 # seed any random functions
 random.seed(123)
 
@@ -249,7 +254,7 @@ TIME_STEP = 0.05
 # trainableLayer = [True, True, False]
 # newModel = transferLSTM(model,newModel,trainableLayer)
 
-config = MambaConfig(d_model=degreesOfFreedom, n_layers=2)
+config = MambaConfig(d_model=degreesOfFreedom, n_layers=1)
 newModel = Mamba(config).to(device).double()
 
 
@@ -312,7 +317,7 @@ def twoBodyPert(t, y, p=pam):
 
 numPeriods = 20
 
-n_epochs = 50
+n_epochs = 5
 lr = 0.001
 input_size = degreesOfFreedom
 output_size = degreesOfFreedom
@@ -380,3 +385,12 @@ pertNR = nonDim2Dim4(pertNR)
 
 err = nonDim2Dim4(err)
 plotPredition(epoch+1,newModel,'target',err,t*TU,pertNR)
+
+if printoutSuperweight is True:
+    printoutMaxLayerWeight(newModel)
+    getSuperWeight(newModel)
+    plotSuperWeight(newModel)
+    plotMinWeight(newModel)
+    
+if plotOn is True:
+    plt.show()

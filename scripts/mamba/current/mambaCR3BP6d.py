@@ -7,7 +7,7 @@ import torchinfo
 
 from qutils.integrators import ode85
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions,plotStatePredictions
-from qutils.mlExtras import findDecAcc
+from qutils.mlExtras import findDecAcc,printoutMaxLayerWeight
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC
 from qutils.mamba import Mamba, MambaConfig
 from qutils.ml import printModelParmSize, getDevice, Adam_mini, genPlotPrediction, create_datasets,LSTMSelfAttentionNetwork
@@ -15,10 +15,11 @@ from qutils.tictoc import timer
 # from nets import Adam_mini
 
 # from memory_profiler import profile
-
+from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
 
 DEBUG = True
 plotOn = True
+printoutSuperweight = True
 
 problemDim = 6
 m_1 = 5.974E24  # kg
@@ -305,6 +306,11 @@ torchinfo.summary(model)
 print('rk85 on 2 period halo orbit takes 1.199 MB of memory to solve')
 print(numericResult[0,:])
 print(numericResult[1,:])
+
+if printoutSuperweight is True:
+    printoutMaxLayerWeight(model)
+    getSuperWeight(model)
+    plotSuperWeight(model)
 
 if plotOn is True:
     plt.show()

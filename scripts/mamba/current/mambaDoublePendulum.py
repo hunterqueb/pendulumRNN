@@ -12,7 +12,10 @@ from qutils.orbital import nonDim2Dim4
 
 from qutils.mamba import Mamba, MambaConfig
 
+from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
+
 plotOn = True
+printoutSuperweight = True
 
 problemDim = 4 
 
@@ -207,6 +210,11 @@ for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg} {unitLabels[i-1]}")
 
 printModelParmSize(model)
+
+if printoutSuperweight is True:
+    printoutMaxLayerWeight(model)
+    getSuperWeight(model)
+    plotSuperWeight(model)
 
 if plotOn is True:
     plt.figure()

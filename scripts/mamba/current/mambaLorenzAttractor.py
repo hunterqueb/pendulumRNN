@@ -11,6 +11,10 @@ from qutils.mlExtras import findDecAcc
 from qutils.mamba import Mamba, MambaConfig
 from qutils.ml import printModelParmSize, getDevice, Adam_mini, genPlotPrediction, create_datasets, LSTMSelfAttentionNetwork, LSTM
 from qutils.tictoc import timer
+
+#import for superweight identification
+from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
+
 # from nets import Adam_mini
 
 # from memory_profiler import profile
@@ -19,6 +23,7 @@ DEBUG = True
 plotOn = True
 randomIC = False
 randomParameters = False
+printoutSuperweight = True
 
 problemDim = 3
 
@@ -84,7 +89,7 @@ delT = 0.001
 nSamples = int(np.ceil((tf - t0) / delT))
 t = np.linspace(t0, tf, nSamples)
 
-t , numericResult = ode45(lorenzAttractor,[t0,tf],IC,t,rtol=1e-15,atol=1e-15)
+t , numericResult = ode85(lorenzAttractor,[t0,tf],IC,t)
 
 # generate data sets
 
@@ -157,6 +162,11 @@ ax = plt.axes(projection='3d')
 ax.plot3D(numericResult[:,0], numericResult[:,1], numericResult[:,2], 'green')
 ax.set_title(r'Numerical of Lorenz Attractor'+'\n'+r'($\sigma$={:.2f}, $\rho$={:.2f}, $\beta$={:.3f})'.format(parameters[0], parameters[1], parameters[2]))
 
+if printoutSuperweight is True:
+    printoutMaxLayerWeight(model)
+    getSuperWeight(model)
+    plotSuperWeight(model)
 
 if plotOn is True:
     plt.show()
+

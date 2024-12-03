@@ -15,9 +15,11 @@ from qutils.tictoc import timer
 # from nets import Adam_mini
 
 # from memory_profiler import profile
+from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
 
-compareLSTM = True
+compareLSTM = False
 plotOn = True
+printoutSuperweight = True
 
 
 problemDim = 6
@@ -292,6 +294,11 @@ if compareLSTM:
 
     printModelParmSize(modelLSTM)
     torchinfo.summary(modelLSTM)
+
+if printoutSuperweight is True:
+    printoutMaxLayerWeight(model)
+    getSuperWeight(model)
+    plotSuperWeight(model)
 
 if plotOn is True:
     plt.show()

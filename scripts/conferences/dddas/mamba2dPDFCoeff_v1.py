@@ -15,7 +15,10 @@ from qutils.mlExtras import findDecAcc,generateTrajectoryPrediction
 from qutils.mamba import Mamba,MambaConfig
 from qutils.tictoc import timer
 
+from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
+
 plotOn = True
+printoutSuperweight = True
 
 device = getDevice()
 
@@ -160,5 +163,11 @@ for file in fileName:
     printModelParmSize(model)
     savemat(fileLocation+file+'_pred'+fileExtension, all_data)
 
+if printoutSuperweight is True:
+    printoutMaxLayerWeight(model)
+    getSuperWeight(model)
+    plotSuperWeight(model)
+
 if plotOn:
     plt.show()
+
