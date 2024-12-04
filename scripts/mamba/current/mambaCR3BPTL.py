@@ -6,51 +6,35 @@ import torch.utils.data as data
 import torchinfo
 
 from qutils.integrators import ode85
-from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
-from qutils.ml import getDevice, create_datasets, genPlotPrediction,transferMamba
-from qutils.mlExtras import findDecAcc, plotSuperWeight
-from qutils.orbital import nonDim2Dim4
+from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plotStatePredictions, plot3dCR3BPPredictions,newPlotSolutionErrors
+from qutils.ml import getDevice, create_datasets, genPlotPrediction,transferMamba,LSTMSelfAttentionNetwork,transferLSTM, transferModelAll,LSTM
+from qutils.mlExtras import findDecAcc, plotSuperWeight, plotMinWeight, printoutMaxLayerWeight
+from qutils.orbital import returnCR3BPIC, nonDim2Dim6
 from qutils.tictoc import timer
 from qutils.mamba import Mamba, MambaConfig
 
+modelString = 'mamba'
 
 modelSaved = False
 pretrainedModelPath = 'CR3BP_L4_SP.pth'
 plotOn = True
 
-problemDim = 4 
+problemDim = 6
 m_1 = 5.974E24  # kg
 m_2 = 7.348E22 # kg
 mu = m_2/(m_1 + m_2)
 
-# # short period L4 "kidney bean"
-# x_0 = 0.487849413
-# y_0 = 1.471265959
-# vx_0 = 1.024841387
-# vy_0 = -0.788224219
-# tEnd = 6.2858346244258847
+orbitFamily = 'longPeriod'
 
-# long period L4 "smaller stable orbit"
-x_0 = 4.8784941344943100E-1	
-y_0 = 7.9675359028611403E-1	
-vx_0 = -7.4430997318144260E-2	
-vy_0 = 5.6679773588495463E-2
-tEnd = 2.1134216469590449E1
+CR3BPIC = returnCR3BPIC(orbitFamily,L=4,id=751,stable=True)
 
+x_0,tEnd = CR3BPIC()
 
-vSquared = (vx_0**2 + vy_0**2)
-xn1 = -mu
-xn2 = 1-mu
-rho1 = np.sqrt((x_0-xn1)**2+y_0**2)
-rho2 = np.sqrt((x_0-xn2)**2+y_0**2)
+IC = np.array(x_0)
 
-C0 = (x_0**2 + y_0**2) + 2*(1-mu)/rho1 + 2*mu/rho2 - vSquared
-print('Jacobi Constant: {}'.format(C0))
-
-# Then stack everything together into the state vector
-r_0 = np.array((x_0, y_0))
-v_0 = np.array((vx_0, vy_0))
-x_0 = np.hstack((r_0, v_0))
+DU = 389703
+G = 6.67430e-11
+TU = 382981
 
 
 def system(t, Y,mu=mu):
@@ -62,20 +46,23 @@ def system(t, Y,mu=mu):
     The solution is parameterized on $\\pi_2$, the mass ratio.
     """
     # Get the position and velocity from the solution vector
-    x, y = Y[:2]
-    xdot, ydot = Y[2:]
+    x, y, z = Y[:3]
+    xdot, ydot, zdot = Y[3:]
 
     # Define the derivative vector
 
     dydt1 = xdot
     dydt2 = ydot
-    sigma = np.sqrt(np.sum(np.square([x + mu, y])))
-    psi = np.sqrt(np.sum(np.square([x - 1 + mu, y])))
-    dydt3 = 2 * ydot + x - (1 - mu) * (x + mu) / sigma**3 - mu * (x - 1 + mu) / psi**3
-    dydt4 = -2 * xdot + y - (1 - mu) * y / sigma**3 - mu * y / psi**3
-    return np.array([dydt1, dydt2,dydt3,dydt4])
+    dydt3 = zdot
 
-IC = np.array(x_0)
+    r1 = np.sqrt((x + mu)**2 + y**2 + z**2)
+    r2 = np.sqrt((x - 1 + mu)**2 + y**2 + z**2)
+
+    dydt4 = 2 * ydot + x - (1 - mu) * (x + mu) / r1**3 - mu * (x - 1 + mu) / r2**3
+    dydt5 = -2 * xdot + y - (1 - mu) * y / r1**3 - mu * y / r2**3
+    dydt6 = -(1 - mu) * z / r1**3 - mu * z / r2**3
+
+    return np.array([dydt1, dydt2,dydt3,dydt4,dydt5,dydt6])
 
 
 device = getDevice()
@@ -106,7 +93,6 @@ lookback = 1
 # p_motion_knowledge = 0.5
 p_motion_knowledge = 1/numPeriods
 
-
 train_size = int(len(output_seq) * p_motion_knowledge)
 test_size = len(output_seq) - train_size
 
@@ -116,8 +102,15 @@ loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, 
 
 # initilizing the model, criterion, and optimizer for the data
 config = MambaConfig(d_model=problemDim, n_layers=num_layers)
-model = Mamba(config).to(device).double()
-# model = LSTMSelfAttentionNetwork(input_size,50,output_size,num_layers,0).double().to(device)
+
+def returnModel(modelString = 'mamba'):
+    if modelString == 'mamba':
+        model = Mamba(config).to(device).double()
+    elif modelString == 'lstm':
+        model = LSTM(input_size,30,output_size,num_layers,0).double().to(device)
+    return model
+
+model = returnModel(modelString)
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
@@ -125,9 +118,6 @@ criterion = torch.nn.HuberLoss()
 
 if not modelSaved:
     for epoch in range(n_epochs):
-
-        # trajPredition = plotPredition(epoch,model,'target',t=t*TU,output_seq=pertNR)
-
         model.train()
         for X_batch, y_batch in loader:
             y_pred = model(X_batch)
@@ -153,172 +143,34 @@ else:
     print('Loading pretrained model: ' + pretrainedModelPath)
     model = torch.load(pretrainedModelPath)
 
-def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
-        output_seq = trueMotion
-        # with torch.no_grad():
-            # shift train predictions for plotting
-            # train_plot = np.ones_like(output_seq) * np.nan
-
-            # NNtimer = timer()
-            # y_pred = model(train_in)
-            # NNtimer.toc()
-
-            # y_pred = y_pred[:, -1, :]
-            # train_plot[lookback:train_size] = model(train_in)[:, -1, :].cpu()
-            # # shift test predictions for plotting
-            # test_plot = np.ones_like(output_seq) * np.nan
-            # test_plot[train_size+lookback:len(output_seq)] = model(test_in)[:, -1, :].cpu()
-        train_plot, test_plot = genPlotPrediction(model,output_seq,train_in,test_in,train_size,1)
-
-        # output_seq = nonDim2Dim4(output_seq)
-        # train_plot = nonDim2Dim4(train_plot)
-        # test_plot = nonDim2Dim4(test_plot)
-    
-        fig, axes = plt.subplots(2,2)
-
-        axes[0,0].plot(t,output_seq[:,0], c='b',label = 'True Motion')
-        axes[0,0].plot(t,train_plot[:,0], c='r',label = 'Training Region')
-        axes[0,0].plot(t,test_plot[:,0], c='g',label = 'Predition')
-        axes[0,0].set_xlabel('time (sec)')
-        axes[0,0].set_ylabel('x (km)')
-
-        axes[0,1].plot(t,output_seq[:,1], c='b',label = 'True Motion')
-        axes[0,1].plot(t,train_plot[:,1], c='r',label = 'Training Region')
-        axes[0,1].plot(t,test_plot[:,1], c='g',label = 'Predition')
-        axes[0,1].set_xlabel('time (sec)')
-        axes[0,1].set_ylabel('y (km)')
-
-        axes[1,0].plot(t,output_seq[:,2], c='b',label = 'True Motion')
-        axes[1,0].plot(t,train_plot[:,2], c='r',label = 'Training Region')
-        axes[1,0].plot(t,test_plot[:,2], c='g',label = 'Predition')
-        axes[1,0].set_xlabel('time (sec)')
-        axes[1,0].set_ylabel('xdot (km/s)')
-
-        axes[1,1].plot(t,output_seq[:,3], c='b',label = 'True Motion')
-        axes[1,1].plot(t,train_plot[:,3], c='r',label = 'Training Region')
-        axes[1,1].plot(t,test_plot[:,3], c='g',label = 'Predition')
-        axes[1,1].set_xlabel('time (sec)')
-        axes[1,1].set_ylabel('ydot (km/s)')
-
-
-        plt.legend(loc='upper left', bbox_to_anchor=(1,0.5))
-        plt.tight_layout()
-
-        if prediction == 'source':
-            plt.savefig('predict/predict%d.png' % epoch)
-        if prediction == 'target':
-            plt.savefig('predict/newPredict%d.png' % epoch)
-        plt.close()
-
-        if err is not None:
-            fig, (ax1, ax2) = plt.subplots(2,1)
-            ax1.plot(err[:,0:2],label=('x','y'))
-            ax1.set_xlabel('node #')
-            ax1.set_ylabel('error (km)')
-            ax1.legend()
-            ax2.plot(err[:,2:4],label=('xdot','ydot'))
-            ax2.set_xlabel('node #')
-            ax2.set_ylabel('error (km/s)')
-            ax2.legend()
-            # ax2.plot(np.average(err,axis=0)*np.ones(err.shape))
-            plt.show()
-            
-        trajPredition = np.zeros_like(train_plot)
-
-        for i in range(test_plot.shape[0]):
-            for j in range(test_plot.shape[1]):
-                # Check if either of the matrices has a non-nan value at the current position
-                if not np.isnan(test_plot[i, j]) or not np.isnan(train_plot[i, j]):
-                    # Choose the non-nan value if one exists, otherwise default to test value
-                    trajPredition[i, j] = test_plot[i, j] if not np.isnan(test_plot[i, j]) else train_plot[i, j]
-                else:
-                    # If both are nan, set traj element to nan
-                    trajPredition[i, j] = np.nan
-
-        return trajPredition
-
-networkPrediction = plotPredition(n_epochs,model,output_seq)
-plotCR3BPPhasePredictions(output_seq,networkPrediction)
-
-DU = 384400
-G = 6.67430e-11
-TU = np.sqrt(DU**3 / (G*(m_1+m_2)))
-
-networkPrediction = nonDim2Dim4(networkPrediction,DU,TU)
-output_seq = nonDim2Dim4(output_seq,DU,TU)
 t = t / tEnd
 
-plotOrbitPredictions(output_seq,networkPrediction,t=t)
-plotSolutionErrors(output_seq,networkPrediction,t)
-# plotDecAccs(decAcc,t,problemDim)
+networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
+output_seq = nonDim2Dim6(output_seq,DU,TU)
+
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,plane='xz',earth=False,moon=False)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,plane='yz',earth=False,moon=False)
+plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
+
+newPlotSolutionErrors(output_seq,networkPrediction,t)
+
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average values of each dimension:")
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg}")
 
 
-torchinfo.summary(model,input_size=(1,1,problemDim))
+
+
 
 # TRANSFER LEARN
 
-# short period L4 "kidney bean"
-x_0 = 0.487849413
-y_0 = 1.471265959
-vx_0 = 1.024841387
-vy_0 = -0.788224219
-tEnd = 6.2858346244258847
+orbitFamily = 'shortPeriod'
 
-# # long period L4 "smaller stable orbit"
-# x_0 = 4.8784941344943100E-1	
-# y_0 = 7.9675359028611403E-1	
-# vx_0 = -7.4430997318144260E-2	
-# vy_0 = 5.6679773588495463E-2
-# tEnd = 2.1134216469590449E1
-    
-# long period L4 "weirdo smaller stable orbit"
-# x_0 = 4.8784941344943100E-1
-# y_0 = 6.8561800039907050E-1
-# vx_0 = -2.1988906536966030E-1
-# vy_0 = 1.4035202756071452E-1
-# tEnd = 2.2949593180987161E+1
+CR3BPIC = returnCR3BPIC(orbitFamily,L=4,id=755,stable=True)
 
-# Long period L5 with jacobi constant of 2.9979611240160713 (within 2 dec pts of long period L4)
-# stability index of 1.1018
-# x_0 = 4.8784941344943100E-1
-# y_0 = -6.7216923728902811E-1
-# vx_0 = 2.4526519697961138E-1
-# vy_0 = 1.3806761685537203E-1
-# tEnd = 2.4068108193305424E+1
-
-
-# long period L5 with jacobi constant of 2.7116867242419902E+0	
-# x_0 = 4.8784941344943100E-1
-# y_0 = -3.1572783764407214E-1
-# vx_0 = 9.6168428525236171E-1
-# vy_0 = 2.8862010897709328E-1
-# tEnd = 2.5646081097796674E+1		
-# stability index = 5.4769067605400700E+1
-
-# # short period L5 with jacobi constant of 2.0181025139684499E+0	
-# x_0 = 4.8784941344943100E-1
-# y_0 = -1.4712659584826735
-# vx_0 = -1.0248413865395025
-# vy_0 = -7.8822421957823163E-1
-# tEnd = 6.2858346243635790E+0
-
-vSquared = (vx_0**2 + vy_0**2)
-xn1 = -mu
-xn2 = 1-mu
-rho1 = np.sqrt((x_0-xn1)**2+y_0**2)
-rho2 = np.sqrt((x_0-xn2)**2+y_0**2)
-
-C0 = (x_0**2 + y_0**2) + 2*(1-mu)/rho1 + 2*mu/rho2 - vSquared
-print('Jacobi Constant: {}'.format(C0))
-
-# Then stack everything together into the state vector
-r_0 = np.array((x_0, y_0))
-v_0 = np.array((vx_0, vy_0))
-x_0 = np.hstack((r_0, v_0))
+x_0,tEnd = CR3BPIC()
 
 IC = np.array(x_0)
 
@@ -334,8 +186,7 @@ t , numericResult = ode85(system,[t0,tf],IC,t,rtol=1e-15,atol=1e-15)
 
 output_seq = numericResult
 
-
-n_epochs = 10
+n_epochs = 5
 # lr = 5*(10**-5)
 # lr = 0.85
 lr = 0.001
@@ -357,7 +208,14 @@ loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, 
 config = MambaConfig(d_model=problemDim, n_layers=num_layers)
 newModel = Mamba(config).to(device).double()
 
-newModel = transferMamba(model,newModel,[True,True,True])
+newModel = returnModel(modelString)
+
+if modelString == "mamba":
+    newModel = transferMamba(model,newModel,[True,True,False])
+else:
+    newModel = transferLSTM(model,newModel)
+
+# newModel = transferModelAll(model,newModel)
 
 # newModel = LSTMSelfAttentionNetwork(input_size,50,output_size,num_layers,0).double().to(device)
 
@@ -389,30 +247,40 @@ for epoch in range(n_epochs):
 
     print("Epoch %d: train loss %f, test loss %f\n" % (epoch, train_loss, test_loss))
 
-networkPrediction = plotPredition(n_epochs,newModel,output_seq)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=4)
-
-
-DU = 384400
-G = 6.67430e-11
-TU = np.sqrt(DU**3 / (G*(m_1+m_2)))
-
-networkPrediction = nonDim2Dim4(networkPrediction,DU,TU)
-output_seq = nonDim2Dim4(output_seq,DU,TU)
 t = t / tEnd
-plotOrbitPredictions(output_seq,networkPrediction,t=t)
-plotSolutionErrors(output_seq,networkPrediction,t)
-# plotDecAccs(decAcc,t,problemDim)
+networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
+output_seq = nonDim2Dim6(output_seq,DU,TU)
+
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,plane='xz',earth=False,moon=False)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,plane='yz',earth=False,moon=False)
+plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
+
+newPlotSolutionErrors(output_seq,networkPrediction,t)
+
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
-print("Average error of each dimension:")
+print("Average values of each dimension:")
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg}")
+
+torchinfo.summary(model)
+torchinfo.summary(newModel)
+
+printoutMaxLayerWeight(model)
+printoutMaxLayerWeight(newModel)
 
 plt.figure()
 plotSuperWeight(model,newPlot=False)
 plotSuperWeight(newModel,newPlot=False)
 plt.grid()
 plt.tight_layout()
+
+plt.figure()
+plotMinWeight(model,newPlot=False)
+plotMinWeight(newModel,newPlot=False)
+plt.grid()
+plt.tight_layout()
+
 
 if plotOn is True:
     plt.show()
