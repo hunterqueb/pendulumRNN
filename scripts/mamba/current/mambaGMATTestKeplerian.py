@@ -10,13 +10,11 @@ from qutils.plot import plot3dOrbitPredictions,plotOrbitPhasePredictions, plotSo
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC, readGMATReport, dim2NonDim6
 from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import printModelParmSize, getDevice, Adam_mini,create_datasets, genPlotPrediction
+from qutils.ml import printModelParmSize, getDevice, Adam_mini,create_datasets, genPlotPrediction, LSTMSelfAttentionNetwork
 from qutils.tictoc import timer
 # from nets import Adam_mini
 
 # from memory_profiler import profile
-
-from nets import create_dataset, LSTMSelfAttentionNetwork
 
 DEBUG = True
 plotOn = True
