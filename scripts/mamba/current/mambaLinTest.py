@@ -9,10 +9,9 @@ import torchinfo
 
 from qutils.integrators import myRK4Py, ode45
 from qutils.mlExtras import findDecAcc
-from qutils.plot import plotOrbitPhasePredictions
+from qutils.plot import plotOrbitPhasePredictions,newPlotSolutionErrors,plotStatePredictions
 from qutils.orbital import nonDim2Dim4
-
-from nets import LSTMSelfAttentionNetwork, create_dataset
+from qutils.ml import create_datasets, LSTMSelfAttentionNetwork
 
 from qutils.mamba import Mamba, MambaConfig
 
@@ -34,7 +33,7 @@ else:
 k = 1; m = 1
 wr = np.sqrt(k/m)
 F0 = 0.3
-c = 0.1 # consider no damping for now
+c = 0.0 # consider no damping for now
 zeta = c / (2*m*wr)
 
 def linPendulumODE(t,theta,u,p=[m,c,k]):
@@ -56,11 +55,15 @@ t = np.linspace(t0,tf,int(tf/dt))
 
 u = F0 * np.sin(t) # LTI system
 # u = F0 * np.exp(-2*t) # LTV system
-
+# u = F0
 sys = ct.StateSpace(A,B,C,D)
 
 results = ct.forced_response(sys,t,u,[1,0])
 numericalResult = results.states.T
+
+results = ct.forced_response(sys,t,0,[1,0])
+numericalResultUnforced = results.states.T
+
 
 # plt.figure()
 # plt.plot(t,results.states.T)
@@ -78,7 +81,7 @@ modelLSTM = LSTMSelfAttentionNetwork(2,20,2,1,0).double().to(device)
 modelMamba = Mamba(config).to(device).double()
 
 model = modelMamba
-model = modelLSTM
+# model = modelLSTM
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
@@ -95,53 +98,9 @@ test_size = len(numericalResult) - train_size
 
 train, test = numericalResult[:train_size], numericalResult[train_size:]
 
-train_in,train_out = create_dataset(train,device,lookback=lookback)
-test_in,test_out = create_dataset(test,device,lookback=lookback)
+train_in,train_out,test_in,test_out = create_datasets(numericalResult,1,train_size,device)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
-
-def plotPredition(epoch):
-        with torch.no_grad():
-            # shift train predictions for plotting
-            train_plot = np.ones_like(numericalResult) * np.nan
-            y_pred = model(train_in)
-            y_pred = y_pred[:, -1, :]
-            train_plot[lookback:train_size] = model(train_in)[:, -1, :].cpu()
-            # shift test predictions for plotting
-            test_plot = np.ones_like(numericalResult) * np.nan
-            test_plot[train_size+lookback:len(numericalResult)] = model(test_in)[:, -1, :].cpu()
-
-        fig, (ax1, ax2) = plt.subplots(2,1)
-        # plot
-        ax1.plot(t,numericalResult[:,0], c='b',label = 'True Motion')
-        ax1.plot(t,train_plot[:,0], c='r',label = 'Training Region')
-        ax1.plot(t,test_plot[:,0], c='g',label = 'Predition')
-        if model == modelLSTM:
-            ax1.set_title('LSTM Solution to Linear Oscillator')
-        elif model == modelMamba:
-            ax1.set_title('Mamba Solution to Linear Oscillator')
-        # ax1.xlabel('time (sec)')
-        ax1.set_ylabel('x (m)')
-        # plt.legend(loc="lower left")
-
-        ax2.plot(t,numericalResult[:,1], c='b',label = 'True Motion')
-        ax2.plot(t,train_plot[:,1], c='r',label = 'Training Region')
-        ax2.plot(t,test_plot[:,1], c='g',label = 'Predition')
-        ax2.set_xlabel('time (sec)')
-        ax2.set_ylabel('xdot (m/s)')
-        plt.legend(loc="lower left")
-        plt.show()
-        plt.savefig('predict/predict%d.png' % epoch)
-        plt.close()
-
-        # filter out nan values for better post processing
-        train_plot = train_plot[~np.isnan(train_plot)]
-        test_plot = test_plot[~np.isnan(test_plot)]
-
-        trajPredition = np.concatenate((train_plot,test_plot))
-
-        return trajPredition.reshape((len(trajPredition),1))
-
 
 for epoch in range(n_epochs):
     model.train()
@@ -174,4 +133,11 @@ if model == modelMamba:
 # B and C take the size of the test vector? how is it doing this? how does it now
 torchinfo.summary(model)
 
-plotPredition(n_epochs)
+trajPredition = plotStatePredictions(model,t,numericalResult,train_in,test_in,train_size,test_size,states=['x','y','z'])
+fig, axes = plt.subplots(2,1)
+for i, ax in enumerate(axes.flat):
+    ax.plot(t, numericalResultUnforced[:, i], c='b', label='Unforced Motion')
+
+plt.legend()
+newPlotSolutionErrors(numericalResult,trajPredition,t,states=['x','y','z'])
+plt.show()
