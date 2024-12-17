@@ -19,6 +19,9 @@ device = getDevice()
 
 fileLocation = 'scripts/mamba/nsin/'
 file = "lin_forced_osc_pdfCoeff_del_t_0_01_tf_4_8_mamba"
+file = "lin_sin_forced_osc_pdfCoeff_del_t_0_01_tf_4_8_mamba"
+# file = "lin_forced_osc_pdfCoeff_del_t_0_01_tf_25_mamba"
+# file = "lin_sin_forced_osc_pdfCoeff_del_t_0_01_tf_25_mamba"
 fileExtension = ".mat"
 pdf_approx_coeff = loadmat(fileLocation+file+fileExtension)
 
@@ -113,7 +116,7 @@ for set in learningSet:
             decAcc, err2 = findDecAcc(test_out,y_pred_test,printOut=False)
             err = np.concatenate((err1,err2),axis=0)
 
-        print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
+    print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
     trainTime.toc()
 
@@ -128,25 +131,11 @@ for set in learningSet:
 
     sequenceLength = learningSeq.shape[0]
     problemDim = learningSeq.shape[1]
+    n_epochs = 2
 
-    # hyperparameters
-    n_epochs = 20
-    # lr = 0.0007
-    lr = 0.01
-    input_size = problemDim
-    output_size = problemDim
-    num_layers = 1
-    lookback = 1
-    seq_length = 1
 
-    if set == learningSet[0]:
-        p_motion_knowledge = 1/2
-    else:
-        p_motion_knowledge = 1/4
-    # train_size = 2
     train_size = int(sequenceLength * p_motion_knowledge)
     test_size = sequenceLength - train_size
-
 
     train = learningSeq[:train_size]
     test = learningSeq[train_size:]
@@ -157,13 +146,7 @@ for set in learningSet:
 
     loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
-    # initilizing the model, criterion, and optimizer for the data
-    # config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=256)
-    config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=32,expand_factor=1)
-    model = Mamba(config).to(device).double()
-
-
-    optimizer = torch.optim.Adam(model.parameters(),lr=lr)
+    optimizer = torch.optim.Adam(newModel.parameters(),lr=lr)
     criterion = F.smooth_l1_loss
 
     trainTime = timer()
@@ -172,26 +155,26 @@ for set in learningSet:
 
         # trajPredition = plotPredition(epoch,model,'target',t=t*TU,output_seq=pertNR)
 
-        model.train()
+        newModel.train()
         for X_batch, y_batch in loader:
-            y_pred = model(X_batch)
+            y_pred = newModel(X_batch)
             loss = criterion(y_pred, y_batch)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
         # Validation
-        model.eval()
+        newModel.eval()
         with torch.no_grad():
-            y_pred_train = model(train_in)
+            y_pred_train = newModel(train_in)
             train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
-            y_pred_test = model(test_in)
+            y_pred_test = newModel(test_in)
             test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
 
             decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
             decAcc, err2 = findDecAcc(test_out,y_pred_test,printOut=False)
             err = np.concatenate((err1,err2),axis=0)
 
-        print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
+    print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
     trainTime.toc()
 
@@ -199,4 +182,70 @@ for set in learningSet:
 
     t = pdf_approx_coeff['tspan'].T
 
+    unforcedTrueCoffNorm = pdf_approx_coeff[set].T
+    forcedTrueCoffNorm = pdf_approx_coeff[set+"_forced"].T
+
+
+
+
     # TODO - plot the coefficent trajectories
+
+
+    def plotCoeffPred(finalData,trueCoffNorm):
+        predictedCoeffNorm = finalData
+        error = predictedCoeffNorm - trueCoffNorm
+        errorAvg = np.nanmean(abs(error))
+    
+        print('Average error in for ' + set + ':',errorAvg)
+        print("\ttrain loss %.4f, test loss %.4f\n" % (train_loss, test_loss))
+
+        train_plot = np.pad(train, ((0, learningSeq.shape[0] - train.shape[0]), (0, 0)), mode='constant', constant_values=np.nan)
+        test_plot = np.pad(predictedCoeffNorm, ((0, learningSeq.shape[0] - predictedCoeffNorm.shape[0]), (0, 0)), mode='constant', constant_values=np.nan)
+
+        for i in range(problemDim):
+            plt.plot(t,learningSeq[:,i])
+        plt.plot(t,learningSeq[:,0])
+
+        plt.plot(t,train_plot,'k', linestyle='dashed',label='_nolegend_')
+        plt.plot(t,test_plot,'grey', linestyle=':',label='_nolegend_')
+        plt.grid()
+        plt.xlabel('Time (sec)')
+        plt.ylabel('RBF Coefficent Values (none)')
+
+    def plotCoeffPredAtIndex(i,finalData,trueCoffNorm):
+        predictedCoeffNorm = finalData
+        error = predictedCoeffNorm - trueCoffNorm
+        errorAvg = np.nanmean(abs(error))
+    
+        print('Average error in for ' + set + ':',errorAvg)
+        print("\ttrain loss %.4f, test loss %.4f\n" % (train_loss, test_loss))
+
+        train_plot = np.pad(train, ((0, learningSeq.shape[0] - train.shape[0]), (0, 0)), mode='constant', constant_values=np.nan)
+        test_plot = np.pad(predictedCoeffNorm, ((0, learningSeq.shape[0] - predictedCoeffNorm.shape[0]), (0, 0)), mode='constant', constant_values=np.nan)
+
+        plt.plot(t,learningSeq[:,i])
+
+        plt.plot(t,train_plot[:,i],'k', linestyle='dashed',label='_nolegend_')
+        plt.plot(t,test_plot[:,i],'grey', linestyle=':',label='_nolegend_')
+        plt.grid()
+        plt.xlabel('Time (sec)')
+        plt.ylabel('RBF Coefficent Values (none)')
+
+
+    # plt.figure()
+    # plotCoeffPred(unforced_pred,unforcedTrueCoffNorm)
+    # plotCoeffPred(forced_pred,forcedTrueCoffNorm)
+    # training_region_line = mlines.Line2D([], [], color='k', linestyle='dashed', label='Training Region')
+    # test_region_line = mlines.Line2D([], [], color='grey', linestyle=':', label='Prediction')
+    # truth_region_line = mlines.Line2D([], [], color='blue', label='Truth')
+    # plt.legend(handles=[training_region_line,test_region_line,truth_region_line])
+    # plt.show()
+
+    plt.figure()
+    plotCoeffPredAtIndex(1,unforced_pred,unforcedTrueCoffNorm)
+    # plotCoeffPredAtIndex(1,forced_pred,forcedTrueCoffNorm)
+    training_region_line = mlines.Line2D([], [], color='k', linestyle='dashed', label='Training Region')
+    test_region_line = mlines.Line2D([], [], color='grey', linestyle=':', label='Prediction')
+    truth_region_line = mlines.Line2D([], [], color='blue', label='Truth')
+    plt.legend(handles=[training_region_line,test_region_line,truth_region_line])
+    plt.show()
