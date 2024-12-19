@@ -55,8 +55,9 @@ mu = m_2/(m_1 + m_2)
 
 orbitFamily = 'halo'
 
-CR3BPIC = returnCR3BPIC(orbitFamily,L=1,id=894,stable=True)
-# CR3BPIC = returnCR3BPIC(orbitFamily,L=2,id=150,stable=True)
+# CR3BPIC = returnCR3BPIC(orbitFamily,L=1,id=894,stable=True)
+# CR3BPIC = returnCR3BPIC("resonant",L=43)
+CR3BPIC = returnCR3BPIC(orbitFamily,L=2,id=77)
 
 # orbitFamily = 'longPeriod'
 
@@ -191,13 +192,14 @@ TU = 382981
 networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
 output_seq = nonDim2Dim6(output_seq,DU,TU)
 
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1,plane='xz')
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1,plane='yz')
-plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=2,DU=DU)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=2,plane='xz',DU=DU)
+plotCR3BPPhasePredictions(output_seq,networkPrediction,L=2,plane='yz',DU=DU)
+# plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
+plot3dCR3BPPredictions(output_seq,networkPrediction,L=2,DU=DU)
 
 from qutils.plot import newPlotSolutionErrors
-newPlotSolutionErrors(output_seq,networkPrediction,t)
+newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel="Orbit Periods")
 
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average values of each dimension:")
