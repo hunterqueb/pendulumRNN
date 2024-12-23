@@ -1,12 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
+
 import torch
 import torch.nn.functional as F
 import torch.utils.data as data
 import torchinfo
 
 from qutils.integrators import ode85
-from qutils.plot import plot3dOrbitPredictions,plotOrbitPhasePredictions, plotSolutionErrors,plotPercentSolutionErrors, plotEnergy,plotStatePredictions
+from qutils.plot import plot3dOrbitPredictions,plotOrbitPhasePredictions, plotSolutionErrors,plotPercentSolutionErrors, plotEnergy,plotStatePredictions,newPlotSolutionErrors
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC, readGMATReport, dim2NonDim6, orbitalEnergy
 from qutils.mamba import Mamba, MambaConfig
@@ -17,9 +19,9 @@ from qutils.tictoc import timer
 # from memory_profiler import profile
 from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
 
-compareLSTM = False
+compareLSTM = True
 plotOn = True
-printoutSuperweight = True
+printoutSuperweight = False
 
 
 problemDim = 6
@@ -188,7 +190,7 @@ if compareLSTM:
     networkPredictionLSTM = plotStatePredictions(modelLSTM,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
     output_seq = nonDim2Dim6(output_seq,DU,TU)
 
-    plot3dOrbitPredictions(output_seq,networkPrediction,earth=False)
+    plot3dOrbitPredictions(output_seq,networkPrediction,earth=False,networkLabel="Mamba")
     plt.plot(networkPredictionLSTM[:, 0], networkPredictionLSTM[:, 1], networkPredictionLSTM[:, 2], label='LSTM')
     plt.legend(fontsize=10)
     plt.tight_layout()
@@ -198,8 +200,19 @@ if compareLSTM:
     plotOrbitPhasePredictions(output_seq,networkPredictionLSTM,plane='yz')
 
     plotSolutionErrors(output_seq,networkPredictionLSTM,t/tPeriod)
-    plotPercentSolutionErrors(output_seq,networkPredictionLSTM,t/tPeriod,semimajorAxis,max(np.linalg.norm(gmatImport[:,3:6],axis=1)))
-    plotEnergy(output_seq,networkPredictionLSTM,t/tPeriod,orbitalEnergy,xLabel='Number of Periods (T)',yLabel='Specific Energy')
+
+    fig, axes = newPlotSolutionErrors(output_seq,networkPrediction,t/tPeriod,timeLabel="Periods")
+    newPlotSolutionErrors(output_seq,networkPredictionLSTM,t/tPeriod,timeLabel="Periods",newPlot=axes,networkLabels=["Mamba","LSTM"])
+    mambaLine = mlines.Line2D([], [], color='b', label='Mamba')
+    LSTMLine = mlines.Line2D([], [], color='orange', label='LSTM')
+    fig.legend(handles=[mambaLine,LSTMLine])
+    fig.tight_layout()
+
+    # plotPercentSolutionErrors(output_seq,networkPredictionLSTM,t/tPeriod,semimajorAxis,max(np.linalg.norm(gmatImport[:,3:6],axis=1)))
+
+    plotEnergy(output_seq,networkPrediction,t/tPeriod,orbitalEnergy,xLabel='Number of Periods (T)',yLabel='Specific Energy')
+    plt.plot(t/tPeriod,orbitalEnergy(networkPredictionLSTM),label='LSTM')
+    plt.legend()
 
     errorAvg = np.nanmean(abs(networkPredictionLSTM-output_seq), axis=0)
     print("Average values of each dimension:")

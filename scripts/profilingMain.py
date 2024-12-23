@@ -6,4 +6,4 @@ scriptName = "mambaCR3BP6d.py"
 scriptName = "mambaGMATTest.py"
 
 qProfile.runMemoryProfiling(folderLocation+scriptName)
-# qProfile.runPerformanceProfiling(folderLocation+scriptName,'profiled'+scriptName)
+qProfile.runPerformanceProfiling(folderLocation+scriptName,'profiled'+scriptName)

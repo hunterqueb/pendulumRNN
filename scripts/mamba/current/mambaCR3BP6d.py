@@ -1,14 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 import torch
 import torch.nn.functional as F
 import torch.utils.data as data
 import torchinfo
 
 from qutils.integrators import ode85
-from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions,plotStatePredictions
+from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions,plotStatePredictions, plotEnergy
 from qutils.mlExtras import findDecAcc,printoutMaxLayerWeight
-from qutils.orbital import nonDim2Dim6, returnCR3BPIC
+from qutils.orbital import nonDim2Dim6, dim2NonDim6, returnCR3BPIC, jacobiConstant6
 from qutils.mamba import Mamba, MambaConfig
 from qutils.ml import printModelParmSize, getDevice, Adam_mini, genPlotPrediction, create_datasets,LSTMSelfAttentionNetwork
 from qutils.tictoc import timer
@@ -20,18 +21,12 @@ from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeigh
 DEBUG = True
 plotOn = True
 printoutSuperweight = True
+compareLSTM = True
 
 problemDim = 6
 m_1 = 5.974E24  # kg
 m_2 = 7.348E22 # kg
 mu = m_2/(m_1 + m_2)
-
-# short period L4 "kidney bean"
-# x_0 = 0.487849413
-# y_0 = 1.471265959
-# vx_0 = 1.024841387
-# vy_0 = -0.788224219
-# tEnd = 6.2858346244258847
 
 # halo orbit around L1 - id 754
 
@@ -43,25 +38,15 @@ mu = m_2/(m_1 + m_2)
 
 # lyapunov id 312
 
-# vSquared = (vx_0**2 + vy_0**2)
-# xn1 = -mu
-# xn2 = 1-mu
-# rho1 = np.sqrt((x_0-xn1)**2+y_0**2)
-# rho2 = np.sqrt((x_0-xn2)**2+y_0**2)
-
-# C0 = (x_0**2 + y_0**2) + 2*(1-mu)/rho1 + 2*mu/rho2 - vSquared
-# print('Jacobi Constant: {}'.format(C0))
-
-
 orbitFamily = 'halo'
 
 # CR3BPIC = returnCR3BPIC(orbitFamily,L=1,id=894,stable=True)
-# CR3BPIC = returnCR3BPIC("resonant",L=43)
-CR3BPIC = returnCR3BPIC(orbitFamily,L=2,id=77)
+CR3BPIC = returnCR3BPIC("resonant",L=43,id=533)
+# CR3BPIC = returnCR3BPIC(orbitFamily,L=2,id=77)
 
 # orbitFamily = 'longPeriod'
 
-# CR3BPIC = returnCR3BPIC(orbitFamily,L=4,id=751,stable=True)
+# CR3BPIC = returnCR3BPIC("shortPeriod",L=4,id=806)
 
 x_0,tEnd = CR3BPIC()
 
@@ -216,6 +201,85 @@ if printoutSuperweight is True:
     printoutMaxLayerWeight(model)
     getSuperWeight(model)
     plotSuperWeight(model)
+
+if compareLSTM:
+    del model
+    del optimizer
+    torch.cuda.empty_cache()
+    import gc
+    gc.collect()
+    modelLSTM = returnModel('lstm')
+
+    # optimizer = torch.optim.AdamW(model.parameters(),lr=lr)
+    optimizer = Adam_mini(modelLSTM,lr=lr)
+
+    criterion = F.smooth_l1_loss
+    # criterion = torch.nn.HuberLoss()
+    trainTime = timer()
+    for epoch in range(n_epochs):
+
+        # trajPredition = plotPredition(epoch,model,'target',t=t*TU,output_seq=pertNR)
+
+        modelLSTM.train()
+        for X_batch, y_batch in loader:
+            y_pred = modelLSTM(X_batch)
+            loss = criterion(y_pred, y_batch)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        # Validation
+        modelLSTM.eval()
+        with torch.no_grad():
+            y_pred_train = modelLSTM(train_in)
+            train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
+            y_pred_test = modelLSTM(test_in)
+            test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
+
+            decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
+            decAcc, err2 = findDecAcc(test_out,y_pred_test)
+            err = np.concatenate((err1,err2),axis=0)
+
+        print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
+    trainTime.toc()
+
+
+    output_seq = dim2NonDim6(output_seq,DU,TU)
+
+    networkPredictionLSTM = plotStatePredictions(modelLSTM,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
+    output_seq = nonDim2Dim6(output_seq,DU,TU)
+
+    plot3dCR3BPPredictions(output_seq,networkPrediction,earth=False,networkLabel="Mamba")
+    plt.plot(networkPredictionLSTM[:, 0], networkPredictionLSTM[:, 1], networkPredictionLSTM[:, 2], label='LSTM')
+    plt.legend(fontsize=10)
+    plt.tight_layout()
+
+    plotCR3BPPhasePredictions(output_seq,networkPredictionLSTM)
+    plotCR3BPPhasePredictions(output_seq,networkPredictionLSTM,plane='xz')
+    plotCR3BPPhasePredictions(output_seq,networkPredictionLSTM,plane='yz')
+
+    plotSolutionErrors(output_seq,networkPredictionLSTM,t)
+
+    fig, axes = newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel="Periods")
+    newPlotSolutionErrors(output_seq,networkPredictionLSTM,t,timeLabel="Periods",newPlot=axes,networkLabels=["Mamba","LSTM"])
+    mambaLine = mlines.Line2D([], [], color='b', label='Mamba')
+    LSTMLine = mlines.Line2D([], [], color='orange', label='LSTM')
+    fig.legend(handles=[mambaLine,LSTMLine])
+    fig.tight_layout()
+
+    # plotPercentSolutionErrors(output_seq,networkPredictionLSTM,t,semimajorAxis,max(np.linalg.norm(gmatImport[:,3:6],axis=1)))
+
+    plotEnergy(output_seq,networkPrediction,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',nonDim=dim2NonDim6,DU = DU, TU = TU,networkLabel="Mamba")
+    plt.plot(t,jacobiConstant6(dim2NonDim6(networkPredictionLSTM,DU=DU,TU=TU)),label='LSTM')
+    plt.legend()
+
+    errorAvg = np.nanmean(abs(networkPredictionLSTM-output_seq), axis=0)
+    print("Average values of each dimension:")
+    for i, avg in enumerate(errorAvg, 1):
+        print(f"Dimension {i}: {avg}")
+
+    printModelParmSize(modelLSTM)
+    torchinfo.summary(modelLSTM)
+
 
 if plotOn is True:
     plt.show()
