@@ -92,7 +92,7 @@ nSamples = int(np.ceil((tf - t0) / delT))
 t = np.linspace(t0, tf, nSamples)
 
 # t , numericResult = ode1412(system,[t0,tf],IC,t)
-t , numericResult = ode85(system,[t0,tf],IC,t)
+t , numericResult = ode85(system,[t0,tf],IC,t,rtol=1e-15,atol=1e-15)
 
 t = t / tEnd
 
@@ -138,7 +138,7 @@ optimizer = Adam_mini(model,lr=lr)
 # optimizer = Adam_mini(model,lr=lr)
 
 criterion = F.smooth_l1_loss
-criterion = torch.nn.HuberLoss()
+# criterion = torch.nn.HuberLoss()
 
 trainTime = timer()
 for epoch in range(n_epochs):
@@ -248,7 +248,7 @@ if compareLSTM:
     networkPredictionLSTM = plotStatePredictions(modelLSTM,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
     output_seq = nonDim2Dim6(output_seq,DU,TU)
 
-    plot3dCR3BPPredictions(output_seq,networkPrediction,earth=False,networkLabel="Mamba")
+    plot3dCR3BPPredictions(output_seq,networkPrediction,earth=False,networkLabel="Mamba",DU=DU,L=None)
     plt.plot(networkPredictionLSTM[:, 0], networkPredictionLSTM[:, 1], networkPredictionLSTM[:, 2], label='LSTM')
     plt.legend(fontsize=10)
     plt.tight_layout()
@@ -257,10 +257,10 @@ if compareLSTM:
     plotCR3BPPhasePredictions(output_seq,networkPredictionLSTM,plane='xz')
     plotCR3BPPhasePredictions(output_seq,networkPredictionLSTM,plane='yz')
 
-    plotSolutionErrors(output_seq,networkPredictionLSTM,t)
+    newPlotSolutionErrors(output_seq,networkPredictionLSTM,t,timeLabel="Orbit Periods")
 
-    fig, axes = newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel="Periods")
-    newPlotSolutionErrors(output_seq,networkPredictionLSTM,t,timeLabel="Periods",newPlot=axes,networkLabels=["Mamba","LSTM"])
+    fig, axes = newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel="Orbit Periods")
+    newPlotSolutionErrors(output_seq,networkPredictionLSTM,t,timeLabel="Orbit Periods",newPlot=axes,networkLabels=["Mamba","LSTM"])
     mambaLine = mlines.Line2D([], [], color='b', label='Mamba')
     LSTMLine = mlines.Line2D([], [], color='orange', label='LSTM')
     fig.legend(handles=[mambaLine,LSTMLine])

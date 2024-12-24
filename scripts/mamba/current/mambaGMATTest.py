@@ -42,7 +42,7 @@ DU = 6378.1 # radius of earth in km
 TU = ((DU)**3 / muR)**0.5
 
 output_seq = dim2NonDim6(output_seq,DU,TU)
-
+print(output_seq[0,:])
 # hyperparameters
 n_epochs = 5
 # lr = 5*(10**-5)
@@ -192,6 +192,7 @@ if compareLSTM:
 
     plot3dOrbitPredictions(output_seq,networkPrediction,earth=False,networkLabel="Mamba")
     plt.plot(networkPredictionLSTM[:, 0], networkPredictionLSTM[:, 1], networkPredictionLSTM[:, 2], label='LSTM')
+    plt.plot(0,0,0,"ko",label="Earth")
     plt.legend(fontsize=10)
     plt.tight_layout()
 
