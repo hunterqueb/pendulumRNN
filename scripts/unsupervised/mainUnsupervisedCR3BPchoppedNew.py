@@ -8,7 +8,7 @@ import qutils.trialSolution as TS
 from qutils.mlExtras import findDecAcc as findDecimalAccuracy
 from qutils.tictoc import timer
 from qutils.pinn import PINN,FeedforwardSin,FeedforwardCos
-from qutils.integrators import ode85
+from qutils.integrators import ode87
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors, plotEnergy, plot3dCR3BPPredictions
 from qutils.orbital import  returnCR3BPIC,nonDim2Dim6
 
@@ -254,7 +254,7 @@ TU = 382981
 # odeTime = timer()
 # odeTime.tic()
 # for i in range(nTest):
-#     tSeg, numericalResult  = ode85(system, (0, tEnd), y0, rtol=1e-8,atol=1e-10)
+#     tSeg, numericalResult  = ode87(system, (0, tEnd), y0, rtol=1e-8,atol=1e-10)
 # finalOde = odeTime.tocVal()
 # print('Time to evaluate {} ODES with RK45: {}'.format(nTest,finalOde))
 

@@ -8,7 +8,7 @@ import qutils.trialSolution as TS
 from qutils.mlExtras import findDecAcc as findDecimalAccuracy
 from qutils.tictoc import timer
 from qutils.pinn import trainForwardLagAna,FeedforwardSin,FeedforwardCos
-from qutils.integrators import ode85
+from qutils.integrators import ode87
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors, plotEnergy
 from qutils.orbital import jacobiConstant
 
@@ -250,7 +250,7 @@ for i in range(numSegs):
 
     tSeg = np.linspace(tParts[i], tParts[i+1], nSamples)
     
-    tSeg, yTruthSeg[i] = ode85(system, (tParts[i], tParts[i+1]), y0Seg, rtol=1e-8,atol=1e-10,t_eval=tSeg)
+    tSeg, yTruthSeg[i] = ode87(system, (tParts[i], tParts[i+1]), y0Seg, rtol=1e-8,atol=1e-10,t_eval=tSeg)
     
     T.append(torch.tensor(np.reshape(tSeg, [len(tSeg), 1])).to(device))
 
@@ -318,7 +318,7 @@ print('Time to evaluate {} ODES with NN: {}'.format(nTest,finalNet))
 odeTime = timer()
 odeTime.tic()
 for i in range(nTest):
-    tSeg, numericalResult  = ode85(system, (0, tEnd), y0Seg, rtol=1e-8,atol=1e-10)
+    tSeg, numericalResult  = ode87(system, (0, tEnd), y0Seg, rtol=1e-8,atol=1e-10)
 finalOde = odeTime.tocVal()
 print('Time to evaluate {} ODES with RK45: {}'.format(nTest,finalOde))
 

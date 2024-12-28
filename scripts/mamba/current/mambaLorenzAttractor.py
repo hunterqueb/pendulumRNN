@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch.utils.data as data
 import torchinfo
 
-from qutils.integrators import ode85, ode45
+from qutils.integrators import ode87, ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions,plotStatePredictions,newPlotSolutionErrors
 from qutils.mlExtras import findDecAcc
 from qutils.mamba import Mamba, MambaConfig
@@ -89,7 +89,7 @@ delT = 0.001
 nSamples = int(np.ceil((tf - t0) / delT))
 t = np.linspace(t0, tf, nSamples)
 
-t , numericResult = ode85(lorenzAttractor,[t0,tf],IC,t)
+t , numericResult = ode87(lorenzAttractor,[t0,tf],IC,t)
 
 # generate data sets
 

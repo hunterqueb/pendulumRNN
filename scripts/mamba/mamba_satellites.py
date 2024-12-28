@@ -6,7 +6,7 @@ import torch.utils.data as data
 import torchinfo
 from scipy.io import loadmat,savemat
 
-from qutils.integrators import ode85
+from qutils.integrators import ode87
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions
 from qutils.mlExtras import findDecAcc,generateTrajectoryPrediction
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC

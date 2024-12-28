@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch.utils.data as data
 import torchinfo
 
-from qutils.integrators import ode85
+from qutils.integrators import ode87
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions,plotStatePredictions
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC
@@ -171,7 +171,7 @@ nSamples = int(np.ceil((tf - t0) / delT))
 t = np.linspace(t0, tf, nSamples)
 
 # t , numericResult = ode1412(system,[t0,tf],IC,t)
-t , numericResult = ode85(system,[t0,tf],IC,t)
+t , numericResult = ode87(system,[t0,tf],IC,t)
 
 t = t / tEnd
 

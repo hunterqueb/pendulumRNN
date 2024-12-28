@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch.utils.data as data
 import torchinfo
 
-from qutils.integrators import ode85
+from qutils.integrators import ode87
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plotStatePredictions, plot3dCR3BPPredictions,newPlotSolutionErrors
 from qutils.ml import getDevice, create_datasets, genPlotPrediction,transferMamba,LSTMSelfAttentionNetwork,transferLSTM, transferModelAll,LSTM
 from qutils.mlExtras import findDecAcc, plotSuperWeight, plotMinWeight, printoutMaxLayerWeight
@@ -76,7 +76,7 @@ nSamples = int(np.ceil((tf - t0) / delT))
 t = np.linspace(t0, tf, nSamples)
 
 ODEtime = timer()
-t , numericResult = ode85(system,[t0,tf],IC,t)
+t , numericResult = ode87(system,[t0,tf],IC,t)
 ODEtime.toc()
 
 output_seq = numericResult
@@ -182,7 +182,7 @@ delT = 0.001
 nSamples = int(np.ceil((tf - t0) / delT))
 t = np.linspace(t0, tf, nSamples)
 
-t , numericResult = ode85(system,[t0,tf],IC,t,rtol=1e-15,atol=1e-15)
+t , numericResult = ode87(system,[t0,tf],IC,t,rtol=1e-15,atol=1e-15)
 
 output_seq = numericResult
 

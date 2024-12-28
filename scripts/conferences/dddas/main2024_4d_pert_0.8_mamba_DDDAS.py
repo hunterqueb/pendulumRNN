@@ -16,7 +16,7 @@ import torch.nn.functional as F
 import torch.utils.data as data
 import torchinfo
 
-from qutils.integrators import myRK4Py, ode85
+from qutils.integrators import myRK4Py, ode87
 from qutils.mlExtras import findDecAcc
 from qutils.plot import plotOrbitPhasePredictions,plotSolutionErrors, plotStatePredictions,newPlotSolutionErrors
 
@@ -156,7 +156,7 @@ t = np.arange(t0, tf, TIME_STEP)
 
 IC = np.concatenate((r,v))
 
-t , numericResult = ode85(sysfuncptr,[t0,tf],IC,t)
+t , numericResult = ode87(sysfuncptr,[t0,tf],IC,t)
 
 output_seq = numericResult
 
