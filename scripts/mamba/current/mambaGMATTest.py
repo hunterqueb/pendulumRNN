@@ -12,7 +12,7 @@ from qutils.plot import plot3dOrbitPredictions,plotOrbitPhasePredictions, plotSo
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC, readGMATReport, dim2NonDim6, orbitalEnergy
 from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import printModelParmSize, getDevice, Adam_mini, create_datasets, genPlotPrediction, LSTMSelfAttentionNetwork
+from qutils.ml import trainModel, printModelParmSize, getDevice, Adam_mini, create_datasets, genPlotPrediction, LSTMSelfAttentionNetwork
 from qutils.tictoc import timer
 # from nets import Adam_mini
 
@@ -63,9 +63,8 @@ train_size = int(len(output_seq) * p_motion_knowledge)
 # train_size = 2
 test_size = len(output_seq) - train_size
 print(train_size)
+print(test_size)
 train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
-
-loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
 # initilizing the model, criterion, and optimizer for the data
 config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=32)
@@ -85,34 +84,7 @@ optimizer = Adam_mini(model,lr=lr)
 criterion = F.smooth_l1_loss
 # criterion = torch.nn.HuberLoss()
 
-trainTime = timer()
-for epoch in range(n_epochs):
-
-    # trajPredition = plotPredition(epoch,model,'target',t=t*TU,output_seq=pertNR)
-
-    model.train()
-    for X_batch, y_batch in loader:
-        y_pred = model(X_batch)
-        loss = criterion(y_pred, y_batch)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-    # Validation
-    model.eval()
-    with torch.no_grad():
-        y_pred_train = model(train_in)
-        train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
-        y_pred_test = model(test_in)
-        test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
-
-        decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
-        decAcc, err2 = findDecAcc(test_out,y_pred_test)
-        err = np.concatenate((err1,err2),axis=0)
-
-    print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
-
-trainTime.toc()
-
+trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
 
 networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
 output_seq = nonDim2Dim6(output_seq,DU,TU)
@@ -157,33 +129,7 @@ if compareLSTM:
 
     criterion = F.smooth_l1_loss
     # criterion = torch.nn.HuberLoss()
-    trainTime = timer()
-    for epoch in range(n_epochs):
-
-        # trajPredition = plotPredition(epoch,model,'target',t=t*TU,output_seq=pertNR)
-
-        modelLSTM.train()
-        for X_batch, y_batch in loader:
-            y_pred = modelLSTM(X_batch)
-            loss = criterion(y_pred, y_batch)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-        # Validation
-        modelLSTM.eval()
-        with torch.no_grad():
-            y_pred_train = modelLSTM(train_in)
-            train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
-            y_pred_test = modelLSTM(test_in)
-            test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
-
-            decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
-            decAcc, err2 = findDecAcc(test_out,y_pred_test)
-            err = np.concatenate((err1,err2),axis=0)
-
-        print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
-    trainTime.toc()
-
+    trainModel(modelLSTM,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
 
     output_seq = dim2NonDim6(output_seq,DU,TU)
 
@@ -191,7 +137,7 @@ if compareLSTM:
     output_seq = nonDim2Dim6(output_seq,DU,TU)
 
     plot3dOrbitPredictions(output_seq,networkPrediction,earth=False,networkLabel="Mamba")
-    plt.plot(networkPredictionLSTM[:, 0], networkPredictionLSTM[:, 1], networkPredictionLSTM[:, 2], label='LSTM')
+    plt.plot(networkPredictionLSTM[:, 0], networkPredictionLSTM[:, 1], networkPredictionLSTM[:, 2], label='LSTM',linestyle='dashed')
     plt.plot(0,0,0,"ko",label="Earth")
     plt.legend(fontsize=10)
     plt.tight_layout()
@@ -207,12 +153,11 @@ if compareLSTM:
     mambaLine = mlines.Line2D([], [], color='b', label='Mamba')
     LSTMLine = mlines.Line2D([], [], color='orange', label='LSTM')
     fig.legend(handles=[mambaLine,LSTMLine])
-    fig.tight_layout()
 
     # plotPercentSolutionErrors(output_seq,networkPredictionLSTM,t/tPeriod,semimajorAxis,max(np.linalg.norm(gmatImport[:,3:6],axis=1)))
 
     plotEnergy(output_seq,networkPrediction,t/tPeriod,orbitalEnergy,xLabel='Number of Periods (T)',yLabel='Specific Energy')
-    plt.plot(t/tPeriod,orbitalEnergy(networkPredictionLSTM),label='LSTM')
+    plt.plot(t/tPeriod,orbitalEnergy(networkPredictionLSTM),label='LSTM',linestyle='dashed')
     plt.legend()
 
     errorAvg = np.nanmean(abs(networkPredictionLSTM-output_seq), axis=0)

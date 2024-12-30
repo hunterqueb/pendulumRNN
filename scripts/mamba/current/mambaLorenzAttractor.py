@@ -9,7 +9,7 @@ from qutils.integrators import ode87, ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions,plotStatePredictions,newPlotSolutionErrors
 from qutils.mlExtras import findDecAcc
 from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import printModelParmSize, getDevice, Adam_mini, genPlotPrediction, create_datasets, LSTMSelfAttentionNetwork, LSTM
+from qutils.ml import trainModel, printModelParmSize, getDevice, Adam_mini, genPlotPrediction, create_datasets, LSTMSelfAttentionNetwork, LSTM
 from qutils.tictoc import timer
 
 #import for superweight identification
@@ -116,34 +116,7 @@ criterion = F.smooth_l1_loss
 criterion = torch.nn.HuberLoss()
 
 # train with mamba
-
-trainTime = timer()
-for epoch in range(n_epochs):
-
-    # trajPredition = plotPredition(epoch,model,'target',t=t*TU,output_seq=pertNR)
-
-    model.train()
-    for X_batch, y_batch in loader:
-        y_pred = model(X_batch)
-        loss = criterion(y_pred, y_batch)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-    # Validation
-    model.eval()
-    with torch.no_grad():
-        y_pred_train = model(train_in)
-        train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
-        y_pred_test = model(test_in)
-        test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
-
-        decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
-        decAcc, err2 = findDecAcc(test_out,y_pred_test)
-        err = np.concatenate((err1,err2),axis=0)
-
-    print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
-
-trainTime.toc()
+trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
 
 
 # plot results

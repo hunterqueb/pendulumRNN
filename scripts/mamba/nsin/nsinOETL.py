@@ -8,18 +8,15 @@ import torch.utils.data as data
 import torchinfo
 
 from qutils.integrators import ode87
-from qutils.plot import plot3dOrbitPredictions,plotOrbitPhasePredictions, plotSolutionErrors,plotPercentSolutionErrors, plotEnergy,plotStatePredictions,newPlotSolutionErrors
-from qutils.mlExtras import findDecAcc
-from qutils.orbital import nonDim2Dim6, returnCR3BPIC, readGMATReport, dim2NonDim6, orbitalEnergy
+from qutils.plot import plotStatePredictions,newPlotSolutionErrors
 from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import printModelParmSize, getDevice, Adam_mini, create_datasets, genPlotPrediction, transferMamba
+from qutils.ml import trainModel, printModelParmSize, getDevice, Adam_mini, create_datasets, genPlotPrediction, transferMamba
 from qutils.tictoc import timer
 from scipy.io import loadmat,savemat
 
 # from nets import Adam_mini
 
 # from memory_profiler import profile
-from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
 
 problemDim = 6
 
@@ -58,31 +55,7 @@ optimizer = Adam_mini(model,lr=lr)
 
 criterion = F.smooth_l1_loss
 
-trainTime = timer()
-for epoch in range(n_epochs):
-
-    model.train()
-    for X_batch, y_batch in loader:
-        y_pred = model(X_batch)
-        loss = criterion(y_pred, y_batch)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-    # Validation
-    model.eval()
-    with torch.no_grad():
-        y_pred_train = model(train_in)
-        train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
-        y_pred_test = model(test_in)
-        test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
-
-        decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
-        decAcc, err2 = findDecAcc(test_out,y_pred_test)
-        err = np.concatenate((err1,err2),axis=0)
-
-    print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
-
-trainTime.toc()
+trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
 
 networkPredictionSource = plotStatePredictions(model,t,OE_nominal_two_body,train_in,test_in,train_size,test_size,states = ('a','e','i','Omega','omega','f'),units=('km',' ','deg','deg','deg','deg'))
 fig = plt.gcf()
@@ -97,12 +70,6 @@ for i, avg in enumerate(errorAvg, 1):
 
 
 
-
-
-
-
-
-
 n_epochs = 3
 
 newModel = Mamba(config).to(device).double()
@@ -110,32 +77,7 @@ newModel = transferMamba(model,newModel,[True,True,False])
 
 train_in,train_out,test_in,test_out = create_datasets(OE_J2_drag,1,train_size,device)
 
-loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
-
-trainTime = timer()
-for epoch in range(n_epochs):
-    newModel.train()
-    for X_batch, y_batch in loader:
-        y_pred = newModel(X_batch)
-        loss = criterion(y_pred, y_batch)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-    # Validation
-    newModel.eval()
-    with torch.no_grad():
-        y_pred_train = newModel(train_in)
-        train_loss = np.sqrt(criterion(y_pred_train, train_out).cpu())
-        y_pred_test = newModel(test_in)
-        test_loss = np.sqrt(criterion(y_pred_test, test_out).cpu())
-
-        decAcc, err1 = findDecAcc(train_out,y_pred_train,printOut=False)
-        decAcc, err2 = findDecAcc(test_out,y_pred_test)
-        err = np.concatenate((err1,err2),axis=0)
-
-    print("Epoch %d: train loss %f, test loss %f\n" % (epoch, train_loss, test_loss))
-trainTime.toc()
-
+trainModel(newModel,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
 
 networkPredictionTarget = plotStatePredictions(model,t,OE_J2_drag,train_in,test_in,train_size,test_size,states = ('a','e','i','Omega','omega','f'),units=('km',' ','deg','deg','deg','deg'))
 fig = plt.gcf()
