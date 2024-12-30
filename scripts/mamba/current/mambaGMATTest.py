@@ -108,6 +108,13 @@ plotSolutionErrors(output_seq,networkPrediction,t/tPeriod)
 plotPercentSolutionErrors(output_seq,networkPrediction,t/tPeriod,semimajorAxis,max(np.linalg.norm(gmatImport[:,3:6],axis=1)))
 plotEnergy(output_seq,networkPrediction,t/tPeriod,orbitalEnergy,xLabel='Number of Periods (T)',yLabel='Specific Energy')
 # plotDecAccs(decAcc,t,problemDim)
+
+from qutils.mlExtras import rmse
+
+rmse(output_seq,networkPrediction)
+
+
+
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average values of each dimension:")
 for i, avg in enumerate(errorAvg, 1):
@@ -159,6 +166,9 @@ if compareLSTM:
     plotEnergy(output_seq,networkPrediction,t/tPeriod,orbitalEnergy,xLabel='Number of Periods (T)',yLabel='Specific Energy')
     plt.plot(t/tPeriod,orbitalEnergy(networkPredictionLSTM),label='LSTM',linestyle='dashed')
     plt.legend()
+
+    rmse(output_seq,networkPredictionLSTM)
+
 
     errorAvg = np.nanmean(abs(networkPredictionLSTM-output_seq), axis=0)
     print("Average values of each dimension:")

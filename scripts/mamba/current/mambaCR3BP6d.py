@@ -156,6 +156,10 @@ plot3dCR3BPPredictions(output_seq,networkPrediction,L=2,DU=DU)
 from qutils.plot import newPlotSolutionErrors
 newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel="Orbit Periods")
 
+from qutils.mlExtras import rmse
+
+rmse(output_seq,networkPrediction)
+
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average values of each dimension:")
 for i, avg in enumerate(errorAvg, 1):
@@ -223,6 +227,8 @@ if compareLSTM:
     plotEnergy(output_seq,networkPrediction,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',nonDim=dim2NonDim6,DU = DU, TU = TU,networkLabel="Mamba")
     plt.plot(t,jacobiConstant6(dim2NonDim6(networkPredictionLSTM,DU=DU,TU=TU)),label='LSTM',linestyle='dashed')
     plt.legend()
+
+    rmse(output_seq,networkPredictionLSTM)
 
     errorAvg = np.nanmean(abs(networkPredictionLSTM-output_seq), axis=0)
     print("Average values of each dimension:")
