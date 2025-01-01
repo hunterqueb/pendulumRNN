@@ -1,6 +1,7 @@
 
 import torch
 import torch.nn.functional as F
+import os
 
 from qutils.plot import plotStatePredictions
 from qutils.orbital import readGMATReport, dim2NonDim6
@@ -95,9 +96,15 @@ networkPredictionLSTM,testTimeLSTM = plotStatePredictions(modelLSTM,t,output_seq
 # output_seq = nonDim2Dim6(output_seq,DU,TU)
 import csv
 
-fieldnames = ['Mamba Train','LSTM Train','Mamba Test','LSTM Test']
+fieldnames = ["Mamba Train","LSTM Train","Mamba Test","LSTM Test"]
 new_data = {"Mamba Train":timeToTrain,"LSTM Train":timeToTrainLSTM,"Mamba Test":testTime,"LSTM Test":testTimeLSTM}
 
-with open(r'p2bp.csv', 'a', newline='') as file:
+
+file_path = 'p2bp.csv'
+file_exists = os.path.isfile(file_path)
+
+with open(file_path, 'a', newline='') as file:
     writer = csv.DictWriter(file,fieldnames=fieldnames)
+    if not file_exists or os.path.getsize(file_path) == 0:
+        writer.writeheader()
     writer.writerow(new_data)
