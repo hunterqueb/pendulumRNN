@@ -75,7 +75,7 @@ criterion = F.smooth_l1_loss
 
 timeToTrain = trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
 
-# networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,plotOn=False)
+networkPrediction,testTime = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,plotOn=False)
 # output_seq = nonDim2Dim6(output_seq,DU,TU)
 
 del model
@@ -87,16 +87,16 @@ modelLSTM = returnModel('lstm')
 
 optimizer = Adam_mini(modelLSTM,lr=lr)
 
-timeToTrainLSTM =trainModel(modelLSTM,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
+timeToTrainLSTM = trainModel(modelLSTM,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
 
 # output_seq = dim2NonDim6(output_seq,DU,TU)
 
-# networkPredictionLSTM = plotStatePredictions(modelLSTM,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
+networkPredictionLSTM,testTimeLSTM = plotStatePredictions(modelLSTM,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
 # output_seq = nonDim2Dim6(output_seq,DU,TU)
 import csv
 
-fieldnames = ['Mamba','LSTM']
-new_data = {"Mamba":timeToTrain,"LSTM":timeToTrainLSTM}
+fieldnames = ['Mamba Train','LSTM Train','Mamba Test','LSTM Test']
+new_data = {"Mamba Train":timeToTrain,"LSTM Train":timeToTrainLSTM,"Mamba Test":testTime,"LSTM Test":testTimeLSTM}
 
 with open(r'p2bp.csv', 'a', newline='') as file:
     writer = csv.DictWriter(file,fieldnames=fieldnames)
