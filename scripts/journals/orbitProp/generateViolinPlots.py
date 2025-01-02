@@ -148,8 +148,8 @@ if __name__ == "__main__":
 
     fileExt = ".csv"
 
-    fileName = "p2bp"
-    # fileName = "cr3bp"
+    # fileName = "p2bp"
+    fileName = "cr3bp"
 
     filepath = fileName + fileExt
     data_dict = csv_columns_to_numpy(filepath)
@@ -178,5 +178,6 @@ if __name__ == "__main__":
     RSMELSTMPVel = [data_dict["vx"],data_dict["vy"],data_dict["vz"]]
 
 
+    generateRMSEViolinPlots(keepLSTM=True)
     generateRMSEViolinPlots(keepLSTM=False)
     plt.show()
