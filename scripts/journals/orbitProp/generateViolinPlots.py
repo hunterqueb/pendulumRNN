@@ -66,7 +66,7 @@ def generateTimeViolinPlots():
         body.set_edgecolor(edge_colors[i])
         body.set_alpha(0.7)  # Set transparency
 
-def generateRMSEViolinPlots():
+def generateRMSEViolinPlots(keepLSTM = True):
     # colors = ['lightblue', 'lightcoral']
     # edge_colors = ['blue', 'red']
 
@@ -84,20 +84,21 @@ def generateRMSEViolinPlots():
         # body.set_edgecolor(edge_colors[i])
         body.set_alpha(0.7)  # Set transparency
 
-    vpLSTM = plt.violinplot(RSMELSTMPos,showmeans=True)
-    plt.xticks([1, 2, 3], ['x', 'y','z'])
-    vpLSTM['cmeans'].set_color('black') 
-    vpLSTM['cmeans'].set_linestyle('--')
-    for i, body in enumerate(vpLSTM['bodies']):
-        # body.set_facecolor(colors[i])
-        # body.set_edgecolor(edge_colors[i])
-        body.set_alpha(0.7)  # Set transparency
+    if keepLSTM:
+        vpLSTM = plt.violinplot(RSMELSTMPos,showmeans=True)
+        plt.xticks([1, 2, 3], ['x', 'y','z'])
+        vpLSTM['cmeans'].set_color('black') 
+        vpLSTM['cmeans'].set_linestyle('--')
+        for i, body in enumerate(vpLSTM['bodies']):
+            # body.set_facecolor(colors[i])
+            # body.set_edgecolor(edge_colors[i])
+            body.set_alpha(0.7)  # Set transparency
 
-    mambaLine = mlines.Line2D([], [], color='b', label='Mamba')
-    LSTMLine = mlines.Line2D([], [], color='orange', label='LSTM')
-    meanLine = mlines.Line2D([], [], color='black', label='Mean',linestyle='dashed')
-    
-    plt.legend(handles=[mambaLine,LSTMLine,meanLine])
+        mambaLine = mlines.Line2D([], [], color='b', label='Mamba')
+        LSTMLine = mlines.Line2D([], [], color='orange', label='LSTM')
+        meanLine = mlines.Line2D([], [], color='black', label='Mean',linestyle='dashed')
+        
+        plt.legend(handles=[mambaLine,LSTMLine,meanLine])
 
     plt.figure()
     vpMamba = plt.violinplot(RSMEMambaVel,showmeans=True)
@@ -113,15 +114,16 @@ def generateRMSEViolinPlots():
         # body.set_edgecolor(edge_colors[i])
         body.set_alpha(0.7)  # Set transparency
 
-    vpLSTM = plt.violinplot(RSMELSTMPVel,showmeans=True)
-    vpLSTM['cmeans'].set_color('black') 
-    vpLSTM['cmeans'].set_linestyle('--')
-    for i, body in enumerate(vpLSTM['bodies']):
-        # body.set_facecolor(colors[i])
-        # body.set_edgecolor(edge_colors[i])
-        body.set_alpha(0.7)  # Set transparency
-    
-    plt.legend(handles=[mambaLine,LSTMLine,meanLine])
+    if keepLSTM:
+        vpLSTM = plt.violinplot(RSMELSTMPVel,showmeans=True)
+        vpLSTM['cmeans'].set_color('black') 
+        vpLSTM['cmeans'].set_linestyle('--')
+        for i, body in enumerate(vpLSTM['bodies']):
+            # body.set_facecolor(colors[i])
+            # body.set_edgecolor(edge_colors[i])
+            body.set_alpha(0.7)  # Set transparency
+        
+        plt.legend(handles=[mambaLine,LSTMLine,meanLine])
 
 
     return
@@ -176,5 +178,5 @@ if __name__ == "__main__":
     RSMELSTMPVel = [data_dict["vx"],data_dict["vy"],data_dict["vz"]]
 
 
-    generateRMSEViolinPlots()
+    generateRMSEViolinPlots(keepLSTM=False)
     plt.show()
