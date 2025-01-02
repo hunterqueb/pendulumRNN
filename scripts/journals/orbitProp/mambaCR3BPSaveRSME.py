@@ -2,14 +2,14 @@
 import torch
 import torch.nn.functional as F
 import os
+import numpy as np
 
 from qutils.integrators import ode87
 from qutils.plot import plotStatePredictions
-from qutils.orbital import dim2NonDim6, returnCR3BPIC
+from qutils.orbital import dim2NonDim6, returnCR3BPIC,nonDim2Dim6
 from qutils.mamba import Mamba, MambaConfig
 from qutils.ml import trainModel, getDevice, Adam_mini, create_datasets, LSTMSelfAttentionNetwork
-import numpy as np
-
+from qutils.mlExtras import rmse
 compareLSTM = True
 plotOn = False
 printoutSuperweight = False
@@ -127,7 +127,10 @@ criterion = F.smooth_l1_loss
 timeToTrain = trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
 
 networkPrediction,testTime = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,plotOn=False)
-# output_seq = nonDim2Dim6(output_seq,DU,TU)
+output_seq = nonDim2Dim6(output_seq,DU,TU)
+
+rmseMamba = rmse(output_seq,networkPrediction)
+
 
 del model
 del optimizer
@@ -140,21 +143,34 @@ optimizer = Adam_mini(modelLSTM,lr=lr)
 
 timeToTrainLSTM = trainModel(modelLSTM,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
 
-# output_seq = dim2NonDim6(output_seq,DU,TU)
 
+output_seq = dim2NonDim6(output_seq,DU,TU)
 networkPredictionLSTM,testTimeLSTM = plotStatePredictions(modelLSTM,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,plotOn=False)
-# output_seq = nonDim2Dim6(output_seq,DU,TU)
+output_seq = nonDim2Dim6(output_seq,DU,TU)
+
+rmseLSTM = rmse(output_seq,networkPredictionLSTM)
+
 import csv
 
-fieldnames = ["Mamba Train","LSTM Train","Mamba Test","LSTM Test"]
-new_data = {"Mamba Train":timeToTrain,"LSTM Train":timeToTrainLSTM,"Mamba Test":testTime,"LSTM Test":testTimeLSTM}
+fieldnames = ["x","y","z","vx","vy","vz"]
+new_data_mamba = {"x":rmseMamba[0],"y":rmseMamba[1],"z":rmseMamba[2],"vx":rmseMamba[3],"vy":rmseMamba[4],"vz":rmseMamba[5]}
+new_data_LSTM = {"x":rmseLSTM[0],"y":rmseLSTM[1],"z":rmseLSTM[2],"vx":rmseLSTM[3],"vy":rmseLSTM[4],"vz":rmseLSTM[5]}
 
 
-file_path = 'cr3bp.csv'
+file_path = 'cr3bpRMSEMamba.csv'
 file_exists = os.path.isfile(file_path)
 
 with open(file_path, 'a', newline='') as file:
     writer = csv.DictWriter(file,fieldnames=fieldnames)
     if not file_exists or os.path.getsize(file_path) == 0:
         writer.writeheader()
-    writer.writerow(new_data)
+    writer.writerow(new_data_mamba)
+
+file_path = 'cr3bpRMSELSTM.csv'
+file_exists = os.path.isfile(file_path)
+
+with open(file_path, 'a', newline='') as file:
+    writer = csv.DictWriter(file,fieldnames=fieldnames)
+    if not file_exists or os.path.getsize(file_path) == 0:
+        writer.writeheader()
+    writer.writerow(new_data_LSTM)
