@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import csv
 import numpy as np
+import matplotlib.lines as mlines
 
-fieldnames = ['Mamba Train','LSTM Train','Mamba Test','LSTM Test']
 
 def csv_columns_to_numpy(file_path):
     """
@@ -34,7 +34,10 @@ def csv_columns_to_numpy(file_path):
     return columns
 
 
-def generateViolinPlots():
+def generateTimeViolinPlots():
+    colors = ['lightblue', 'lightcoral']
+    edge_colors = ['blue', 'red']
+
     plt.figure()
     vpMamba = plt.violinplot([mambaTrain,lstmTrain],showmeans=True)
     plt.xticks([1, 2], ['Mamba', 'LSTM'])
@@ -55,7 +58,7 @@ def generateViolinPlots():
     plt.xticks([1, 2], ['Mamba', 'LSTM'])
     plt.ylabel('Time (sec)')
     plt.grid()
-    plt.title("Network Testing Timescl")
+    plt.title("Network Testing Times")
     vpLSTM['cmeans'].set_color('black') 
     vpLSTM['cmeans'].set_linestyle('--')
     for i, body in enumerate(vpLSTM['bodies']):
@@ -63,7 +66,67 @@ def generateViolinPlots():
         body.set_edgecolor(edge_colors[i])
         body.set_alpha(0.7)  # Set transparency
 
-def generateBoxPlots():
+def generateRMSEViolinPlots():
+    # colors = ['lightblue', 'lightcoral']
+    # edge_colors = ['blue', 'red']
+
+    plt.figure()
+    vpMamba = plt.violinplot(RSMEMambaPos,showmeans=True)
+    plt.xticks([1, 2, 3], ['x', 'y','z'])
+    plt.ylabel('Distance (km)')
+    plt.grid()
+    plt.title("Root Mean Square Error of Position Dimensions")
+    vpMamba['cmeans'].set_color('black') 
+    vpMamba['cmeans'].set_linestyle('--')
+
+    for i, body in enumerate(vpMamba['bodies']):
+        # body.set_facecolor(colors[i])
+        # body.set_edgecolor(edge_colors[i])
+        body.set_alpha(0.7)  # Set transparency
+
+    vpLSTM = plt.violinplot(RSMELSTMPos,showmeans=True)
+    plt.xticks([1, 2, 3], ['x', 'y','z'])
+    vpLSTM['cmeans'].set_color('black') 
+    vpLSTM['cmeans'].set_linestyle('--')
+    for i, body in enumerate(vpLSTM['bodies']):
+        # body.set_facecolor(colors[i])
+        # body.set_edgecolor(edge_colors[i])
+        body.set_alpha(0.7)  # Set transparency
+
+    mambaLine = mlines.Line2D([], [], color='b', label='Mamba')
+    LSTMLine = mlines.Line2D([], [], color='orange', label='LSTM')
+    meanLine = mlines.Line2D([], [], color='black', label='Mean',linestyle='dashed')
+    
+    plt.legend(handles=[mambaLine,LSTMLine,meanLine])
+
+    plt.figure()
+    vpMamba = plt.violinplot(RSMEMambaVel,showmeans=True)
+    plt.xticks([1, 2, 3], ['vx', 'vy','vz'])
+    plt.ylabel('Speed (km/s)')
+    plt.grid()
+    plt.title("Root Mean Square Error of Velocity Dimensions")
+    vpMamba['cmeans'].set_color('black') 
+    vpMamba['cmeans'].set_linestyle('--')
+
+    for i, body in enumerate(vpMamba['bodies']):
+        # body.set_facecolor(colors[i])
+        # body.set_edgecolor(edge_colors[i])
+        body.set_alpha(0.7)  # Set transparency
+
+    vpLSTM = plt.violinplot(RSMELSTMPVel,showmeans=True)
+    vpLSTM['cmeans'].set_color('black') 
+    vpLSTM['cmeans'].set_linestyle('--')
+    for i, body in enumerate(vpLSTM['bodies']):
+        # body.set_facecolor(colors[i])
+        # body.set_edgecolor(edge_colors[i])
+        body.set_alpha(0.7)  # Set transparency
+    
+    plt.legend(handles=[mambaLine,LSTMLine,meanLine])
+
+
+    return
+
+def generateTimeBoxPlots():
     plt.figure()
     plt.boxplot([mambaTrain,lstmTrain],showmeans=True)
     plt.xticks([1, 2], ['Mamba', 'LSTM'])
@@ -81,14 +144,14 @@ def generateBoxPlots():
 
 if __name__ == "__main__":
 
-    filepath = "p2bp.csv"
-    filepath = "cr3bp.csv"
+    fileExt = ".csv"
 
+    fileName = "p2bp"
+    # fileName = "cr3bp"
+
+    filepath = fileName + fileExt
     data_dict = csv_columns_to_numpy(filepath)
     
-    colors = ['lightblue', 'lightcoral']
-    edge_colors = ['blue', 'red']
-
 
     # Each key in data_dict corresponds to a field name, and the value is a NumPy array.
     mambaTrain = data_dict["Mamba Train"]
@@ -96,7 +159,22 @@ if __name__ == "__main__":
     mambaTest = data_dict["Mamba Test"]
     lstmTest = data_dict["LSTM Test"]
     
-    generateBoxPlots()
-    generateViolinPlots()
+    generateTimeBoxPlots()
+    generateTimeViolinPlots()
 
+
+    filepath = fileName + "RMSEMamba" + fileExt
+    data_dict = csv_columns_to_numpy(filepath)
+
+    RSMEMambaPos = [data_dict["x"],data_dict["y"],data_dict["z"]]
+    RSMEMambaVel = [data_dict["vx"],data_dict["vy"],data_dict["vz"]]
+
+    filepath = fileName + "RMSELSTM" + fileExt
+    data_dict = csv_columns_to_numpy(filepath)
+
+    RSMELSTMPos = [data_dict["x"],data_dict["y"],data_dict["z"]]
+    RSMELSTMPVel = [data_dict["vx"],data_dict["vy"],data_dict["vz"]]
+
+
+    generateRMSEViolinPlots()
     plt.show()
