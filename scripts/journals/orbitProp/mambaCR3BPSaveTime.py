@@ -142,7 +142,7 @@ timeToTrainLSTM = trainModel(modelLSTM,n_epochs,[train_in,train_out,test_in,test
 
 # output_seq = dim2NonDim6(output_seq,DU,TU)
 
-networkPredictionLSTM,testTimeLSTM = plotStatePredictions(modelLSTM,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
+networkPredictionLSTM,testTimeLSTM = plotStatePredictions(modelLSTM,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,plotOn=False)
 # output_seq = nonDim2Dim6(output_seq,DU,TU)
 import csv
 
