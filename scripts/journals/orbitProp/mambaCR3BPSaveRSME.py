@@ -126,7 +126,7 @@ criterion = F.smooth_l1_loss
 
 timeToTrain = trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
 
-networkPrediction,testTime = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,plotOn=False)
+networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,plotOn=False)
 output_seq = nonDim2Dim6(output_seq,DU,TU)
 
 rmseMamba = rmse(output_seq,networkPrediction)
@@ -145,7 +145,7 @@ timeToTrainLSTM = trainModel(modelLSTM,n_epochs,[train_in,train_out,test_in,test
 
 
 output_seq = dim2NonDim6(output_seq,DU,TU)
-networkPredictionLSTM,testTimeLSTM = plotStatePredictions(modelLSTM,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,plotOn=False)
+networkPredictionLSTM = plotStatePredictions(modelLSTM,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,plotOn=False)
 output_seq = nonDim2Dim6(output_seq,DU,TU)
 
 rmseLSTM = rmse(output_seq,networkPredictionLSTM)
