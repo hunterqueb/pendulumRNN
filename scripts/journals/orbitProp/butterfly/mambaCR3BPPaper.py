@@ -160,7 +160,11 @@ plotCR3BPPhasePredictions(output_seq,networkPrediction,L=2,DU=DU)
 plotCR3BPPhasePredictions(output_seq,networkPrediction,L=2,plane='xz',DU=DU)
 plotCR3BPPhasePredictions(output_seq,networkPrediction,L=2,plane='yz',DU=DU)
 # plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
-plot3dCR3BPPredictions(output_seq,networkPrediction,L=2,DU=DU)
+plot3dCR3BPPredictions(output_seq,networkPrediction,earth=False,networkLabel="Mamba",DU=DU,L=None,moon=False)
+plt.plot(-mu * DU, 0, 0, 'ko', label='Earth')
+plt.plot((1-mu) * DU, 0, 0, 'go', label='Moon')
+plt.legend(fontsize=10)
+plt.tight_layout()
 
 from qutils.plot import newPlotSolutionErrors
 newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel="Orbit Periods")
@@ -233,6 +237,9 @@ if compareLSTM:
     plotEnergy(output_seq,networkPrediction,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',nonDim=dim2NonDim6,DU = DU, TU = TU,networkLabel="Mamba")
     plt.plot(t,jacobiConstant6(dim2NonDim6(networkPredictionLSTM,DU=DU,TU=TU)),label='LSTM',linestyle='dashed')
     plt.legend()
+
+    plotEnergy(output_seq,networkPrediction,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',nonDim=dim2NonDim6,DU = DU, TU = TU,networkLabel="Mamba")
+    plt.legend(loc="lower left")
 
     rmse(output_seq,networkPredictionLSTM)
 
