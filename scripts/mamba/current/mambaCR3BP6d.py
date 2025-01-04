@@ -40,8 +40,8 @@ mu = m_2/(m_1 + m_2)
 orbitFamily = 'halo'
 
 CR3BPIC = returnCR3BPIC(orbitFamily,L=1,id=894,stable=True)
-CR3BPIC = returnCR3BPIC("resonant",L=43,id=533)
-# CR3BPIC = returnCR3BPIC(orbitFamily,L=2,id=77)
+# CR3BPIC = returnCR3BPIC("resonant",L=43,id=533)
+CR3BPIC = returnCR3BPIC(orbitFamily,L=1,stable=False,id=139)
 
 # orbitFamily = 'longPeriod'
 
@@ -82,7 +82,7 @@ def system(t, Y,mu=mu):
 
 device = getDevice()
 
-numPeriods = 4
+numPeriods = 3
 
 t0 = 0; tf = numPeriods * tEnd
 
