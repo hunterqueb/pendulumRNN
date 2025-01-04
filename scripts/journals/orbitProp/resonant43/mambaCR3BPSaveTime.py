@@ -150,7 +150,7 @@ fieldnames = ["Mamba Train","LSTM Train","Mamba Test","LSTM Test"]
 new_data = {"Mamba Train":timeToTrain,"LSTM Train":timeToTrainLSTM,"Mamba Test":testTime,"LSTM Test":testTimeLSTM}
 
 
-file_path = 'cr3bp.csv'
+file_path = 'cr3bpTime.csv'
 file_exists = os.path.isfile(file_path)
 
 with open(file_path, 'a', newline='') as file:
