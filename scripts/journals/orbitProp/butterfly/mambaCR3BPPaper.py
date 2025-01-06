@@ -126,6 +126,9 @@ train_size = int(len(output_seq) * p_motion_knowledge)
 # train_size = 2
 test_size = len(output_seq) - train_size
 
+print(train_size)
+print(test_size)
+
 train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
 
 # initilizing the model, criterion, and optimizer for the data

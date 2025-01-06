@@ -1,8 +1,10 @@
+import matplotlib
+# matplotlib.use("tkagg")
+
 import matplotlib.pyplot as plt
 import csv
 import numpy as np
 import matplotlib.lines as mlines
-
 
 def csv_columns_to_numpy(file_path):
     """
@@ -143,6 +145,24 @@ def generateTimeBoxPlots():
     plt.grid()
     plt.title("Network Testing Times")
 
+def generateP2BPEnergyPlots():
+    fileName = "p2bpEnergy"
+    fileExt = '.npy'
+    energy = np.load(fileName+fileExt)
+    energyMamba = np.load(fileName+"Mamba"+fileExt)
+    energyLSTM = np.load(fileName+"LSTM"+fileExt)
+    t = np.linspace(0,10,len(energy[:,0]))
+
+    energyMambaMean = energyMamba.mean(axis=1)
+    energyMambaMin = energyMamba.min(axis=1)
+    energyMambaMax = energyMamba.max(axis=1)
+    energyMambaErr = np.stack((energyMambaMean-energyMambaMin, energyMambaMax-energyMambaMean))
+
+    plt.figure()
+    plt.plot(t,energy[:,0], 'k-')
+    plt.fill_between(t,energyMambaMin, energyMambaMax)
+
+    # plt.fill_between(t,energy[:,0]-energyLSTM[:,0], energy[:,0]+energyLSTM[:,0])
 
 if __name__ == "__main__":
 
@@ -151,10 +171,8 @@ if __name__ == "__main__":
     # fileName = "p2bp"
     fileName = "cr3bp"
 
-    filepath = fileName + fileExt
+    filepath = fileName + "Time" + fileExt
     data_dict = csv_columns_to_numpy(filepath)
-    
-
     # Each key in data_dict corresponds to a field name, and the value is a NumPy array.
     mambaTrain = data_dict["Mamba Train"]
     lstmTrain = data_dict["LSTM Train"]
@@ -164,6 +182,7 @@ if __name__ == "__main__":
     generateTimeBoxPlots()
     generateTimeViolinPlots()
 
+    # ==========================================================================================
 
     filepath = fileName + "RMSEMamba" + fileExt
     data_dict = csv_columns_to_numpy(filepath)
@@ -180,4 +199,7 @@ if __name__ == "__main__":
 
     generateRMSEViolinPlots(keepLSTM=True)
     generateRMSEViolinPlots(keepLSTM=False)
+
+    # generateP2BPEnergyPlots()
+
     plt.show()
