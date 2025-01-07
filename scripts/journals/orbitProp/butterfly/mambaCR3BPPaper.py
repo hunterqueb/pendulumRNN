@@ -18,10 +18,11 @@ from qutils.tictoc import timer
 # from memory_profiler import profile
 from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
 
+from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
 DEBUG = True
 plotOn = True
 printoutSuperweight = True
-compareLSTM = True
+compareLSTM = False
 
 problemDim = 6
 m_1 = 5.974E24  # kg
@@ -188,6 +189,8 @@ if printoutSuperweight is True:
     printoutMaxLayerWeight(model)
     getSuperWeight(model)
     plotSuperWeight(model)
+    magnitude, index = findMambaSuperActivation(model,test_in)
+    plotSuperActivation(magnitude, index)
 
 if compareLSTM:
     del model

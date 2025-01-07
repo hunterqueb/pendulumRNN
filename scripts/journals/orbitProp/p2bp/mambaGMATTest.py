@@ -19,9 +19,11 @@ from qutils.tictoc import timer
 # from memory_profiler import profile
 from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
 
-compareLSTM = True
+from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
+
+compareLSTM = False
 plotOn = True
-printoutSuperweight = False
+printoutSuperweight = True
 
 
 problemDim = 6
@@ -123,6 +125,15 @@ for i, avg in enumerate(errorAvg, 1):
 printModelParmSize(model)
 torchinfo.summary(model)
 
+if printoutSuperweight:
+    printoutMaxLayerWeight(model)
+    getSuperWeight(model)
+    plotSuperWeight(model)
+
+    magnitude, index = findMambaSuperActivation(model,test_in)
+    plotSuperActivation(magnitude, index)
+
+
 if compareLSTM:
     del model
     del optimizer
@@ -177,11 +188,6 @@ if compareLSTM:
 
     printModelParmSize(modelLSTM)
     torchinfo.summary(modelLSTM)
-
-if printoutSuperweight is True:
-    printoutMaxLayerWeight(model)
-    getSuperWeight(model)
-    plotSuperWeight(model)
 
 if plotOn is True:
     plt.show()

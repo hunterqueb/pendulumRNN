@@ -16,11 +16,12 @@ from qutils.tictoc import timer
 
 # from memory_profiler import profile
 from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
+from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
 
 DEBUG = True
 plotOn = True
 printoutSuperweight = True
-compareLSTM = True
+compareLSTM = False
 
 problemDim = 6
 m_1 = 5.974E24  # kg
@@ -37,20 +38,22 @@ mu = m_2/(m_1 + m_2)
 
 # lyapunov id 312
 
-orbitFamily = 'halo'
+orbitFamily = 'butterfly'
 
 CR3BPIC = returnCR3BPIC(orbitFamily,L=1,id=894,stable=True)
 # CR3BPIC = returnCR3BPIC("resonant",L=43,id=533)
-CR3BPIC = returnCR3BPIC(orbitFamily,L=1,stable=False,id=139)
+# CR3BPIC = returnCR3BPIC(orbitFamily,id=1080)
 
 # orbitFamily = 'longPeriod'
 
-# CR3BPIC = returnCR3BPIC("shortPeriod",L=4,id=806)
+CR3BPIC = returnCR3BPIC("shortPeriod",L=4,id=806)
 
 x_0,tEnd = CR3BPIC()
 
 IC = np.array(x_0)
 
+print(IC)
+print(tEnd)
 def system(t, Y,mu=mu):
     """Solve the CR3BP in nondimensional coordinates.
     
@@ -82,7 +85,7 @@ def system(t, Y,mu=mu):
 
 device = getDevice()
 
-numPeriods = 3
+numPeriods = 5
 
 t0 = 0; tf = numPeriods * tEnd
 
@@ -175,6 +178,8 @@ if printoutSuperweight is True:
     printoutMaxLayerWeight(model)
     getSuperWeight(model)
     plotSuperWeight(model)
+    magnitude, index = findMambaSuperActivation(model,test_in)
+    plotSuperActivation(magnitude, index)
 
 if compareLSTM:
     del model

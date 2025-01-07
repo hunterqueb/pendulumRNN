@@ -11,7 +11,7 @@ from qutils.mamba import Mamba, MambaConfig
 
 from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
 
-activationArea = 'input'
+activationArea = 'output'
 layer_path = "layers"
 DEBUG = True
 
@@ -234,15 +234,6 @@ if printoutSuperweight is True:
     plotSuperWeight(model)
 
 if plotOn is True:
-    # Plot input activations
-    plt.figure(figsize=(5,3.5))
-    for i in range(len(magnitude)):
-        plt.plot(i, magnitude[i].norm(), color='blue', marker='o', markersize=5)
-    plt.xlabel('Layer')
-    plt.xticks((0,1,2,3,4),mambaLayerAttributes)
-    plt.ylabel('Max Activation Value')
-    plt.grid()
-    plt.title(f"{activationArea} Activation")
 
     plt.figure()
     plt.subplot(2, 1, 1)
