@@ -8,14 +8,10 @@ import torch.utils.data as data
 import torchinfo
 
 from qutils.integrators import myRK4Py, ode45
-from qutils.mlExtras import findDecAcc
-from qutils.plot import plotOrbitPhasePredictions,newPlotSolutionErrors,plotStatePredictions
-from qutils.orbital import nonDim2Dim4
-from qutils.ml import create_datasets, LSTMSelfAttentionNetwork, trainModel
+from qutils.ml import create_datasets, LSTMSelfAttentionNetwork
+from qutils.autoregressive import trainModel,testModel, getDataLoader,genPlotPred
 
 from qutils.mamba import Mamba, MambaConfig
-
-from qutils.mlSuperweight import findMambaSuperActivation,plotSuperActivation
 
 import control as ct
 # pip install control
@@ -52,7 +48,6 @@ C = np.eye(2)
 D = 0
 
 t0 = 0; tf = 100
-secondsToTrain = 50
 dt = 0.01
 t = np.linspace(t0,tf,int(tf/dt))
 
@@ -72,8 +67,8 @@ numericalResultUnforced = results.states.T
 # plt.plot(t,results.states.T)
 # plt.show()
 
-n_epochs = 5
-lr = 0.001
+n_epochs = 10
+lr = 0.1
 lookback = 1
 
 nDim = 2
@@ -95,36 +90,24 @@ criterion = F.smooth_l1_loss
 # train_size = int(len(numericalResult) * p_motion_knowledge)
 # test_size = len(numericalResult) - train_size
 
-train_size = int(dt * 10000 * secondsToTrain)
+seconds = 50
+
+train_size = int(dt * 10000 * seconds)
 # train_size = 2
 test_size = len(numericalResult) - train_size
 
 train, test = numericalResult[:train_size], numericalResult[train_size:]
 
-train_in,train_out,test_in,test_out = create_datasets(numericalResult,1,train_size,device)
+train_dataset,dataloader = getDataLoader(train,seq_length=10)
 
-loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
+trainModel(model,train,n_epochs,criterion,optimizer,seq_length=10)
 
-trainModel(model,n_epochs,(train_in,train_out,test_in,test_out),criterion,optimizer)
+prediction = testModel(model,train_dataset,test)
 
-if model == modelMamba:
-    print(model.layers[0].mixer.A_SSM.shape)
-    print(model.layers[0].mixer.B_SSM.shape)
-    print(model.layers[0].mixer.C_SSM.shape)
-    print(model.layers[0].mixer.delta)
-# A takes the a shape defined by the user, a combination of the user defined latent space size and the expansion size of the input
-# B and C take the size of the test vector? how is it doing this? how does it now
-torchinfo.summary(model)
+train_plot,test_plot,pred_plot = genPlotPred(numericalResult,train,test,prediction)
 
-trajPredition = plotStatePredictions(model,t,numericalResult,train_in,test_in,train_size,test_size,states=['x','y','z'])
-fig, axes = plt.subplots(2,1)
-for i, ax in enumerate(axes.flat):
-    ax.plot(t, numericalResultUnforced[:, i], c='b', label='Unforced Motion')
-
+plt.plot(t,train_plot,label = "Train")
+plt.plot(t,test_plot,label = "Truth")
+plt.plot(t,pred_plot,label = "Prediction")
 plt.legend()
-newPlotSolutionErrors(numericalResult,trajPredition,t,states=['x','y','z'])
-
-magnitude, index = findMambaSuperActivation(model,test_in)
-plotSuperActivation(magnitude,index)
-
 plt.show()

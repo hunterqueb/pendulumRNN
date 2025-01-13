@@ -11,110 +11,13 @@ from qutils.mamba import Mamba, MambaConfig
 
 from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
 
+from qutils.mlSuperweight import findMambaSuperActivation,plotSuperActivation,zeroModelWeight
+
 activationArea = 'output'
 layer_path = "layers"
-DEBUG = True
+DEBUG = False
 
 mambaLayerAttributes = ["in_proj","conv1d","x_proj","dt_proj","out_proj"]
-
-def custom_unravel_index(indices: torch.LongTensor, shape: tuple):
-    """
-    Mimics torch.unravel_index(indices, shape) without directly calling it.
-    
-    Args:
-        indices (torch.LongTensor): A 1D tensor of flat indices.
-        shape (tuple): The target shape to unravel into.
-    
-    Returns:
-        torch.LongTensor: A 2D tensor of shape (len(shape), indices.size(0)),
-                          containing the unraveled coordinates.
-    """
-    # Flatten the N-D indices to a 1D tensor
-    flat_indices = indices.view(-1).long()
-    
-    # Perform the unraveling on the flattened tensor
-    coords = []
-    for dim in reversed(shape):
-        coords.append(flat_indices % dim)
-        flat_indices = flat_indices // dim
-    
-    # Reverse coordinates since we iterated from last dimension to first
-    coords.reverse()
-    
-    # Now reshape each coordinate vector back to the original indices shape
-    # so that coords[i] has the same shape as indices (except it gives the
-    # i-th dimension's coordinate)
-    coords = [c.reshape(indices.shape) for c in coords]
-    
-    # Finally, stack along dim=0 to get a shape of (len(shape), *indices.shape)
-    return torch.stack(coords, dim=0)
-
-
-def findSuperActivation(model,test_in,input_or_output=activationArea,layer_path=layer_path):
-    module_name = "mixer"
-    all_activations = {}
-    all_hooks = []
-
-    def get_activations(layer_index):
-        def hook(model, inputs, outputs):
-            hidden_states = inputs if input_or_output == "input" else outputs
-            all_activations.setdefault(layer_index, {})[f"{module_name}_{input_or_output}_hidden_states"] = hidden_states
-        return hook   
-
-    def get_layers(model, layer_path):
-        attributes = layer_path.split('.')
-        layers = model
-        for attr in attributes:
-            layers = getattr(layers, attr)
-        return layers
-
-
-    attributes = module_name.split('.') if module_name != "layer" else []
-    layers = get_layers(model, layer_path)
-
-    for layer_index, layer in enumerate(layers):
-        mixerAttr = layer
-        valid = True
-        for attr in attributes:
-            if hasattr(mixerAttr, attr):
-                mixerAttr = getattr(mixerAttr, attr)
-                layer_index = 0
-                for innerAttr in mambaLayerAttributes:
-                    current_attr = getattr(mixerAttr, innerAttr)
-                    hook = current_attr.register_forward_hook(get_activations(layer_index))
-                    all_hooks.append(hook)
-                    layer_index += 1
-            else:
-                valid = False
-                break
-        
-
-
-    model.eval()
-    with torch.no_grad():
-        model(test_in)
-    for hook in all_hooks:
-        hook.remove()
-    top1_values_all_layers = []
-    top1_indexes_all_layers = []
-    for layer_index, outputs in all_activations.items():
-        values = outputs[f'{module_name}_{input_or_output}_hidden_states']
-        tensor = values[0] if isinstance(values, tuple) else values
-        tensor = tensor.detach().cpu()
-        tensor_abs = tensor.abs().float()
-
-        # tensor2d = tensor.abs().reshape((tensor.shape[0],tensor.shape[2]))
-
-
-        max_value, max_index = torch.max(tensor_abs, 0)
-        max_index = custom_unravel_index(max_index, tensor.shape)
-        top1_values_all_layers.append(tensor[max_index])
-        top1_indexes_all_layers.append(max_index)
-
-
-    return top1_values_all_layers, top1_indexes_all_layers
-
-
 
 plotOn = True
 printoutSuperweight = True
@@ -204,13 +107,22 @@ criterion = F.smooth_l1_loss
 
 trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutToc=False)
 
+# zeroModelWeight(model,"dt_proj","weight")
+# zeroModelWeight(model,"dt_proj","bias")
+# zeroModelWeight(model,"in_proj","weight")
 
+# state_dict = model.state_dict()
+
+# print(state_dict["layers.0.mixer.dt_proj.weight"])
+# print(state_dict["layers.0.mixer.dt_proj.bias"])
+# print(state_dict["layers.0.mixer.conv1d.weight"])
+
+
+print(model(torch.zeros_like(test_in,device=device).double()))
 from qutils.plot import plotStatePredictions
 
 networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,1,states=('\\theta_1','\\theta_2','\\theta_1_dot','\\theta_2_dot'),units=('rad','rad','rad/s','rad/s'),plotOn=not DEBUG)
 
-# superweight training function here
-magnitude, index = findSuperActivation(model,test_in)
 
 # spikes_input = [i for i, value in enumerate(magnitude) if abs(value.norm()) > 50]
 # print(f"Activation spikes")
@@ -228,12 +140,12 @@ for i, avg in enumerate(errorAvg, 1):
 
 printModelParmSize(model)
 
-if printoutSuperweight is True:
-    printoutMaxLayerWeight(model)
-    getSuperWeight(model)
-    plotSuperWeight(model)
+
+
+magnitude, index = findMambaSuperActivation(model,test_in)
 
 if plotOn is True:
+    plotSuperActivation(magnitude,index)
 
     plt.figure()
     plt.subplot(2, 1, 1)
