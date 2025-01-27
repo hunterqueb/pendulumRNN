@@ -37,36 +37,20 @@ def csv_columns_to_numpy(file_path):
 
 
 def generatePlots(conv1d100,conv1d300,dt_proj100,dt_proj300):
-    colors = ['lightblue', 'lightcoral']
-    edge_colors = ['blue', 'red']
 
     plt.figure()
-    vpMamba = plt.violinplot([conv1d100,conv1d300],showmeans=True)
+    vpMamba = plt.boxplot([conv1d100,conv1d300],showmeans=True)
     plt.xticks([1, 2], ['100 Samples', '300 Samples'])
     plt.ylabel('Weight Activation')
     plt.grid()
     plt.title("Weight Activations for E321 conv1d Mamba Approximation")
-    vpMamba['cmeans'].set_color('black') 
-    vpMamba['cmeans'].set_linestyle('--')
-
-    for i, body in enumerate(vpMamba['bodies']):
-        body.set_facecolor(colors[i])
-        body.set_edgecolor(edge_colors[i])
-        body.set_alpha(0.7)  # Set transparency
-
 
     plt.figure()
-    vpLSTM = plt.violinplot([dt_proj100,dt_proj300],showmeans=True)
+    vpLSTM = plt.boxplot([dt_proj100,dt_proj300],showmeans=True)
     plt.xticks([1, 2], ['100 Samples', '300 Samples'])
     plt.ylabel('Weight Activation')
     plt.grid()
     plt.title("Weight Activations for E321 dt_proj Mamba Approximation")
-    vpLSTM['cmeans'].set_color('black') 
-    vpLSTM['cmeans'].set_linestyle('--')
-    for i, body in enumerate(vpLSTM['bodies']):
-        body.set_facecolor(colors[i])
-        body.set_edgecolor(edge_colors[i])
-        body.set_alpha(0.7)  # Set transparency
 
 
 if __name__ == "__main__":

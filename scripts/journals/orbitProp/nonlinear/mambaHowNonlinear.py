@@ -24,11 +24,11 @@ if len(sys.argv) > 1:
 else:
     learnStable = True
 
-plotOn = False
-printoutSuperweight = False
-saveSuperweightToCSV = True
+plotOn = True
+printoutSuperweight = True
+saveSuperweightToCSV = False
 
-nSamples = 300
+nSamples = 100
 
 problemDim = 3
 
@@ -48,8 +48,37 @@ def nominalEulerAngleMotion(t, x,p=None):
 
     return np.array([dydt1, dydt2,dydt3])
 
+np.random.seed()
 
-IC = np.zeros((3,))
+def uniformRandomPointOnSphere():
+    """Generates a random point on the surface of a unit sphere."""
+
+    radius = (10/180)
+
+    # Generate a random point within a cube
+    x = np.random.uniform(-1, 1)
+    y = np.random.uniform(-1, 1)
+    z = np.random.uniform(-1, 1)
+
+    # Normalize the point to project it onto the sphere
+    norm = np.sqrt(x**2 + y**2 + z**2)
+    while norm > 1:  # Ensure the point is inside the sphere
+        x = np.random.uniform(-1, 1)
+        y = np.random.uniform(-1, 1)
+        z = np.random.uniform(-1, 1)
+        norm = np.sqrt(x**2 + y**2 + z**2)
+
+    x = x / norm * radius
+    y = y / norm * radius
+    z = z / norm * radius
+
+    return x, y, z
+
+# dphi, dtheta, dpsi
+
+IC = np.array((uniformRandomPointOnSphere()))
+
+# IC = np.zeros((3,))
 
 
 device = getDevice()
