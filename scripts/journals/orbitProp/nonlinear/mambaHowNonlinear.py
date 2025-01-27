@@ -19,16 +19,11 @@ from qutils.tictoc import timer
 from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
 from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
 
-if len(sys.argv) > 1:
-    learnStable = True if sys.argv[1] == 1 else False
-else:
-    learnStable = True
 
 plotOn = True
-printoutSuperweight = True
 saveSuperweightToCSV = False
+printoutSuperweight = True
 
-nSamples = 100
 
 problemDim = 3
 
@@ -74,6 +69,27 @@ def uniformRandomPointOnSphere():
 
     return x, y, z
 
+def get_MRP_from_euler(eulerAngles):
+    """
+    Converts Euler angles to Modified Rodrigues Parameters.
+    Input: eulerAngles - Nx3 array of Euler angles.
+    Output: MRP - Nx3 array of Modified Rodrigues Parameters.
+    """
+    roll = eulerAngles[:,0]
+    pitch = eulerAngles[:,1]
+    yaw = eulerAngles[:,2]
+
+    qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+    qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+    qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
+    qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+
+    p1=qx/(1+qw)
+    p2=qy/(1+qw)
+    p3=qz/(1+qw)
+
+    return np.array([p1,p2,p3]).T
+
 # dphi, dtheta, dpsi
 
 IC = np.array((uniformRandomPointOnSphere()))
@@ -89,6 +105,8 @@ t0 = 0; tf = 25
 
 # delT = 0.001
 # nSamples = int(np.ceil((tf - t0) / delT))
+nSamples = 100
+
 t = np.linspace(t0, tf, nSamples)
 
 system = nominalEulerAngleMotion
@@ -109,6 +127,7 @@ plt.ylim((-1,1))
 
 
 output_seq = numericResult
+MRP = get_MRP_from_euler(numericResult)
 
 # hyperparameters
 n_epochs = 5
@@ -172,9 +191,9 @@ print(numericResult[0,:])
 print(numericResult[1,:])
 
 magnitude, index = findMambaSuperActivation(model,test_in)
-normedMags = np.zeros((len(magnitude),))
+normedMagsEuler = np.zeros((len(magnitude),))
 for i in range(len(magnitude)):
-    normedMags[i] = magnitude[i].norm().detach().cpu()
+    normedMagsEuler[i] = magnitude[i].norm().detach().cpu()
 
 
 if printoutSuperweight is True:
@@ -182,24 +201,108 @@ if printoutSuperweight is True:
     getSuperWeight(model)
     plotSuperWeight(model)
     plotSuperActivation(magnitude, index,printOutValues=True)
+    plt.title("Euler Angles Super Activations")
 
+
+### MRP SECTION ###
+
+plt.figure(figsize=(10,3))
+plt.plot(t,MRP[:,0])
+plt.ylim((-1,1))
+
+plt.figure(figsize=(10,3))
+plt.plot(t,MRP[:,1])
+plt.ylim((-2,2))
+
+plt.figure(figsize=(10,3))
+plt.plot(t,MRP[:,2])
+plt.ylim((-1,1))
+
+### Train MRP
+train_size = int(len(MRP) * p_motion_knowledge)
+# train_size = 2
+test_size = len(MRP) - train_size
+
+train_in,train_out,test_in,test_out = create_datasets(MRP,1,train_size,device)
+
+# initilizing the model, criterion, and optimizer for the data
+config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=16)
+
+def returnModel(modelString = 'mamba'):
+    if modelString == 'mamba':
+        model = Mamba(config).to(device).double()
+    elif modelString == 'lstm':
+        model = LSTMSelfAttentionNetwork(input_size,30,output_size,num_layers,0).double().to(device)
+    return model
+
+model = returnModel()
+
+optimizer = Adam_mini(model,lr=lr)
+# optimizer = Adam_mini(model,lr=lr)
+
+criterion = F.smooth_l1_loss
+# criterion = torch.nn.HuberLoss()
+
+trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
+
+networkPrediction = plotStatePredictions(model,t,MRP,train_in,test_in,train_size,test_size,states=("None","None","None"),units=("None","None","None"))
+
+from qutils.plot import newPlotSolutionErrors
+newPlotSolutionErrors(MRP,networkPrediction,t,states=("None","None","None"),units=("None","None","None"))
+
+from qutils.mlExtras import rmse
+
+rmse(MRP,networkPrediction)
+
+errorAvg = np.nanmean(abs(networkPrediction-MRP), axis=0)
+print("Average values of each dimension:")
+for i, avg in enumerate(errorAvg, 1):
+    print(f"Dimension {i}: {avg}")
+
+printModelParmSize(model)
+torchinfo.summary(model)
+print('rk85 on 2 period halo orbit takes 1.199 MB of memory to solve')
+print(numericResult[0,:])
+print(numericResult[1,:])
+
+magnitude, index = findMambaSuperActivation(model,test_in)
+normedMagsMRP = np.zeros((len(magnitude),))
+for i in range(len(magnitude)):
+    normedMagsMRP[i] = magnitude[i].norm().detach().cpu()
+
+
+if printoutSuperweight is True:
+    printoutMaxLayerWeight(model)
+    getSuperWeight(model)
+    plotSuperWeight(model)
+    plotSuperActivation(magnitude, index,printOutValues=True)
+    plt.title("Modified Rodrigues Parameters Super Activations")
 
 if saveSuperweightToCSV is True:
     import csv
     import os
     fieldnames = ["in_proj","conv1d","x_proj","dt_proj","out_proj"]
-    new_data = {"in_proj":normedMags[0],"conv1d":normedMags[1],"x_proj":normedMags[2],"dt_proj":normedMags[3],"out_proj":normedMags[4]}
+    new_data_euler = {"in_proj":normedMagsEuler[0],"conv1d":normedMagsEuler[1],"x_proj":normedMagsEuler[2],"dt_proj":normedMagsEuler[3],"out_proj":normedMagsEuler[4]}
+    new_data_MRP = {"in_proj":normedMagsMRP[0],"conv1d":normedMagsMRP[1],"x_proj":normedMagsMRP[2],"dt_proj":normedMagsMRP[3],"out_proj":normedMagsMRP[4]}
 
 
-    file_path = 'superWeight' + str(nSamples) + 'Samples.csv'
+    file_path = 'superWeight' + "Euler" + 'Samples.csv'
     file_exists = os.path.isfile(file_path)
 
     with open(file_path, 'a', newline='') as file:
         writer = csv.DictWriter(file,fieldnames=fieldnames)
         if not file_exists or os.path.getsize(file_path) == 0:
             writer.writeheader()
-        writer.writerow(new_data)
+        writer.writerow(new_data_euler)
 
+    file_path = 'superWeight' + "MRP" + 'Samples.csv'
+    file_exists = os.path.isfile(file_path)
+
+    with open(file_path, 'a', newline='') as file:
+        writer = csv.DictWriter(file,fieldnames=fieldnames)
+        if not file_exists or os.path.getsize(file_path) == 0:
+            writer.writeheader()
+        writer.writerow(new_data_MRP)
 
 if plotOn is True:
     plt.show()

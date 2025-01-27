@@ -29,7 +29,7 @@ def uniformRandomPointOnSphere(radius = (10/180)*np.pi):
 
     return x, y, z
 
-def plotSphere():
+def plotSphere(radius = (10/180)*np.pi):
     phi = np.linspace(0, np.pi, 20)
     theta = np.linspace(0, 2 * np.pi, 40)
 
@@ -138,7 +138,7 @@ if __name__ == "__main__":
     print(radius)
     np.random.seed(int(time.time() * 1000) % 2**32)
 
-    N = 100
+    N = 300
     timeSteps = 100
     t0 = 0; tf = 25
     t = np.linspace(t0,tf,timeSteps)
@@ -159,8 +159,8 @@ if __name__ == "__main__":
         
             nonlinearIndex[j,i] = calcNonlinearIndex(calcLinDepartSTM(getAngularMotion(t[j]),t[j]),calcNominalSTM(xn,yn,zn))
     v = np.max(nonlinearIndex,axis=0)
-    print(np.max(nonlinearIndex))
-    print(nonlinearIndex)
+    # print(np.max(nonlinearIndex))
+    # print(nonlinearIndex)
     # plt.show()
 
 
