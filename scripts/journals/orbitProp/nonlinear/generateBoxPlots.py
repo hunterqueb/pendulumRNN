@@ -36,7 +36,7 @@ def csv_columns_to_numpy(file_path):
     return columns
 
 
-def generatePlots(layersEuler, layersMRP):
+def generateEulerMRPPlots(layersEuler, layersMRP):
     layer_names = ["in_proj", "conv1d", "x_proj", "dt_proj", "out_proj"]
     
     for i, layer_name in enumerate(layer_names):
@@ -46,36 +46,68 @@ def generatePlots(layersEuler, layersMRP):
         plt.ylabel('Weight Activation')
         plt.grid()
         plt.title(f"Weight Activations for E321 + MRP {layer_name} Mamba Approximation")
+def generate4d6dPlots(layersEuler, layersMRP):
+    layer_names = ["in_proj", "conv1d", "x_proj", "dt_proj", "out_proj"]
+    
+    for i, layer_name in enumerate(layer_names):
+        plt.figure()
+        vpMamba = plt.boxplot([layersEuler[i], layersMRP[i]], showmeans=True)
+        plt.xticks([1, 2], ['4d', '6d'])
+        plt.ylabel('Weight Activation')
+        plt.grid()
+        plt.title(f"Weight Activations for Short Period CR3BP {layer_name} Mamba Approximation")
 
+def generate4d6dResPlots(layersEuler, layersMRP):
+    layer_names = ["in_proj", "conv1d", "x_proj", "dt_proj", "out_proj"]
+    
+    for i, layer_name in enumerate(layer_names):
+        plt.figure()
+        vpMamba = plt.boxplot([layersEuler[i], layersMRP[i]], showmeans=True)
+        plt.xticks([1, 2], ['4d', '6d'])
+        plt.ylabel('Weight Activation')
+        plt.grid()
+        plt.title(f"Weight Activations for Resonant 4:3 CR3BP {layer_name} Mamba Approximation")
+
+
+def returnLayerActivationArray(filepath):
+    data_dict = csv_columns_to_numpy(filepath)
+    # Each key in data_dict corresponds to a field name, and the value is a NumPy array.
+    in_proj = data_dict["in_proj"]
+    conv1d = data_dict["conv1d"]
+    x_proj = data_dict["x_proj"]
+    dt_proj = data_dict["dt_proj"]
+    out_proj = data_dict["out_proj"]
+
+    return [in_proj,conv1d,x_proj,dt_proj,out_proj]
 
 if __name__ == "__main__":
 
     fileExt = "Samples.csv"
-
     fileName = "superWeight"
 
     filepath = fileName + "Euler" + fileExt
-    data_dict = csv_columns_to_numpy(filepath)
-    # Each key in data_dict corresponds to a field name, and the value is a NumPy array.
-    in_projEuler = data_dict["in_proj"]
-    conv1dEuler = data_dict["conv1d"]
-    x_projEuler = data_dict["x_proj"]
-    dt_projEuler = data_dict["dt_proj"]
-    out_projEuler = data_dict["out_proj"]
-    
-
+    activationsEuler = returnLayerActivationArray(filepath)    
 
     filepath = fileName + "MRP" + fileExt
-    data_dict = csv_columns_to_numpy(filepath)
-    # Each key in data_dict corresponds to a field name, and the value is a NumPy array.
-    in_projMRP = data_dict["in_proj"]
-    conv1dMRP = data_dict["conv1d"]
-    x_projMRP = data_dict["x_proj"]
-    dt_projMRP = data_dict["dt_proj"]
-    out_projMRP = data_dict["out_proj"]
+    activationsMRP = returnLayerActivationArray(filepath)    
 
+    generateEulerMRPPlots(activationsEuler,activationsMRP)
 
-    generatePlots([in_projEuler,conv1dEuler,x_projEuler,dt_projEuler,out_projEuler],[in_projMRP,conv1dMRP,x_projMRP,dt_projMRP,out_projMRP])
+    filepath = fileName + "CR3BPSP4d" + fileExt
+    activationsCR3BPSP4d = returnLayerActivationArray(filepath)
+    
+    filepath = fileName + "CR3BPSP6d" + fileExt
+    activationsCR3BPSP6d = returnLayerActivationArray(filepath)
+
+    generate4d6dPlots(activationsCR3BPSP4d,activationsCR3BPSP6d)
+
+    filepath = fileName + "CR3BP4d" + fileExt
+    activationsCR3BP4d = returnLayerActivationArray(filepath)
+    
+    filepath = fileName + "CR3BP6d" + fileExt
+    activationsCR3BP6d = returnLayerActivationArray(filepath)
+
+    generate4d6dResPlots(activationsCR3BP4d,activationsCR3BP6d)
 
 
     plt.show()

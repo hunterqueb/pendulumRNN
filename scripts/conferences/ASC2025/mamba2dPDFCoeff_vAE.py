@@ -19,12 +19,12 @@ from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeigh
 from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
 
 plotOn = True
-printoutSuperweight = True
+printoutSuperweight = False
 
 device = getDevice()
 
 fileLocation = 'matlab/DDDAS-2d/newData/'
-fileName = ["duff2D_2xUncer_pdfCoeff_del_t_0_1_tf_4_8_mamba","duff2D_2xUncer_pdfCoeff_del_t_0_01_tf_4_8_mamba","linOsc_pdfCoeff_del_t_0_1_tf_4_8_mamba","linOsc_pdfCoeff_del_t_0_01_tf_4_8_mamba"]
+fileName = ["duff2D_2xUncer_pdfCoeff_del_t_0_1_tf_4_8_mamba"]#,"duff2D_2xUncer_pdfCoeff_del_t_0_01_tf_4_8_mamba","linOsc_pdfCoeff_del_t_0_1_tf_4_8_mamba","linOsc_pdfCoeff_del_t_0_01_tf_4_8_mamba"]
 fileExtension = '.mat'
 
 for file in fileName:
@@ -41,7 +41,7 @@ for file in fileName:
 
         sequenceLength = learningSeq.shape[0]
         problemDim = learningSeq.shape[1]
-
+        modelDim = problemDim//8
         # hyperparameters
         n_epochs = 20
         # lr = 0.0007
@@ -72,8 +72,27 @@ for file in fileName:
 
         # initilizing the model, criterion, and optimizer for the data
         # config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=256)
-        config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=32,expand_factor=1)
-        model = Mamba(config).to(device).double()
+        config = MambaConfig(d_model=modelDim, n_layers=num_layers,d_conv=32,expand_factor=1)
+        
+        encoder = torch.nn.Sequential(
+                torch.nn.Linear(problemDim, problemDim//2),
+                torch.nn.ReLU(),
+                torch.nn.Linear(problemDim//2, problemDim//4),
+                torch.nn.ReLU(),
+                torch.nn.Linear(problemDim//4, modelDim)
+                )
+        decoder = torch.nn.Sequential(
+                torch.nn.Linear(modelDim, problemDim//4),
+                torch.nn.ReLU(),
+                torch.nn.Linear(problemDim//4, problemDim//2),
+                torch.nn.ReLU(),
+                torch.nn.Linear(problemDim//2, problemDim),
+                )
+
+        model = torch.nn.Sequential(encoder,Mamba(config),decoder).to(device).double()
+        # config = MambaConfig(d_model=problemDim, n_layers=num_layers,d_conv=32,expand_factor=1)
+        # model = (Mamba(config)).to(device).double()
+        
 
 
         optimizer = torch.optim.Adam(model.parameters(),lr=lr)
@@ -160,7 +179,11 @@ for file in fileName:
         plt.xlabel('Time (sec)')
         plt.ylabel('RBF Coefficent Values (none)')
 
-    torchinfo.summary(model,input_size=(1,1,problemDim))
+        mse=torch.nn.MSELoss()
+        reconstructionError = mse(decoder(encoder(test_in)),test_in).detach()
+        print('Reconstruction Error: ',reconstructionError)
+
+    # torchinfo.summary(model,input_size=(1,1,problemDim))
     printModelParmSize(model)
     savemat(fileLocation+file+'_pred'+fileExtension, all_data)
 

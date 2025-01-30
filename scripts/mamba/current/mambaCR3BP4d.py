@@ -8,7 +8,7 @@ import torchinfo
 from qutils.integrators import ode87
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions,plotStatePredictions, plotEnergy
 from qutils.mlExtras import findDecAcc,printoutMaxLayerWeight
-from qutils.orbital import nonDim2Dim6, dim2NonDim6, returnCR3BPIC, jacobiConstant6
+from qutils.orbital import nonDim2Dim4 as nonDim2Dim6, dim2NonDim4 as dim2NonDim6, returnCR3BPIC, jacobiConstant6
 from qutils.mamba import Mamba, MambaConfig
 from qutils.ml import trainModel, printModelParmSize, getDevice, Adam_mini, genPlotPrediction, create_datasets,LSTMSelfAttentionNetwork
 from qutils.tictoc import timer
@@ -19,12 +19,12 @@ from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeigh
 from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
 
 DEBUG = True
-plotOn = False
+plotOn = True
 printoutSuperweight = True
 compareLSTM = False
-saveSuperweightToCSV = True
+saveSuperweightToCSV = False
 
-problemDim = 6
+problemDim = 4
 m_1 = 5.974E24  # kg
 m_2 = 7.348E22 # kg
 mu = m_2/(m_1 + m_2)
@@ -43,16 +43,15 @@ orbitFamily = 'butterfly'
 
 CR3BPIC = returnCR3BPIC(orbitFamily,L=1,id=894,stable=True)
 CR3BPIC = returnCR3BPIC("resonant",L=43,stable=True,id=11)
-# CR3BPIC = returnCR3BPIC("resonant",L=43,id=533)
 # CR3BPIC = returnCR3BPIC(orbitFamily,id=1080)
 
 # orbitFamily = 'longPeriod'
 
-# CR3BPIC = returnCR3BPIC("shortPeriod",L=4,id=806)
+CR3BPIC = returnCR3BPIC("shortPeriod",L=4,id=806)
 
 x_0,tEnd = CR3BPIC()
 
-IC = np.array(x_0)
+IC = np.array((x_0[0],x_0[1],x_0[3],x_0[4]))
 
 print(IC)
 print(tEnd)
@@ -65,23 +64,21 @@ def system(t, Y,mu=mu):
     The solution is parameterized on $\\pi_2$, the mass ratio.
     """
     # Get the position and velocity from the solution vector
-    x, y, z = Y[:3]
-    xdot, ydot, zdot = Y[3:]
+    x, y = Y[:2]
+    xdot, ydot = Y[2:]
 
     # Define the derivative vector
 
     dydt1 = xdot
     dydt2 = ydot
-    dydt3 = zdot
 
-    r1 = np.sqrt((x + mu)**2 + y**2 + z**2)
-    r2 = np.sqrt((x - 1 + mu)**2 + y**2 + z**2)
+    r1 = np.sqrt((x + mu)**2 + y**2)
+    r2 = np.sqrt((x - 1 + mu)**2 + y**2)
 
-    dydt4 = 2 * ydot + x - (1 - mu) * (x + mu) / r1**3 - mu * (x - 1 + mu) / r2**3
-    dydt5 = -2 * xdot + y - (1 - mu) * y / r1**3 - mu * y / r2**3
-    dydt6 = -(1 - mu) * z / r1**3 - mu * z / r2**3
+    dydt3 = 2 * ydot + x - (1 - mu) * (x + mu) / r1**3 - mu * (x - 1 + mu) / r2**3
+    dydt4 = -2 * xdot + y - (1 - mu) * y / r1**3 - mu * y / r2**3
 
-    return np.array([dydt1, dydt2,dydt3,dydt4,dydt5,dydt6])
+    return np.array([dydt1, dydt2,dydt3,dydt4])
 
 
 
@@ -248,6 +245,7 @@ if compareLSTM:
 
 if plotOn is True:
     plt.show()
+
 if saveSuperweightToCSV is True:
     normedMags = np.zeros((len(magnitude),))
     for i in range(len(magnitude)):
@@ -259,7 +257,7 @@ if saveSuperweightToCSV is True:
     new_data = {"in_proj":normedMags[0],"conv1d":normedMags[1],"x_proj":normedMags[2],"dt_proj":normedMags[3],"out_proj":normedMags[4]}
 
 
-    file_path = 'superWeightCR3BP' + "6d" + 'Samples.csv'
+    file_path = 'superWeightCR3BP' + "4d" + 'Samples.csv'
     file_exists = os.path.isfile(file_path)
 
     with open(file_path, 'a', newline='') as file:
@@ -267,3 +265,4 @@ if saveSuperweightToCSV is True:
         if not file_exists or os.path.getsize(file_path) == 0:
             writer.writeheader()
         writer.writerow(new_data)
+
