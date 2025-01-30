@@ -92,6 +92,7 @@ def jacobiConstant(Y):
 orbitFamily = 'halo'
 
 CR3BPIC = returnCR3BPIC(orbitFamily,L=1,id=894,stable=True)
+CR3BPIC = returnCR3BPIC("resonant",L=43,id=533)
 
 x_0,tEnd = CR3BPIC()
 
@@ -164,7 +165,7 @@ dataSet = 10 * 50
 epochs = 10000
 learningRate = 6e-4
 
-numPeriods = 5
+numPeriods = 4
 
 tEnd = tEnd * numPeriods
 
@@ -259,7 +260,10 @@ TU = 382981
 # print('Time to evaluate {} ODES with RK45: {}'.format(nTest,finalOde))
 
 
-plotCR3BPPhasePredictions(yTruth,yTest)
+plotCR3BPPhasePredictions(yTruth,yTest,L=None,networkLabel='PINN')
+plt.gcf()
+plt.legend()
+
 plot3dCR3BPPredictions(yTruth,yTest,L=1)
 
 yTruth = nonDim2Dim6(yTruth,DU,TU)
@@ -271,6 +275,11 @@ errorAvg = np.nanmean(abs(yTest-yTruth), axis=0)
 print("Average values of each dimension:")
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg}")
+
+from qutils.mlExtras import rmse
+
+print(rmse(yTruth,yTest))
+
 
 if(not plotOff):
     plt.show()
