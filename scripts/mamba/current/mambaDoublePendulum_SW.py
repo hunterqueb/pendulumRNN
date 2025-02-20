@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
 import torch.utils.data as data
+import latex
 
 from qutils.integrators import ode45
 from qutils.ml import printModelParmSize, getDevice, create_datasets, genPlotPrediction, trainModel
@@ -92,7 +93,6 @@ p_motion_knowledge = 0.5
 train_size = int(len(output_seq) * p_motion_knowledge)
 # train_size = 2
 test_size = len(output_seq) - train_size
-
 train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
@@ -121,7 +121,7 @@ trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimi
 print(model(torch.zeros_like(test_in,device=device).double()))
 from qutils.plot import plotStatePredictions
 
-networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,1,states=('\\theta_1','\\theta_2','\\theta_1_dot','\\theta_2_dot'),units=('rad','rad','rad/s','rad/s'),plotOn=not DEBUG)
+networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,1,states=('$\\theta_1$','$\\theta_2$','$\dot{\\theta_1}$','$\dot{\\theta_2}$'),units=('rad','rad','rad/s','rad/s'),plotOn=not DEBUG)
 
 
 # spikes_input = [i for i, value in enumerate(magnitude) if abs(value.norm()) > 50]

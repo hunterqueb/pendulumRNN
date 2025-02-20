@@ -135,7 +135,7 @@ def generateRMSEBoxPlots(keepLSTM = True):
     # edge_colors = ['blue', 'red']
 
     plt.figure()
-    vpMamba = plt.boxplot(RSMEMambaPos,showmeans=True)
+    vpMamba = plt.boxplot(RSMEMambaPos,showmeans=True,sym='')
     plt.xticks([1, 2, 3], ['x', 'y','z'])
     plt.ylabel('Distance (km)')
     plt.grid()
@@ -143,20 +143,8 @@ def generateRMSEBoxPlots(keepLSTM = True):
     # vpMamba['cmeans'].set_color('black') 
     # vpMamba['cmeans'].set_linestyle('--')
 
-    if keepLSTM:
-        vpLSTM = plt.boxplot(RSMELSTMPos,showmeans=True)
-        plt.xticks([1, 2, 3], ['x', 'y','z'])
-        # vpLSTM['cmeans'].set_color('black') 
-        # vpLSTM['cmeans'].set_linestyle('--')
-
-        mambaLine = mlines.Line2D([], [], color='b', label='Mamba')
-        LSTMLine = mlines.Line2D([], [], color='orange', label='LSTM')
-        meanLine = mlines.Line2D([], [], color='black', label='Mean',linestyle='dashed')
-        
-        plt.legend(handles=[mambaLine,LSTMLine,meanLine])
-
     plt.figure()
-    vpMamba = plt.boxplot(RSMEMambaVel,showmeans=True)
+    vpMamba = plt.boxplot(RSMEMambaVel,showmeans=True,sym='')
     plt.xticks([1, 2, 3], ['vx', 'vy','vz'])
     plt.ylabel('Speed (km/s)')
     plt.grid()
@@ -165,27 +153,37 @@ def generateRMSEBoxPlots(keepLSTM = True):
     # vpMamba['cmeans'].set_linestyle('--')
 
     if keepLSTM:
-        vpLSTM = plt.boxplot(RSMELSTMPVel,showmeans=True)
-        # vpLSTM['cmeans'].set_color('black') 
-        # vpLSTM['cmeans'].set_linestyle('--')
-        
-        plt.legend(handles=[mambaLine,LSTMLine,meanLine])
+        plt.figure()
 
+        vpLSTM = plt.boxplot(RSMELSTMPos,showmeans=True,sym='')
+        plt.xticks([1, 2, 3], ['x', 'y','z'])
+        plt.ylabel('Distance (km)')
+        plt.grid()
+        plt.title("Root Mean Square Error of Position Dimensions")
+
+        
+        plt.figure()
+        vpLSTM = plt.boxplot(RSMELSTMPVel,showmeans=True,sym='')
+        plt.xticks([1, 2, 3], ['vx', 'vy','vz'])
+        plt.ylabel('Speed (km/s)')
+        plt.grid()
+        plt.title("Root Mean Square Error of Velocity Dimensions")
 
     return
 
-
+def generateRMSEBoxPlotsDiff(keepLSTM = True):
+    return
 
 def generateTimeBoxPlots():
     plt.figure()
-    plt.boxplot([mambaTrain,lstmTrain],showmeans=True)
+    plt.boxplot([mambaTrain,lstmTrain],showmeans=True,sym='')
     plt.xticks([1, 2], ['Mamba', 'LSTM'])
     plt.ylabel('Time (sec)')
     plt.grid()
     plt.title("Network Training Times")
 
     plt.figure()
-    plt.boxplot([mambaTest,lstmTest],showmeans=True)
+    plt.boxplot([mambaTest,lstmTest],showmeans=True,sym='')
     plt.xticks([1, 2], ['Mamba', 'LSTM'])
     plt.ylabel('Time (sec)')
     plt.grid()
@@ -214,8 +212,8 @@ if __name__ == "__main__":
 
     fileExt = ".csv"
 
-    # fileName = "p2bp"
-    fileName = "cr3bp"
+    fileName = "p2bp"
+    # fileName = "cr3bp"
 
     filepath = fileName + "Time" + fileExt
     data_dict = csv_columns_to_numpy(filepath)
@@ -243,11 +241,10 @@ if __name__ == "__main__":
     RSMELSTMPVel = [data_dict["vx"],data_dict["vy"],data_dict["vz"]]
 
 
-    generateRMSEViolinPlots(keepLSTM=True)
-    generateRMSEViolinPlots(keepLSTM=False)
+    # generateRMSEViolinPlots(keepLSTM=True)
+    # generateRMSEViolinPlots(keepLSTM=False)
 
     generateRMSEBoxPlots(keepLSTM=True)
-    generateRMSEBoxPlots(keepLSTM=False)
 
 
     # generateP2BPEnergyPlots()
