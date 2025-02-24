@@ -73,7 +73,7 @@ t = np.linspace(t0, tf, nSamples)
 
 # t , numericResult = ode1412(system,[t0,tf],IC,t)
 from scipy.io import loadmat
-cr3bp = loadmat("scripts/journals/orbitProp/butterfly/CR3BP_butterfly_1080.mat")
+cr3bp = loadmat("scripts/journals/orbitProp/cr3bp/butterfly/CR3BP_butterfly_1080.mat")
 
 output_seq = cr3bp['XODE']
 t = cr3bp['tResult']

@@ -99,7 +99,7 @@ nSamples = int(np.ceil((tf - t0) / delT))
 
 
 from scipy.io import loadmat
-cr3bp = loadmat("scripts/journals/orbitProp/butterfly/CR3BP_butterfly_1080.mat")
+cr3bp = loadmat("scripts/journals/orbitProp/cr3bp/butterfly/CR3BP_butterfly_1080.mat")
 
 output_seq = cr3bp['XODE']
 t = cr3bp['tResult']
