@@ -11,12 +11,12 @@ GMAT Sat1.DateFormat = UTCGregorian;
 GMAT Sat1.Epoch = '15 Aug 2024 11:59:28.000';
 GMAT Sat1.CoordinateSystem = EarthMJ2000Eq;
 GMAT Sat1.DisplayStateType = Keplerian;
-GMAT Sat1.SMA = 7191.938817629003;
-GMAT Sat1.ECC = 0.02000000000000002;
+GMAT Sat1.SMA = 7191.938817629005;
+GMAT Sat1.ECC = 0.02000000000000043;
 GMAT Sat1.INC = 12.85008005658097;
 GMAT Sat1.RAAN = 306.6148021947984;
-GMAT Sat1.AOP = 314.1905515359908;
-GMAT Sat1.TA = 99.88774933205001;
+GMAT Sat1.AOP = 314.1905515359917;
+GMAT Sat1.TA = 99.88774933204911;
 GMAT Sat1.DryMass = 850;
 GMAT Sat1.Cd = 2.2;
 GMAT Sat1.Cr = 1.8;
@@ -55,6 +55,7 @@ GMAT Sat1.EulerAngleSequence = '321';
 
 
 
+
 %----------------------------------------
 %---------- ForceModels
 %----------------------------------------
@@ -70,6 +71,9 @@ GMAT EarthProp_ForceModel.GravityField.Earth.Order = 360;
 GMAT EarthProp_ForceModel.GravityField.Earth.StmLimit = 100;
 GMAT EarthProp_ForceModel.GravityField.Earth.PotentialFile = 'EGM96.cof';
 GMAT EarthProp_ForceModel.GravityField.Earth.TideModel = 'None';
+GMAT EarthProp_ForceModel.SRP.Flux = 1367;
+GMAT EarthProp_ForceModel.SRP.SRPModel = Spherical;
+GMAT EarthProp_ForceModel.SRP.Nominal_Sun = 149597870.691;
 GMAT EarthProp_ForceModel.Drag.AtmosphereModel = MSISE90;
 GMAT EarthProp_ForceModel.Drag.HistoricWeatherSource = 'ConstantFluxAndGeoMag';
 GMAT EarthProp_ForceModel.Drag.PredictedWeatherSource = 'ConstantFluxAndGeoMag';
@@ -81,9 +85,6 @@ GMAT EarthProp_ForceModel.Drag.MagneticIndex = 3;
 GMAT EarthProp_ForceModel.Drag.SchattenErrorModel = 'Nominal';
 GMAT EarthProp_ForceModel.Drag.SchattenTimingModel = 'NominalCycle';
 GMAT EarthProp_ForceModel.Drag.DragModel = 'Spherical';
-GMAT EarthProp_ForceModel.SRP.Flux = 1367;
-GMAT EarthProp_ForceModel.SRP.SRPModel = Spherical;
-GMAT EarthProp_ForceModel.SRP.Nominal_Sun = 149597870.691;
 
 %----------------------------------------
 %---------- Propagators
@@ -105,9 +106,9 @@ GMAT EarthProp.StopIfAccuracyIsViolated = true;
 
 Create OrbitView DefaultOrbitView;
 GMAT DefaultOrbitView.SolverIterations = Current;
-GMAT DefaultOrbitView.UpperLeft = [ -0.002352941176470588 0 ];
-GMAT DefaultOrbitView.Size = [ 0.41 0.6293532338308457 ];
-GMAT DefaultOrbitView.RelativeZOrder = 145;
+GMAT DefaultOrbitView.UpperLeft = [ -0.002157031924072476 0 ];
+GMAT DefaultOrbitView.Size = [ 0.4098360655737705 0.6293766011955594 ];
+GMAT DefaultOrbitView.RelativeZOrder = 164;
 GMAT DefaultOrbitView.Maximized = false;
 GMAT DefaultOrbitView.Add = {Sat1, Earth};
 GMAT DefaultOrbitView.CoordinateSystem = EarthMJ2000Eq;
@@ -137,9 +138,9 @@ GMAT DefaultOrbitView.EnableConstellations = On;
 
 Create GroundTrackPlot DefaultGroundTrackPlot;
 GMAT DefaultGroundTrackPlot.SolverIterations = Current;
-GMAT DefaultGroundTrackPlot.UpperLeft = [ 0.4511764705882353 0.03606965174129353 ];
-GMAT DefaultGroundTrackPlot.Size = [ 0.5141176470588236 0.4701492537313433 ];
-GMAT DefaultGroundTrackPlot.RelativeZOrder = 135;
+GMAT DefaultGroundTrackPlot.UpperLeft = [ 0.4508196721311475 0.035866780529462 ];
+GMAT DefaultGroundTrackPlot.Size = [ 0.5142364106988784 0.4705380017079419 ];
+GMAT DefaultGroundTrackPlot.RelativeZOrder = 38;
 GMAT DefaultGroundTrackPlot.Maximized = false;
 GMAT DefaultGroundTrackPlot.Add = {Sat1};
 GMAT DefaultGroundTrackPlot.DataCollectFrequency = 1;
@@ -156,7 +157,7 @@ GMAT report5050.UpperLeft = [ 0.0611764705882353 0.1238095238095238 ];
 GMAT report5050.Size = [ 0.5994117647058823 0.7988095238095239 ];
 GMAT report5050.RelativeZOrder = 102;
 GMAT report5050.Maximized = false;
-GMAT report5050.Filename = 'C:\Users\hu650776\Desktop\GMAT\output\report5050Prop.txt';
+GMAT report5050.Filename = 'C:\Users\Hunter\Documents\Fork\pendulumRNN\gmat\data\reportLEO5050Prop.txt';
 GMAT report5050.Precision = 16;
 GMAT report5050.Add = {Sat1.A1ModJulian, Sat1.EarthMJ2000Eq.X, Sat1.EarthMJ2000Eq.Y, Sat1.EarthMJ2000Eq.Z, Sat1.EarthMJ2000Eq.VX, Sat1.EarthMJ2000Eq.VY, Sat1.EarthMJ2000Eq.VZ, Sat1.ElapsedSecs};
 GMAT report5050.WriteHeaders = true;
@@ -173,4 +174,5 @@ GMAT report5050.WriteReport = true;
 %----------------------------------------
 
 BeginMissionSequence;
-Propagate EarthProp(Sat1) {Sat1.ElapsedSecs = 12000.0};
+Propagate EarthProp(Sat1) {Sat1.ElapsedSecs = 6083.453637};
+Propagate EarthProp(Sat1) {Sat1.ElapsedSecs = 1500};
