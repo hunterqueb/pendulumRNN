@@ -20,7 +20,7 @@ from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeigh
 
 from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
 DEBUG = True
-plotOn = True
+plotOn = False
 printoutSuperweight = True
 compareLSTM = True
 saveData = True

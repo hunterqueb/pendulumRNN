@@ -125,6 +125,12 @@ for i, avg in enumerate(errorAvg, 1):
 printModelParmSize(model)
 torchinfo.summary(model)
 
+
+# round trip closure
+
+finalConditions = networkPrediction[-1,:]
+print(finalConditions)
+
 if printoutSuperweight:
     printoutMaxLayerWeight(model)
     getSuperWeight(model)
@@ -189,6 +195,9 @@ if compareLSTM:
     printModelParmSize(modelLSTM)
     torchinfo.summary(modelLSTM)
 
+    finalConditions = networkPredictionLSTM[-1,:]
+    print(finalConditions)
+
 if plotOn is True:
     plt.show()
 
@@ -201,7 +210,7 @@ if saveData is True:
     new_data_LSTM = {"x":rmseLSTM[0],"y":rmseLSTM[1],"z":rmseLSTM[2],"vx":rmseLSTM[3],"vy":rmseLSTM[4],"vz":rmseLSTM[5]}
 
 
-    file_path = 'p2bpRMSEMambaShort.csv'
+    file_path = 'p2bpShortRMSEMamba.csv'
     file_exists = os.path.isfile(file_path)
 
     with open(file_path, 'a', newline='') as file:
@@ -210,7 +219,7 @@ if saveData is True:
             writer.writeheader()
         writer.writerow(new_data_mamba)
 
-    file_path = 'p2bpRMSELSTMShort.csv'
+    file_path = 'p2bpShortRMSELSTM.csv'
     file_exists = os.path.isfile(file_path)
 
     with open(file_path, 'a', newline='') as file:
@@ -224,7 +233,7 @@ if saveData is True:
     new_data = {"Mamba Train":timeToTrain,"LSTM Train":timeToTrainLSTM,"Mamba Test":testTime,"LSTM Test":testTimeLSTM}
 
 
-    file_path = 'p2bpTimeShort.csv'
+    file_path = 'p2bpShortTime.csv'
     file_exists = os.path.isfile(file_path)
 
     with open(file_path, 'a', newline='') as file:

@@ -20,9 +20,10 @@ from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeigh
 
 from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
 DEBUG = True
-plotOn = True
+plotOn = False
 printoutSuperweight = True
-compareLSTM = False
+compareLSTM = True
+saveData = True
 
 problemDim = 6
 m_1 = 5.974E24  # kg
@@ -150,14 +151,14 @@ optimizer = Adam_mini(model,lr=lr)
 criterion = F.smooth_l1_loss
 # criterion = torch.nn.HuberLoss()
 
-trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
+timeToTrain = trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
 
 DU = 389703
 G = 6.67430e-11
 # TU = np.sqrt(DU**3 / (G*(m_1+m_2)))
 TU = 382981
 
-networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
+networkPrediction, testTime = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,outputToc = True)
 output_seq = nonDim2Dim6(output_seq,DU,TU)
 print(output_seq[0,:])
 plotCR3BPPhasePredictions(output_seq,networkPrediction,L=2,DU=DU)
@@ -175,7 +176,7 @@ newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel="Orbit Periods")
 
 from qutils.mlExtras import rmse
 
-rmse(output_seq,networkPrediction)
+rmseMamba = rmse(output_seq,networkPrediction)
 
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average values of each dimension:")
@@ -205,12 +206,12 @@ if compareLSTM:
 
     criterion = F.smooth_l1_loss
     # criterion = torch.nn.HuberLoss()
-    trainModel(modelLSTM,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
+    timeToTrainLSTM = trainModel(modelLSTM,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
 
 
     output_seq = dim2NonDim6(output_seq,DU,TU)
 
-    networkPredictionLSTM = plotStatePredictions(modelLSTM,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
+    networkPredictionLSTM, testTimeLSTM = plotStatePredictions(modelLSTM,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,outputToc = True)
     output_seq = nonDim2Dim6(output_seq,DU,TU)
 
     plot3dCR3BPPredictions(output_seq,networkPrediction,earth=False,networkLabel="Mamba",DU=DU,L=None,moon=False)
@@ -247,7 +248,7 @@ if compareLSTM:
     plotEnergy(output_seq,networkPrediction,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',nonDim=dim2NonDim6,DU = DU, TU = TU,networkLabel="Mamba")
     plt.legend(loc="lower left")
 
-    rmse(output_seq,networkPredictionLSTM)
+    rmseLSTM = rmse(output_seq,networkPredictionLSTM)
 
     errorAvg = np.nanmean(abs(networkPredictionLSTM-output_seq), axis=0)
     print("Average values of each dimension:")
@@ -260,3 +261,44 @@ if compareLSTM:
 
 if plotOn is True:
     plt.show()
+
+if saveData is True:
+    import csv
+    import os
+
+    fieldnames = ["x","y","z","vx","vy","vz"]
+    new_data_mamba = {"x":rmseMamba[0],"y":rmseMamba[1],"z":rmseMamba[2],"vx":rmseMamba[3],"vy":rmseMamba[4],"vz":rmseMamba[5]}
+    new_data_LSTM = {"x":rmseLSTM[0],"y":rmseLSTM[1],"z":rmseLSTM[2],"vx":rmseLSTM[3],"vy":rmseLSTM[4],"vz":rmseLSTM[5]}
+
+
+    file_path = 'cr3bpRMSEMamba.csv'
+    file_exists = os.path.isfile(file_path)
+
+    with open(file_path, 'a', newline='') as file:
+        writer = csv.DictWriter(file,fieldnames=fieldnames)
+        if not file_exists or os.path.getsize(file_path) == 0:
+            writer.writeheader()
+        writer.writerow(new_data_mamba)
+
+    file_path = 'cr3bpRMSELSTM.csv'
+    file_exists = os.path.isfile(file_path)
+
+    with open(file_path, 'a', newline='') as file:
+        writer = csv.DictWriter(file,fieldnames=fieldnames)
+        if not file_exists or os.path.getsize(file_path) == 0:
+            writer.writeheader()
+        writer.writerow(new_data_LSTM)
+
+
+    fieldnames = ["Mamba Train","LSTM Train","Mamba Test","LSTM Test"]
+    new_data = {"Mamba Train":timeToTrain,"LSTM Train":timeToTrainLSTM,"Mamba Test":testTime,"LSTM Test":testTimeLSTM}
+
+
+    file_path = 'cr3bpTime.csv'
+    file_exists = os.path.isfile(file_path)
+
+    with open(file_path, 'a', newline='') as file:
+        writer = csv.DictWriter(file,fieldnames=fieldnames)
+        if not file_exists or os.path.getsize(file_path) == 0:
+            writer.writeheader()
+        writer.writerow(new_data)

@@ -21,10 +21,10 @@ from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeigh
 
 from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
 
-compareLSTM = False
-plotOn = True
-printoutSuperweight = True
-
+compareLSTM = True
+plotOn = False
+printoutSuperweight = False
+saveData = True
 
 problemDim = 6
 
@@ -86,9 +86,9 @@ optimizer = Adam_mini(model,lr=lr)
 criterion = F.smooth_l1_loss
 # criterion = torch.nn.HuberLoss()
 
-trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
+timeToTrain = trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
 
-networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
+networkPrediction, testTime = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,outputToc=True)
 output_seq = nonDim2Dim6(output_seq,DU,TU)
 
 # networkPrediction = nonDim2Dim6(networkPrediction,DU,TU)
@@ -113,7 +113,7 @@ plotEnergy(output_seq,networkPrediction,t/tPeriod,orbitalEnergy,xLabel='Number o
 
 from qutils.mlExtras import rmse
 
-rmse(output_seq,networkPrediction)
+rmseMamba = rmse(output_seq,networkPrediction)
 
 
 
@@ -147,11 +147,11 @@ if compareLSTM:
 
     criterion = F.smooth_l1_loss
     # criterion = torch.nn.HuberLoss()
-    trainModel(modelLSTM,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
+    timeToTrainLSTM = trainModel(modelLSTM,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
 
     output_seq = dim2NonDim6(output_seq,DU,TU)
 
-    networkPredictionLSTM = plotStatePredictions(modelLSTM,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
+    networkPredictionLSTM, testTimeLSTM = plotStatePredictions(modelLSTM,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,outputToc=True)
     output_seq = nonDim2Dim6(output_seq,DU,TU)
 
     plot3dOrbitPredictions(output_seq,networkPrediction,earth=False,networkLabel="Mamba")
@@ -178,7 +178,7 @@ if compareLSTM:
     plt.plot(t/tPeriod,orbitalEnergy(networkPredictionLSTM),label='LSTM',linestyle='dashed')
     plt.legend()
 
-    rmse(output_seq,networkPredictionLSTM)
+    rmseLSTM = rmse(output_seq,networkPredictionLSTM)
 
 
     errorAvg = np.nanmean(abs(networkPredictionLSTM-output_seq), axis=0)
@@ -189,5 +189,53 @@ if compareLSTM:
     printModelParmSize(modelLSTM)
     torchinfo.summary(modelLSTM)
 
+# round trip closure
+finalConditions = networkPrediction[-1,:]
+
+finalConditionsLSTM = networkPredictionLSTM[-1,:]
+print(finalConditions)
+print(finalConditionsLSTM)
+
 if plotOn is True:
     plt.show()
+
+if saveData is True:
+    import csv
+    import os
+
+    fieldnames = ["x","y","z","vx","vy","vz"]
+    new_data_mamba = {"x":rmseMamba[0],"y":rmseMamba[1],"z":rmseMamba[2],"vx":rmseMamba[3],"vy":rmseMamba[4],"vz":rmseMamba[5]}
+    new_data_LSTM = {"x":rmseLSTM[0],"y":rmseLSTM[1],"z":rmseLSTM[2],"vx":rmseLSTM[3],"vy":rmseLSTM[4],"vz":rmseLSTM[5]}
+
+
+    file_path = 'p2bpRMSEMamba.csv'
+    file_exists = os.path.isfile(file_path)
+
+    with open(file_path, 'a', newline='') as file:
+        writer = csv.DictWriter(file,fieldnames=fieldnames)
+        if not file_exists or os.path.getsize(file_path) == 0:
+            writer.writeheader()
+        writer.writerow(new_data_mamba)
+
+    file_path = 'p2bpRMSELSTM.csv'
+    file_exists = os.path.isfile(file_path)
+
+    with open(file_path, 'a', newline='') as file:
+        writer = csv.DictWriter(file,fieldnames=fieldnames)
+        if not file_exists or os.path.getsize(file_path) == 0:
+            writer.writeheader()
+        writer.writerow(new_data_LSTM)
+
+
+    fieldnames = ["Mamba Train","LSTM Train","Mamba Test","LSTM Test"]
+    new_data = {"Mamba Train":timeToTrain,"LSTM Train":timeToTrainLSTM,"Mamba Test":testTime,"LSTM Test":testTimeLSTM}
+
+
+    file_path = 'p2bpTime.csv'
+    file_exists = os.path.isfile(file_path)
+
+    with open(file_path, 'a', newline='') as file:
+        writer = csv.DictWriter(file,fieldnames=fieldnames)
+        if not file_exists or os.path.getsize(file_path) == 0:
+            writer.writeheader()
+        writer.writerow(new_data)
