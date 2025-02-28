@@ -215,6 +215,11 @@ if __name__ == "__main__":
     fileName = "p2bp"
     # fileName = "cr3bp"
 
+    # suffix = ''
+    suffix = 'Short'
+
+    fileName = fileName + suffix
+
     filepath = fileName + "Time" + fileExt
     data_dict = csv_columns_to_numpy(filepath)
     # Each key in data_dict corresponds to a field name, and the value is a NumPy array.
@@ -241,7 +246,7 @@ if __name__ == "__main__":
     RSMELSTMPVel = [data_dict["vx"],data_dict["vy"],data_dict["vz"]]
 
 
-    # generateRMSEViolinPlots(keepLSTM=True)
+    generateRMSEViolinPlots(keepLSTM=True)
     # generateRMSEViolinPlots(keepLSTM=False)
 
     generateRMSEBoxPlots(keepLSTM=True)
