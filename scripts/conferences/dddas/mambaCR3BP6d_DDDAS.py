@@ -130,6 +130,8 @@ train_size = 2
 test_size = len(output_seq) - train_size
 
 train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
+print(train_in)
+print(train_out)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
