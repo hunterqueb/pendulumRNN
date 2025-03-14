@@ -212,8 +212,8 @@ if __name__ == "__main__":
 
     fileExt = ".csv"
 
-    fileName = "p2bp"
-    # fileName = "cr3bp"
+    # fileName = "p2bp"
+    fileName = "cr3bp"
 
     # suffix = ''
     suffix = 'Short'
@@ -246,7 +246,7 @@ if __name__ == "__main__":
     RSMELSTMPVel = [data_dict["vx"],data_dict["vy"],data_dict["vz"]]
 
 
-    generateRMSEViolinPlots(keepLSTM=True)
+    # generateRMSEViolinPlots(keepLSTM=True)
     # generateRMSEViolinPlots(keepLSTM=False)
 
     generateRMSEBoxPlots(keepLSTM=True)
