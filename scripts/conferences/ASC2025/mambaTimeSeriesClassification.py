@@ -17,26 +17,22 @@ rng = np.random.default_rng(seed=1) # Seed for reproducibility
 
 device = getDevice()
 
-numRandSys = 20
+batchSize = 32
+numRandSys = 2000
 problemDim = 2
 t0 = 0; tf = 10
-dt = 0.01
+dt = 0.005
 t = np.linspace(t0,tf,int(tf/dt))
 
 numericalResultForced = np.zeros((numRandSys,len(t),problemDim))
 numericalResultUnforced = np.zeros((numRandSys,len(t),problemDim))
 
-for i in range(20):
+for i in range(numRandSys):
     # linear system for a simple harmonic oscillator
     k = rng.random(); m = rng.random()
     wr = np.sqrt(k/m)
-    F0 = 0.1 * rng.random()
-    c = 0.01 * rng.random() # consider no damping for now
-
-    def linPendulumODE(t,theta,u,p=[m,c,k]):
-        dtheta1 = theta[1]
-        dtheta2 = -k/m*(theta[0]) - (c/m) * theta[1]
-        return np.array([dtheta1, dtheta2])
+    F0 = 1 * rng.random()
+    c = 0.01 # consider no damping for now
 
     A = np.array(([0,1],[-k/m,-c/m]))
 
@@ -55,6 +51,12 @@ for i in range(20):
 
     numericalResultForced[i,:,:] = resultsForced.x.T
     numericalResultUnforced[i,:,:] = resultsUnforced.x.T
+
+
+plt.figure()
+plt.plot(t,resultsForced.x.T[:,0])
+plt.plot(t,resultsUnforced.x.T[:,0])
+plt.show()
 
 ForcedLabel = np.ones(numRandSys)
 UnforcedLabel = np.zeros(numRandSys)
@@ -90,9 +92,9 @@ train_dataset = TensorDataset(torch.from_numpy(train_data),torch.from_numpy(trai
 val_dataset = TensorDataset(torch.from_numpy(val_data),torch.from_numpy(val_label).long())
 test_dataset = TensorDataset(torch.from_numpy(test_data),torch.from_numpy(test_label).long())
 
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
-test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+train_loader = DataLoader(train_dataset, batch_size=batchSize, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=batchSize, shuffle=False)
+test_loader = DataLoader(test_dataset, batch_size=batchSize, shuffle=False)
 
 
 import torch.nn as nn
@@ -163,7 +165,7 @@ hidden_size = 64
 num_layers = 1
 num_classes = 2  # e.g., binary classification
 learning_rate = 1e-3
-num_epochs = 2  # for demonstration; adjust as needed
+num_epochs = 5  # for demonstration; adjust as needed
 
 model = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device).double()
 criterion = nn.CrossEntropyLoss()
