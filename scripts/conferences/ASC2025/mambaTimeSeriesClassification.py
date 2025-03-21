@@ -17,10 +17,10 @@ rng = np.random.default_rng(seed=1) # Seed for reproducibility
 
 device = getDevice()
 
-numRandSys = 2000
+numRandSys = 20
 problemDim = 2
 t0 = 0; tf = 10
-dt = 0.001
+dt = 0.01
 t = np.linspace(t0,tf,int(tf/dt))
 
 numericalResultForced = np.zeros((numRandSys,len(t),problemDim))
@@ -169,6 +169,7 @@ model = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(devi
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
+print('Entering Training Loop')
 # Training loop
 for epoch in range(num_epochs):
     model.train()
