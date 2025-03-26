@@ -25,6 +25,9 @@ from qutils.ml import printModelParmSize, create_datasets, genPlotPrediction, LS
 
 from qutils.mamba import Mamba, MambaConfig
 
+
+LSTM = True
+
 # seed any random functions
 random.seed(123)
 
@@ -74,8 +77,11 @@ TIME_STEP = 0.05
 # newModel = transferLSTM(model,newModel,trainableLayer)
 hidden_size = 30
 config = MambaConfig(d_model=degreesOfFreedom, n_layers=1)
-newModel = Mamba(config).to(device).double()
-newModel = LSTMSelfAttentionNetwork(problemDim,hidden_size,problemDim,1, 0).double().to(device)
+
+if LSTM:
+    newModel = LSTMSelfAttentionNetwork(problemDim,hidden_size,problemDim,1, 0).double().to(device)
+else:
+    newModel = Mamba(config).to(device).double()
 
 
 muR = 396800
@@ -271,19 +277,17 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         return trajPredition
 
 
-pertNR = nonDim2Dim4(pertNR)
 t = t / T
 
 # networkPrediction = plotPredition(epoch+1,newModel,output_seq)
 networkPrediction = plotStatePredictions(newModel,t,pertNR,train_in,test_in,train_size,test_size,DU=DU,TU=TU,timeLabel='Periods')
-
-# networkPrediction = nonDim2Dim4(networkPrediction)
+pertNR = nonDim2Dim4(pertNR)
 
 plotOrbitPhasePredictions(pertNR,networkPrediction)
 plt.grid()
 plt.tight_layout()
 # plotSolutionErrors(pertNR,networkPrediction,t)
-newPlotSolutionErrors(pertNR,networkPrediction,t,timeLabel='Periods')
+newPlotSolutionErrors(pertNR,networkPrediction,t,timeLabel='Periods',percentError=True,states = ['x', 'y', '$\dot{x}$', '$\dot{y}$'])
 
 plt.show()
 

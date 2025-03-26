@@ -22,7 +22,7 @@ from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeigh
 DEBUG = True
 plotOn = True
 randomIC = False
-periodic = True
+periodic = False
 printoutSuperweight = True
 compareLSTM = True
 
@@ -90,7 +90,7 @@ else:
 
 
 
-delT = 0.001
+delT = 0.01
 nSamples = int(np.ceil((tf - t0) / delT))
 t = np.linspace(t0, tf, nSamples)
 

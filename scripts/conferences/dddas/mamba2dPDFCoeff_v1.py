@@ -25,6 +25,7 @@ device = getDevice()
 
 fileLocation = 'matlab/DDDAS-2d/newData/'
 fileName = ["duff2D_2xUncer_pdfCoeff_del_t_0_1_tf_4_8_mamba","duff2D_2xUncer_pdfCoeff_del_t_0_01_tf_4_8_mamba","linOsc_pdfCoeff_del_t_0_1_tf_4_8_mamba","linOsc_pdfCoeff_del_t_0_01_tf_4_8_mamba"]
+fileName=["linOsc_pdfCoeff_del_t_0_01_tf_4_8_mamba"]
 fileExtension = '.mat'
 
 for file in fileName:

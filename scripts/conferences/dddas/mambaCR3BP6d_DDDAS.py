@@ -191,13 +191,13 @@ print(TU)
 print(tf)
 print(TU*tf)
 
-output_seq = nonDim2Dim6(output_seq,DU,TU)
 
 networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,timeLabel='Periods')
 plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1)
 plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1,plane='xz')
 plotCR3BPPhasePredictions(output_seq,networkPrediction,L=1,plane='yz')
 
+output_seq = nonDim2Dim6(output_seq,DU,TU)
 
 # plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
 
@@ -256,7 +256,7 @@ plt.legend()
 
 # plotOrbitPredictions(output_seq,networkPrediction,t=t)
 from qutils.plot import newPlotSolutionErrors
-newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel='Periods')
+newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
 # plotDecAccs(decAcc,t,problemDim)
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average values of each dimension:")
