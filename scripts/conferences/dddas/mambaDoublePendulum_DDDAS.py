@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch.utils.data as data
 
 from qutils.integrators import ode45
-from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors, plotStatePredictions
+from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors, plotStatePredictions,newPlotSolutionErrors
 
 from qutils.ml import printModelParmSize, getDevice, create_datasets, genPlotPrediction, trainModel, LSTMSelfAttentionNetwork,Adam_mini
 from qutils.mlExtras import findDecAcc
@@ -18,7 +18,7 @@ from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeigh
 plotOn = True
 printoutSuperweight = True
 compareLSTM = True
-periodic = True
+periodic = False
 
 problemDim = 4 
 
@@ -122,7 +122,8 @@ trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimi
 
 networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,1,states=('$\\theta_1$','$\\theta_2$','$\dot{\\theta_1}$','$\dot{\\theta_2}$'),units=('rad','rad','rad/s','rad/s'))
 
-plotSolutionErrors(output_seq,networkPrediction,t,units='rad',states=('\\theta_1','\\theta_2'))
+newPlotSolutionErrors(output_seq,networkPrediction,t,states=('$\\theta_1$','$\\theta_2$','$\dot{\\theta_1}$','$\dot{\\theta_2}$'),units=('rad','rad','rad/s','rad/s'))
+newPlotSolutionErrors(output_seq,networkPrediction,t,states=('$\\theta_1$','$\\theta_2$','$\dot{\\theta_1}$','$\dot{\\theta_2}$'),percentError=True)
 # plotDecAccs(decAcc,t,problemDim)
 errorAvg = np.nanmean(abs(networkPrediction-output_seq) * 90 / np.pi, axis=0)
 print("Average error of each dimension:")
@@ -154,7 +155,8 @@ if compareLSTM is True:
     trainModel(modelLSTM,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutToc=False)
     networkPredictionLSTM = plotStatePredictions(modelLSTM,t,output_seq,train_in,test_in,train_size,test_size,1,states=('$\\theta_1$','$\\theta_2$','$\dot{\\theta_1}$','$\dot{\\theta_2}$'),units=('rad','rad','rad/s','rad/s'))
     
-    plotSolutionErrors(output_seq,networkPredictionLSTM,t,units='rad',states=('\\theta_1','\\theta_2'))
+    newPlotSolutionErrors(output_seq,networkPredictionLSTM,t,states=('$\\theta_1$','$\\theta_2$','$\dot{\\theta_1}$','$\dot{\\theta_2}$'),units=('rad','rad','rad/s','rad/s'))
+    newPlotSolutionErrors(output_seq,networkPredictionLSTM,t,states=('$\\theta_1$','$\\theta_2$','$\dot{\\theta_1}$','$\dot{\\theta_2}$'),percentError=True)
     # plotDecAccs(decAcc,t,problemDim)
     errorAvg = np.nanmean(abs(networkPrediction-output_seq) * 90 / np.pi, axis=0)
     print("Average error of each dimension:")

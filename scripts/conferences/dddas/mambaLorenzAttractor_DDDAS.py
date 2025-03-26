@@ -6,7 +6,7 @@ import torch.utils.data as data
 import torchinfo
 
 from qutils.integrators import ode87, ode45
-from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions,plotStatePredictions,newPlotSolutionErrors
+from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions,plotStatePredictions,newPlotSolutionErrors,plotPercentSolutionErrors
 from qutils.mlExtras import findDecAcc
 from qutils.mamba import Mamba, MambaConfig
 from qutils.ml import trainModel, printModelParmSize, getDevice, Adam_mini, genPlotPrediction, create_datasets, LSTMSelfAttentionNetwork, LSTM
@@ -121,6 +121,7 @@ trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimi
 # plot results
 trajPredition = plotStatePredictions(model,t,numericResult,train_in,test_in,train_size,test_size,states=['x','y','z'])
 
+newPlotSolutionErrors(numericResult,trajPredition,t,states=['x','y','z'],percentError=True)
 newPlotSolutionErrors(numericResult,trajPredition,t,states=['x','y','z'])
 
 plt.figure()
@@ -157,8 +158,9 @@ if compareLSTM:
     criterion = F.smooth_l1_loss
 
     trainModel(modelLSTM,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutToc=False)
-    networkPredictionLSTM = plotStatePredictions(modelLSTM,t,numericResult,train_in,test_in,train_size,test_size,1,states=('x','y','z'),units=('none','none','none'))
+    networkPredictionLSTM = plotStatePredictions(modelLSTM,t,numericResult,train_in,test_in,train_size,test_size,1,states=('x','y','z'))
     
+    newPlotSolutionErrors(numericResult,networkPredictionLSTM,t,states=['x','y','z'],percentError=True)
     newPlotSolutionErrors(numericResult,networkPredictionLSTM,t,states=['x','y','z'])
     # plotDecAccs(decAcc,t,problemDim)
     errorAvg = np.nanmean(abs(networkPredictionLSTM-numericResult) * 90 / np.pi, axis=0)
