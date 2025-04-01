@@ -4,6 +4,7 @@ import torch
 import torch.nn.functional as F
 import torch.utils.data as data
 import torchinfo
+import sys
 
 from qutils.integrators import ode87
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions,plotStatePredictions, plot3dCR3BPPredictions,newPlotSolutionErrors
@@ -13,11 +14,30 @@ from qutils.orbital import returnCR3BPIC, nonDim2Dim6
 from qutils.tictoc import timer
 from qutils.mamba import Mamba, MambaConfig
 
-modelString = 'mamba'
-# modelString = 'lstm'
+from mpldock import persist_layout
+plt.switch_backend('module://mpldock')
+plt.switch_backend('WebAgg')
+persist_layout('test')
 
-sourceOrbitFamily = 'longPeriod'
-targetOrbitFamily = 'shortPeriod'
+
+compareLSTM = True
+
+# get the source and target orbit families from sys args
+if len(sys.argv) > 1:
+    sourceOrbitFamily = sys.argv[1]
+    targetOrbitFamily = sys.argv[2]
+else: # targeted orbit family pairs for transfer learning demonstration
+    targetOrbitFamily = 'shortPeriod'
+    sourceOrbitFamily = 'longPeriod'
+
+    sourceOrbitFamily = 'butterflySouth'
+    targetOrbitFamily = 'butterflyNorth'
+
+    sourceOrbitFamily = 'longPeriod'
+    targetOrbitFamily = 'dragonflySouth'
+
+    sourceOrbitFamily = 'shortPeriod'
+    targetOrbitFamily = 'butterflyNorth'
 
 plotOn = True
 
@@ -26,11 +46,41 @@ m_1 = 5.974E24  # kg
 m_2 = 7.348E22 # kg
 mu = m_2/(m_1 + m_2)
 
-CR3BPIC = returnCR3BPIC(sourceOrbitFamily,L=4,id=751,stable=True)
+if sourceOrbitFamily == 'longPeriod':
+    CR3BPIC_source = returnCR3BPIC(sourceOrbitFamily,L=4,id=751,stable=True)
+elif sourceOrbitFamily == 'shortPeriod':
+    CR3BPIC_source = returnCR3BPIC(sourceOrbitFamily,L=4,id=755,stable=True)
+elif sourceOrbitFamily == 'halo':
+    CR3BPIC_source = returnCR3BPIC(sourceOrbitFamily,id=928,L=1)
+elif sourceOrbitFamily == 'butterflyNorth':
+    CR3BPIC_source = returnCR3BPIC("butterfly",L="north",id=1080)
+elif sourceOrbitFamily == 'butterflySouth':
+    CR3BPIC_source = returnCR3BPIC("butterfly",L="south",id=270)
+elif sourceOrbitFamily == 'dragonflyNorth':
+    CR3BPIC_source = returnCR3BPIC("butterfly",L="north",id=404)
+elif sourceOrbitFamily == 'dragonflySouth':
+    CR3BPIC_source = returnCR3BPIC("butterfly",L="south",id=71)
+else:
+    raise ValueError("Invalid source orbit family.")
 
-x_0,tEnd = CR3BPIC()
 
-IC = np.array(x_0)
+if targetOrbitFamily == 'shortPeriod':
+    CR3BPIC_target = returnCR3BPIC(targetOrbitFamily,L=4,id=755,stable=True)
+elif targetOrbitFamily == 'longPeriod':
+    CR3BPIC_target = returnCR3BPIC(targetOrbitFamily,L=4,id=751,stable=True)
+elif targetOrbitFamily == 'halo':
+    CR3BPIC_target = returnCR3BPIC(targetOrbitFamily,id=928,L=1)
+elif targetOrbitFamily == 'butterflyNorth':
+    CR3BPIC_target = returnCR3BPIC("butterfly",L="north",id=1080)
+elif targetOrbitFamily == 'butterflySouth':
+    CR3BPIC_target = returnCR3BPIC("butterfly",L="south",id=270)
+elif targetOrbitFamily == 'dragonflyNorth':
+    CR3BPIC_target = returnCR3BPIC("butterfly",L="north",id=404)
+elif targetOrbitFamily == 'dragonflySouth':
+    CR3BPIC_target = returnCR3BPIC("butterfly",L="south",id=71)
+else:
+    raise ValueError("Invalid target orbit family.")
+
 
 DU = 389703
 TU = 382981
@@ -66,161 +116,171 @@ def system(t, Y,mu=mu):
 
 
 device = getDevice()
+modelString = 'mamba'
 
-numPeriods = 5
-
-t0 = 0; tf = numPeriods * tEnd
-
-delT = 0.001
-nSamples = int(np.ceil((tf - t0) / delT))
-t = np.linspace(t0, tf, nSamples)
-
-ODEtime = timer()
-t , numericResult = ode87(system,[t0,tf],IC,t)
-ODEtime.toc()
-
-output_seq = numericResult
-
-# hyperparameters
-n_epochs = 5
-# lr = 5*(10**-5)
-# lr = 0.85
-lr = 0.001
-input_size = problemDim
-output_size = problemDim
-num_layers = 1
-lookback = 1
-# p_motion_knowledge = 0.5
-p_motion_knowledge = 1/numPeriods
-
-train_size = int(len(output_seq) * p_motion_knowledge)
-test_size = len(output_seq) - train_size
-
-train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
-
-loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
-
-# initilizing the model, criterion, and optimizer for the data
-config = MambaConfig(d_model=problemDim, n_layers=num_layers)
-
-def returnModel(modelString = 'mamba'):
-    if modelString == 'mamba':
-        model = Mamba(config).to(device).double()
-    elif modelString == 'lstm':
-        model = LSTM(input_size,30,output_size,num_layers,0).double().to(device)
-    return model
-
-model = returnModel(modelString)
-
-optimizer = torch.optim.Adam(model.parameters(),lr=lr)
-criterion = F.smooth_l1_loss
-criterion = torch.nn.HuberLoss()
-
-trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
-
-networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
-output_seq = nonDim2Dim6(output_seq,DU,TU)
-
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,plane='xz',earth=False,moon=False)
-plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,plane='yz',earth=False,moon=False)
-plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
-
-t = t / tEnd
-
-newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
-
-# # TRANSFER LEARN
-
-CR3BPIC = returnCR3BPIC(targetOrbitFamily,L=4,id=755,stable=True)
-
-x_0,tEnd = CR3BPIC()
-
-IC = np.array(x_0)
-
-numPeriods = 5
-
-t0 = 0; tf = numPeriods * tEnd
-
-delT = 0.001
-nSamples = int(np.ceil((tf - t0) / delT))
-t = np.linspace(t0, tf, nSamples)
-
-t , numericResult = ode87(system,[t0,tf],IC,t,rtol=1e-15,atol=1e-15)
-
-output_seq = numericResult
-
-n_epochs = 2
-lr = 0.001
-input_size = problemDim
-output_size = problemDim
-num_layers = 1
-lookback = 1
-
-p_motion_knowledge = 1/numPeriods
-
-train_size = int(len(output_seq) * p_motion_knowledge)
-test_size = len(output_seq) - train_size
-
-train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
-
-loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
-
-# initilizing the model, criterion, and optimizer for the data
-config = MambaConfig(d_model=problemDim, n_layers=num_layers)
-newModel = Mamba(config).to(device).double()
-
-newModel = returnModel(modelString)
-
-if modelString == "mamba":
-    newModel = transferMamba(model,newModel,[True,True,False])
+if compareLSTM == True:
+    numRuns = 2 # run the LSTM and MAMBA models for comparison
 else:
-    newModel = transferLSTM(model,newModel)
+    numRuns = 1 # just run the MAMBA model
 
-# newModel = transferModelAll(model,newModel)
+for i in range(numRuns):
+    x_0,tEnd = CR3BPIC_source()
 
-# newModel = LSTMSelfAttentionNetwork(input_size,50,output_size,num_layers,0).double().to(device)
+    IC = np.array(x_0)
 
-optimizer = torch.optim.Adam(newModel.parameters(),lr=lr)
-criterion = F.smooth_l1_loss
+    numPeriods = 5
 
-trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
+    t0 = 0; tf = numPeriods * tEnd
 
-networkPredictionLSTM = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
+    delT = 0.001
+    nSamples = int(np.ceil((tf - t0) / delT))
+    t = np.linspace(t0, tf, nSamples)
 
-output_seq = nonDim2Dim6(output_seq,DU,TU)
+    ODEtime = timer()
+    t , numericResult = ode87(system,[t0,tf],IC,t)
+    ODEtime.toc()
 
-plotCR3BPPhasePredictions(output_seq,networkPredictionLSTM,L=None,earth=False,moon=False)
-plotCR3BPPhasePredictions(output_seq,networkPredictionLSTM,L=None,plane='xz',earth=False,moon=False)
-plotCR3BPPhasePredictions(output_seq,networkPredictionLSTM,L=None,plane='yz',earth=False,moon=False)
-plot3dCR3BPPredictions(output_seq,networkPredictionLSTM,L=None,earth=False,moon=False)
+    output_seq = numericResult
 
-newPlotSolutionErrors(output_seq,networkPredictionLSTM,t,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
+    # hyperparameters
+    n_epochs = 5
+    lr = 0.001
+    input_size = problemDim
+    output_size = problemDim
+    num_layers = 1
+    lookback = 1
+    p_motion_knowledge = 1/numPeriods
 
-errorAvg = np.nanmean(abs(networkPredictionLSTM-output_seq), axis=0)
-print("Average values of each dimension:")
-for i, avg in enumerate(errorAvg, 1):
-    print(f"Dimension {i}: {avg}")
+    train_size = int(len(output_seq) * p_motion_knowledge)
+    test_size = len(output_seq) - train_size
 
-torchinfo.summary(model)
-torchinfo.summary(newModel)
+    train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
 
-printoutMaxLayerWeight(model)
-printoutMaxLayerWeight(newModel)
+    loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
-plt.figure()
-plotSuperWeight(model,newPlot=False)
-plotSuperWeight(newModel,newPlot=False)
-plt.grid()
-plt.tight_layout()
+    # initilizing the model, criterion, and optimizer for the data
+    config = MambaConfig(d_model=problemDim, n_layers=num_layers)
 
-plt.figure()
-plotMinWeight(model,newPlot=False)
-plotMinWeight(newModel,newPlot=False)
-plt.grid()
-plt.tight_layout()
+    def returnModel(modelString = 'mamba'):
+        if modelString == 'mamba':
+            model = Mamba(config).to(device).double()
+        elif modelString == 'lstm':
+            model = LSTM(input_size,30,output_size,num_layers,0).double().to(device)
+        return model
+
+    model = returnModel(modelString)
+
+    optimizer = torch.optim.Adam(model.parameters(),lr=lr)
+    criterion = F.smooth_l1_loss
+    criterion = torch.nn.HuberLoss()
+
+    trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
+    t = t / tEnd
+
+    networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,timeLabel='Periods')
+    output_seq = nonDim2Dim6(output_seq,DU,TU)
+
+    plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
+    plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,plane='xz',earth=False,moon=False)
+    plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,plane='yz',earth=False,moon=False)
+    plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
 
 
+    newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
+
+    # # TRANSFER LEARN
+
+    x_0,tEnd = CR3BPIC_target()
+
+    IC = np.array(x_0)
+
+    numPeriods = 5
+
+    t0 = 0; tf = numPeriods * tEnd
+
+    delT = 0.001
+    nSamples = int(np.ceil((tf - t0) / delT))
+    t = np.linspace(t0, tf, nSamples)
+
+    t , numericResult = ode87(system,[t0,tf],IC,t,rtol=1e-15,atol=1e-15)
+
+    output_seq = numericResult
+
+    n_epochs = 2
+    lr = 0.001
+    input_size = problemDim
+    output_size = problemDim
+    num_layers = 1
+    lookback = 1
+
+    p_motion_knowledge = 1/numPeriods
+
+    train_size = int(len(output_seq) * p_motion_knowledge)
+    test_size = len(output_seq) - train_size
+
+    train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
+
+    loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
+
+    # initilizing the model, criterion, and optimizer for the data
+    config = MambaConfig(d_model=problemDim, n_layers=num_layers)
+    newModel = Mamba(config).to(device).double()
+
+    newModel = returnModel(modelString)
+
+    if modelString == "mamba":
+        newModel = transferMamba(model,newModel,[True,True,False])
+    else:
+        newModel = transferLSTM(model,newModel)
+
+    # newModel = transferModelAll(model,newModel)
+
+    # newModel = LSTMSelfAttentionNetwork(input_size,50,output_size,num_layers,0).double().to(device)
+
+    optimizer = torch.optim.Adam(newModel.parameters(),lr=lr)
+    criterion = F.smooth_l1_loss
+
+    trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
+    t = t / tEnd
+
+    networkPrediction_target = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,timeLabel='Periods')
+
+    output_seq = nonDim2Dim6(output_seq,DU,TU)
+
+    plotCR3BPPhasePredictions(output_seq,networkPrediction_target,L=None,earth=False,moon=False)
+    plotCR3BPPhasePredictions(output_seq,networkPrediction_target,L=None,plane='xz',earth=False,moon=False)
+    plotCR3BPPhasePredictions(output_seq,networkPrediction_target,L=None,plane='yz',earth=False,moon=False)
+    plot3dCR3BPPredictions(output_seq,networkPrediction_target,L=None,earth=False,moon=False)
+
+    newPlotSolutionErrors(output_seq,networkPrediction_target,t,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
+
+    errorAvg = np.nanmean(abs(networkPrediction_target-output_seq), axis=0)
+    print("Average values of each dimension:")
+    for i, avg in enumerate(errorAvg, 1):
+        print(f"Dimension {i}: {avg}")
+
+    torchinfo.summary(model)
+    torchinfo.summary(newModel)
+
+    printoutMaxLayerWeight(model)
+    printoutMaxLayerWeight(newModel)
+
+    plt.figure()
+    plotSuperWeight(model,newPlot=False)
+    plotSuperWeight(newModel,newPlot=False)
+    plt.grid()
+    plt.tight_layout()
+
+    plt.figure()
+    plotMinWeight(model,newPlot=False)
+    plotMinWeight(newModel,newPlot=False)
+    plt.grid()
+    plt.tight_layout()
+
+    del model
+    del newModel
+
+    modelString = "lstm"
 if plotOn is True:
     plt.show()
 
