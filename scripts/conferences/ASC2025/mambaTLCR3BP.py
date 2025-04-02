@@ -10,14 +10,14 @@ from qutils.integrators import ode87
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions,plotStatePredictions, plot3dCR3BPPredictions,newPlotSolutionErrors
 from qutils.ml import getDevice, create_datasets, genPlotPrediction,transferMamba,LSTMSelfAttentionNetwork,transferLSTM, transferModelAll,LSTM, trainModel
 from qutils.mlExtras import findDecAcc, plotSuperWeight, plotMinWeight, printoutMaxLayerWeight
-from qutils.orbital import returnCR3BPIC, nonDim2Dim6
+from qutils.orbital import returnCR3BPIC, nonDim2Dim6, orbitInitialConditions
 from qutils.tictoc import timer
 from qutils.mamba import Mamba, MambaConfig
 
-from mpldock import persist_layout
-plt.switch_backend('module://mpldock')
+# from mpldock import persist_layout
+# plt.switch_backend('module://mpldock')
 plt.switch_backend('WebAgg')
-persist_layout('test')
+# persist_layout('test')
 
 
 compareLSTM = True
@@ -27,8 +27,8 @@ if len(sys.argv) > 1:
     sourceOrbitFamily = sys.argv[1]
     targetOrbitFamily = sys.argv[2]
 else: # targeted orbit family pairs for transfer learning demonstration
-    targetOrbitFamily = 'shortPeriod'
     sourceOrbitFamily = 'longPeriod'
+    targetOrbitFamily = 'shortPeriod'
 
     sourceOrbitFamily = 'butterflySouth'
     targetOrbitFamily = 'shortPeriod'
@@ -38,6 +38,9 @@ else: # targeted orbit family pairs for transfer learning demonstration
 
     sourceOrbitFamily = 'shortPeriod'
     targetOrbitFamily = 'butterflyNorth'
+
+    # sourceOrbitFamily = 'halo'
+    # targetOrbitFamily = 'quasiperiodic'  # Note: 'quasiperiodic' is not a valid orbit family in JPL database, will use custom IC
 
 plotOn = True
 
@@ -78,6 +81,8 @@ elif targetOrbitFamily == 'dragonflyNorth':
     CR3BPIC_target = returnCR3BPIC("butterfly",L="north",id=404)
 elif targetOrbitFamily == 'dragonflySouth':
     CR3BPIC_target = returnCR3BPIC("butterfly",L="south",id=71)
+elif targetOrbitFamily == 'quasiperiodic':
+    CR3BPIC_target = orbitInitialConditions() # TODO - add quasiperiodic orbit ICs
 else:
     raise ValueError("Invalid target orbit family.")
 
@@ -119,9 +124,9 @@ device = getDevice()
 modelString = 'mamba'
 
 if compareLSTM == True:
-    numRuns = 2 # run the LSTM and MAMBA models for comparison
+    numRuns = 2 # run the LSTM and Mamba models for comparison
 else:
-    numRuns = 1 # just run the MAMBA model
+    numRuns = 1 # just run the Mamba model
 
 for i in range(numRuns):
     x_0,tEnd = CR3BPIC_source()
@@ -166,6 +171,8 @@ for i in range(numRuns):
             model = Mamba(config).to(device).double()
         elif modelString == 'lstm':
             model = LSTM(input_size,30,output_size,num_layers,0).double().to(device)
+        elif modelString == "lstmSA":
+            model = LSTMSelfAttentionNetwork(input_size,30,output_size,num_layers,0).double().to(device)
         return model
 
     model = returnModel(modelString)
@@ -230,10 +237,10 @@ for i in range(numRuns):
 
     if modelString == "mamba":
         newModel = transferMamba(model,newModel,[True,True,False])
-    else:
+    elif modelString == "lstm":
         newModel = transferLSTM(model,newModel)
-
-    # newModel = transferModelAll(model,newModel)
+    elif modelString == "lstmSA":
+        newModel = transferModelAll(model,newModel)
 
     # newModel = LSTMSelfAttentionNetwork(input_size,50,output_size,num_layers,0).double().to(device)
 

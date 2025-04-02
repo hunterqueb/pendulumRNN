@@ -6,12 +6,73 @@ import torch.utils.data as data
 import control as ct
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
+from qutils.tictoc import timer
 
 from qutils.integrators import ode45
-from qutils.ml import printModelParmSize, getDevice, create_datasets, genPlotPrediction, trainModel
+from qutils.ml import printModelParmSize, getDevice
 from qutils.mamba import Mamba, MambaConfig
 from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
 from qutils.mlSuperweight import findMambaSuperActivation,plotSuperActivation,zeroModelWeight
+
+import torch.nn as nn
+class LSTMClassifier(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers, num_classes):
+        super(LSTMClassifier, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        
+        self.lstm = nn.LSTM(
+            input_size=input_size,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            batch_first=True
+        )
+        self.fc = nn.Linear(hidden_size, num_classes)
+        
+    def forward(self, x):
+        """
+        x: [batch_size, seq_length, input_size]
+        """
+        # h0, c0 default to zero if not provided
+        out, (h_n, c_n) = self.lstm(x)
+        
+        # h_n is shape [num_layers, batch_size, hidden_size].
+        # We typically take the last layer's hidden state: h_n[-1]
+        last_hidden = h_n[-1]  # [batch_size, hidden_size]
+        
+        # Pass the last hidden state through a linear layer for classification
+        logits = self.fc(last_hidden)  # [batch_size, num_classes]
+        
+        return logits
+        
+
+class MambaClassifier(nn.Module):
+    def __init__(self,config, input_size, hidden_size, num_layers, num_classes):
+        super(MambaClassifier, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+
+        self.mamba = Mamba(config)
+        self.fc = nn.Linear(hidden_size, num_classes)
+        
+    def forward(self, x):
+        """
+        x: [batch_size, seq_length, input_size]
+        """
+        
+        h_n = self.mamba(x)
+        
+        # h_n is shape [batch_size, seq_length, hidden_size].
+        # We typically take the last layer's hidden state: h_n[:,-1,:]
+        last_hidden = h_n[:,-1,:]  # [batch_size, hidden_size]
+        
+        # Pass the last hidden state through a linear layer for classification
+        logits = self.fc(last_hidden)  # [batch_size, num_classes]
+        
+        return logits
+
+
+
 
 rng = np.random.default_rng(seed=1) # Seed for reproducibility
 
@@ -24,6 +85,18 @@ t0 = 0; tf = 10
 dt = 0.005
 t = np.linspace(t0,tf,int(tf/dt))
 
+# Hyperparameters
+input_size = problemDim   # 2
+hidden_size = 64
+num_layers = 1
+num_classes = 2  # e.g., binary classification
+learning_rate = 1e-2
+num_epochs = 3  
+
+config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
+
+
+
 numericalResultForced = np.zeros((numRandSys,len(t),problemDim))
 numericalResultUnforced = np.zeros((numRandSys,len(t),problemDim))
 
@@ -32,7 +105,7 @@ for i in range(numRandSys):
     k = rng.random(); m = rng.random()
     wr = np.sqrt(k/m)
     F0 = 1 * rng.random()
-    c = 0.01 # consider no damping for now
+    c = 0.1 # consider damping for now
 
     A = np.array(([0,1],[-k/m,-c/m]))
 
@@ -96,117 +169,61 @@ train_loader = DataLoader(train_dataset, batch_size=batchSize, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batchSize, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=batchSize, shuffle=False)
 
-
-import torch.nn as nn
-class LSTMClassifier(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, num_classes):
-        super(LSTMClassifier, self).__init__()
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        
-        self.lstm = nn.LSTM(
-            input_size=input_size,
-            hidden_size=hidden_size,
-            num_layers=num_layers,
-            batch_first=True
-        )
-        self.fc = nn.Linear(hidden_size, num_classes)
-        
-    def forward(self, x):
-        """
-        x: [batch_size, seq_length, input_size]
-        """
-        # h0, c0 default to zero if not provided
-        out, (h_n, c_n) = self.lstm(x)
-        
-        # h_n is shape [num_layers, batch_size, hidden_size].
-        # We typically take the last layer's hidden state: h_n[-1]
-        last_hidden = h_n[-1]  # [batch_size, hidden_size]
-        
-        # Pass the last hidden state through a linear layer for classification
-        logits = self.fc(last_hidden)  # [batch_size, num_classes]
-        
-        return logits
-    
-class MambaClassifier(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, num_classes):
-        super(LSTMClassifier, self).__init__()
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        
-        self.lstm = nn.LSTM(
-            input_size=input_size,
-            hidden_size=hidden_size,
-            num_layers=num_layers,
-            batch_first=True
-        )
-        self.fc = nn.Linear(hidden_size, num_classes)
-        
-    def forward(self, x):
-        """
-        x: [batch_size, seq_length, input_size]
-        """
-        # h0, c0 default to zero if not provided
-        out, (h_n, c_n) = self.lstm(x)
-        
-        # h_n is shape [num_layers, batch_size, hidden_size].
-        # We typically take the last layer's hidden state: h_n[-1]
-        last_hidden = h_n[-1]  # [batch_size, hidden_size]
-        
-        # Pass the last hidden state through a linear layer for classification
-        logits = self.fc(last_hidden)  # [batch_size, num_classes]
-        
-        return logits
-
-
-# Hyperparameters
-input_size = problemDim   # 2
-hidden_size = 64
-num_layers = 1
-num_classes = 2  # e.g., binary classification
-learning_rate = 1e-3
-num_epochs = 5  # for demonstration; adjust as needed
-
-model = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device).double()
+model_mamba = MambaClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device).double()
+model_LSTM = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device).double()
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+optimizer_mamba = torch.optim.Adam(model_mamba.parameters(), lr=learning_rate)
+optimizer_LSTM = torch.optim.Adam(model_LSTM.parameters(), lr=learning_rate)
 
-print('Entering Training Loop')
 # Training loop
-for epoch in range(num_epochs):
-    model.train()
-    total_loss = 0.0
+def trainClassifier(model,optimizer):
+    for epoch in range(num_epochs):
+        model.train()
+        total_loss = 0.0
 
-    for sequences, labels in train_loader:
-        # Move data to GPU if available
-        sequences = sequences.to(device)  # [batch_size, seq_length, input_size]
-        labels = labels.to(device)        # [batch_size]
+        for sequences, labels in train_loader:
+            # Move data to GPU
+            sequences = sequences.to(device)  # [batch_size, seq_length, input_size]
+            labels = labels.to(device)        # [batch_size]
+            
+            # Forward pass
+            logits = model(sequences)        # [batch_size, num_classes]
+            loss = criterion(logits, labels)
+            
+            # Backward pass and optimization
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
+            total_loss += loss.item()
         
-        # Forward pass
-        logits = model(sequences)        # [batch_size, num_classes]
-        loss = criterion(logits, labels)
-        
-        # Backward pass and optimization
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        
-        total_loss += loss.item()
-    
-    avg_loss = total_loss / len(train_loader)
-    print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}")
+        avg_loss = total_loss / len(train_loader)
+        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}")
 
-    # Validation (optional quick check)
-    model.eval()
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for sequences, labels in val_loader:
-            sequences = sequences.to(device)
-            labels = labels.to(device)
-            outputs = model(sequences)
-            _, predicted = torch.max(outputs, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-    accuracy = 100.0 * correct / total
-    print(f"Validation Accuracy: {accuracy:.2f}%")
+        # Validation (optional quick check)
+        model.eval()
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for sequences, labels in val_loader:
+                sequences = sequences.to(device)
+                labels = labels.to(device)
+                outputs = model(sequences)
+                _, predicted = torch.max(outputs, 1)
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+        accuracy = 100.0 * correct / total
+        print(f"Validation Accuracy: {accuracy:.2f}%")
+
+print('\nEntering Mamba Training Loop')
+mambaTrainTime = timer()
+trainClassifier(model_mamba,optimizer_mamba)
+mambaTrainTime.toc()
+
+# print('\nEntering LSTM Training Loop')
+# LSTMTrainTime = timer()
+# trainClassifier(model_LSTM,optimizer_LSTM)
+# LSTMTrainTime.toc()
+
+printModelParmSize(model_mamba)
+printModelParmSize(model_LSTM)
