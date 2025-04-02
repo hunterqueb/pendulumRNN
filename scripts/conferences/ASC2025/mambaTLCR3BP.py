@@ -31,7 +31,7 @@ else: # targeted orbit family pairs for transfer learning demonstration
     sourceOrbitFamily = 'longPeriod'
 
     sourceOrbitFamily = 'butterflySouth'
-    targetOrbitFamily = 'butterflyNorth'
+    targetOrbitFamily = 'shortPeriod'
 
     sourceOrbitFamily = 'longPeriod'
     targetOrbitFamily = 'dragonflySouth'
