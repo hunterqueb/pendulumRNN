@@ -14,6 +14,9 @@ from qutils.mamba import Mamba, MambaConfig
 from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
 from qutils.mlSuperweight import findMambaSuperActivation,plotSuperActivation,zeroModelWeight
 
+#set webagg backend for matplotlib - i've been liking it 
+plt.switch_backend('WebAgg')
+
 import torch.nn as nn
 class LSTMClassifier(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, num_classes):
@@ -79,7 +82,7 @@ rng = np.random.default_rng(seed=1) # Seed for reproducibility
 device = getDevice()
 
 batchSize = 32
-numRandSys = 5000
+numRandSys = 10000
 problemDim = 2
 t0 = 0; tf = 10
 dt = 0.005
@@ -90,7 +93,7 @@ input_size = problemDim   # 2
 hidden_size = 64
 num_layers = 1
 num_classes = 2  # e.g., binary classification
-learning_rate = 1e-2
+learning_rate = 1e-3
 num_epochs = 10
 
 config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
@@ -100,11 +103,13 @@ config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidd
 numericalResultForced = np.zeros((numRandSys,len(t),problemDim))
 numericalResultUnforced = np.zeros((numRandSys,len(t),problemDim))
 
+timeToGenData = timer()
 for i in range(numRandSys):
     # linear system for a simple harmonic oscillator
     k = rng.random(); m = rng.random()
     wr = np.sqrt(k/m)
-    F0 = 1 * rng.random()
+    F0_const = 0.1 
+    F0 = F0_const * rng.random()
     c = 0.1 # consider damping for now
 
     A = np.array(([0,1],[-k/m,-c/m]))
@@ -125,11 +130,17 @@ for i in range(numRandSys):
     numericalResultForced[i,:,:] = resultsForced.x.T
     numericalResultUnforced[i,:,:] = resultsUnforced.x.T
 
+print("Time to generate data: {:.2f} seconds".format(timeToGenData.tocVal()))
 
-# plt.figure()
-# plt.plot(t,resultsForced.x.T[:,0])
-# plt.plot(t,resultsUnforced.x.T[:,0])
-# # plt.show()
+plt.figure()
+plt.plot(t,resultsForced.x.T[:,0])
+plt.plot(t,resultsUnforced.x.T[:,0])
+plt.grid()
+plt.title("Random Sample Forced and Unforced Responses")
+plt.xlabel("Time (s)")
+plt.ylabel("Displacement (m)")
+plt.legend(["Forced by [0,{}] N Force".format(F0_const),"Unforced Response"])
+# plt.show()
 
 ForcedLabel = np.ones(numRandSys)
 UnforcedLabel = np.zeros(numRandSys)
@@ -177,53 +188,58 @@ optimizer_LSTM = torch.optim.Adam(model_LSTM.parameters(), lr=learning_rate)
 
 # Training loop
 def trainClassifier(model,optimizer):
-    for epoch in range(num_epochs):
-        model.train()
-        total_loss = 0.0
+    # early stopping by user control ctrl+c to break the training loop
+    try:
+        for epoch in range(num_epochs):
+            model.train()
+            total_loss = 0.0
 
-        for sequences, labels in train_loader:
-            # Move data to GPU
-            sequences = sequences.to(device)  # [batch_size, seq_length, input_size]
-            labels = labels.to(device)        # [batch_size]
+            for sequences, labels in train_loader:
+                # Move data to GPU
+                sequences = sequences.to(device)  # [batch_size, seq_length, input_size]
+                labels = labels.to(device)        # [batch_size]
+                
+                # Forward pass
+                logits = model(sequences)        # [batch_size, num_classes]
+                loss = criterion(logits, labels)
+                
+                # Backward pass and optimization
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                
+                total_loss += loss.item()
             
-            # Forward pass
-            logits = model(sequences)        # [batch_size, num_classes]
-            loss = criterion(logits, labels)
-            
-            # Backward pass and optimization
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            
-            total_loss += loss.item()
-        
-        avg_loss = total_loss / len(train_loader)
-        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}")
+            avg_loss = total_loss / len(train_loader)
+            print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}")
 
-        # Validation (optional quick check)
-        model.eval()
-        correct = 0
-        total = 0
-        with torch.no_grad():
-            for sequences, labels in val_loader:
-                sequences = sequences.to(device)
-                labels = labels.to(device)
-                outputs = model(sequences)
-                _, predicted = torch.max(outputs, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-        accuracy = 100.0 * correct / total
-        print(f"Validation Accuracy: {accuracy:.2f}%")
+            # Validation (optional quick check)
+            model.eval()
+            correct = 0
+            total = 0
+            with torch.no_grad():
+                for sequences, labels in val_loader:
+                    sequences = sequences.to(device)
+                    labels = labels.to(device)
+                    outputs = model(sequences)
+                    _, predicted = torch.max(outputs, 1)
+                    total += labels.size(0)
+                    correct += (predicted == labels).sum().item()
+            accuracy = 100.0 * correct / total
+            print(f"Validation Accuracy: {accuracy:.2f}%")
+    except KeyboardInterrupt:
+        print("Training interrupted by user.")
+        return
 
 print('\nEntering Mamba Training Loop')
 mambaTrainTime = timer()
 trainClassifier(model_mamba,optimizer_mamba)
 mambaTrainTime.toc()
 
-# print('\nEntering LSTM Training Loop')
-# LSTMTrainTime = timer()
-# trainClassifier(model_LSTM,optimizer_LSTM)
-# LSTMTrainTime.toc()
+print('\nEntering LSTM Training Loop')
+LSTMTrainTime = timer()
+trainClassifier(model_LSTM,optimizer_LSTM)
+LSTMTrainTime.toc()
 
 printModelParmSize(model_mamba)
 printModelParmSize(model_LSTM)
