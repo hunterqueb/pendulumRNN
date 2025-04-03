@@ -79,7 +79,7 @@ rng = np.random.default_rng(seed=1) # Seed for reproducibility
 device = getDevice()
 
 batchSize = 32
-numRandSys = 2000
+numRandSys = 5000
 problemDim = 2
 t0 = 0; tf = 10
 dt = 0.005
@@ -91,7 +91,7 @@ hidden_size = 64
 num_layers = 1
 num_classes = 2  # e.g., binary classification
 learning_rate = 1e-2
-num_epochs = 3  
+num_epochs = 10
 
 config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
 
@@ -126,10 +126,10 @@ for i in range(numRandSys):
     numericalResultUnforced[i,:,:] = resultsUnforced.x.T
 
 
-plt.figure()
-plt.plot(t,resultsForced.x.T[:,0])
-plt.plot(t,resultsUnforced.x.T[:,0])
-plt.show()
+# plt.figure()
+# plt.plot(t,resultsForced.x.T[:,0])
+# plt.plot(t,resultsUnforced.x.T[:,0])
+# # plt.show()
 
 ForcedLabel = np.ones(numRandSys)
 UnforcedLabel = np.zeros(numRandSys)
