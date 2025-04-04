@@ -172,16 +172,16 @@ val_label = dataset_label[train_end:val_end]
 test_data = dataset[val_end:]
 test_label = dataset_label[val_end:]
 
-train_dataset = TensorDataset(torch.from_numpy(train_data),torch.from_numpy(train_label).long())
-val_dataset = TensorDataset(torch.from_numpy(val_data),torch.from_numpy(val_label).long())
-test_dataset = TensorDataset(torch.from_numpy(test_data),torch.from_numpy(test_label).long())
+train_dataset = TensorDataset(torch.from_numpy(train_data).float(),torch.from_numpy(train_label).long())
+val_dataset = TensorDataset(torch.from_numpy(val_data).float(),torch.from_numpy(val_label).long())
+test_dataset = TensorDataset(torch.from_numpy(test_data).float(),torch.from_numpy(test_label).long())
 
 train_loader = DataLoader(train_dataset, batch_size=batchSize, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=batchSize, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=batchSize, shuffle=False)
 
-model_mamba = MambaClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device).double()
-model_LSTM = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device).double()
+model_mamba = MambaClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device).float()
+model_LSTM = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device).float()
 
 criterion = nn.BCEWithLogitsLoss() # for binary classification
 optimizer_mamba = torch.optim.Adam(model_mamba.parameters(), lr=learning_rate)
