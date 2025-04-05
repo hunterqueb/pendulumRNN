@@ -20,5 +20,5 @@ for force_constant in "${force_constants[@]}"; do
   echo "Running with force constant: $force_constant"
   
   # Run the script and save output
-  python scripts/conferences/ASC2025/mambaTimeSeriesBinaryClassification.py "$force_constant" 1000 | tee "$output_file"
+  python scripts/conferences/ASC2025/mambaTimeSeriesBinaryClassification.py "$force_constant" 10000 | tee "$output_file"
 done
