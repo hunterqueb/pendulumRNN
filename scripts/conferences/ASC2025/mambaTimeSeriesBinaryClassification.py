@@ -17,6 +17,29 @@ from qutils.mlSuperweight import findMambaSuperActivation,plotSuperActivation,ze
 #set webagg backend for matplotlib - i've been liking it 
 plt.switch_backend('WebAgg')
 
+import sys
+
+if len(sys.argv) > 1:
+    try:
+        F0_const = float(sys.argv[1])
+        print(f"Command line argument provided: F0_const = {F0_const}")
+        # if second argument is provided, use it as the number of random systems
+        if len(sys.argv) > 2:
+            numRandSys = int(sys.argv[2])
+            print(f"Number of random systems: {numRandSys}")
+        else:
+            numRandSys = 10000
+    except ValueError:
+        F0_const = 1.0  # Default value for F0
+        numRandSys = 10000
+        print("Invalid command line argument. Using default settings. : F0_const = 1.0, numRandSys = 10000")
+    plotOn = False
+else:
+    F0_const = 1.0  # Default value for F0
+    numRandSys = 10000  # Default number of random systems
+    print("No command line arguments provided. Using default settings : F0_const = 1.0, numRandSys = 10000")
+    plotOn = True
+
 import torch.nn as nn
 class LSTMClassifier(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, num_classes):
@@ -48,7 +71,35 @@ class LSTMClassifier(nn.Module):
         
         return logits
         
+#tranformer classifier for time series data
+class TransformerClassifier(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers, num_classes):
+        super(TransformerClassifier, self).__init__()
+        
+        self.d_model = hidden_size  # Output of transformer & input to fc
+        self.embedding = nn.Linear(input_size, self.d_model)  # Project input to match d_model
 
+        self.transformer = nn.Transformer(
+            d_model=self.d_model,
+            nhead=8,  # Make sure d_model % nhead == 0
+            num_encoder_layers=num_layers,
+            num_decoder_layers=num_layers,
+            dim_feedforward=64,  # Internal feedforward layer size inside Transformer
+            batch_first=True
+        )
+        
+        self.fc = nn.Linear(self.d_model, num_classes)  # Final classification layer
+
+    def forward(self, x):
+        """
+        x: [batch_size, seq_length, input_size]
+        """
+        x = self.embedding(x)         # [batch_size, seq_length, d_model]
+        out = self.transformer(x, x)  # [batch_size, seq_length, d_model]
+        last_output = out[:, -1, :]   # [batch_size, d_model]
+        logits = self.fc(last_output) # [batch_size, num_classes]
+        return logits
+    
 class MambaClassifier(nn.Module):
     def __init__(self,config, input_size, hidden_size, num_layers, num_classes):
         super(MambaClassifier, self).__init__()
@@ -82,7 +133,7 @@ rng = np.random.default_rng(seed=1) # Seed for reproducibility
 device = getDevice()
 
 batchSize = 32
-numRandSys = 1000
+# numRandSys = 10000
 problemDim = 2
 t0 = 0; tf = 10
 dt = 0.005
@@ -93,8 +144,8 @@ input_size = problemDim   # 2
 hidden_size = 64
 num_layers = 1
 num_classes = 1  # e.g., binary classification
-learning_rate = 1e-3
-num_epochs = 10
+learning_rate = 1e-2
+num_epochs = 100
 
 config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
 
@@ -108,9 +159,11 @@ for i in range(numRandSys):
     # linear system for a simple harmonic oscillator
     k = rng.random(); m = rng.random()
     wr = np.sqrt(k/m)
-    F0_const = 0.10
+    
     F0 = F0_const * rng.random()
     c = 0.1 # consider damping for now
+
+    x0 = [rng.random(),rng.random()]
 
     A = np.array(([0,1],[-k/m,-c/m]))
 
@@ -124,8 +177,8 @@ for i in range(numRandSys):
 
     sys = ct.StateSpace(A,B,C,D)
 
-    resultsForced = ct.forced_response(sys,t,u,[1,0])
-    resultsUnforced = ct.forced_response(sys,t,u * 0,[1,0])
+    resultsForced = ct.forced_response(sys,t,u,x0)
+    resultsUnforced = ct.forced_response(sys,t,u * 0,x0)
 
     numericalResultForced[i,:,:] = resultsForced.x.T
     numericalResultUnforced[i,:,:] = resultsUnforced.x.T
@@ -182,13 +235,45 @@ test_loader = DataLoader(test_dataset, batch_size=batchSize, shuffle=False)
 
 model_mamba = MambaClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device).float()
 model_LSTM = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device).float()
+model_transformer = TransformerClassifier(input_size, hidden_size, num_layers, num_classes).to(device).float()
 
 criterion = nn.BCEWithLogitsLoss() # for binary classification
 optimizer_mamba = torch.optim.Adam(model_mamba.parameters(), lr=learning_rate)
 optimizer_LSTM = torch.optim.Adam(model_LSTM.parameters(), lr=learning_rate)
+optimizer_transformer = torch.optim.Adam(model_transformer.parameters(), lr=learning_rate)
+
+schedulerPatience = 3
+scheduler_mamba = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer_mamba,
+    mode='min',             # or 'max' for accuracy
+    factor=0.5,             # shrink LR by 50%
+    patience=schedulerPatience,             # wait for 3 epochs of no improvement
+    verbose=True
+)
+
+scheduler_LSTM = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer_LSTM,
+    mode='min',             # or 'max' for accuracy
+    factor=0.5,             # shrink LR by 50%
+    patience=schedulerPatience,             # wait for 3 epochs of no improvement
+    verbose=True
+)
+
+
+scheduler_transformer = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer_transformer,
+    mode='min',             # or 'max' for accuracy
+    factor=0.5,             # shrink LR by 50%
+    patience=schedulerPatience,             # wait for 3 epochs of no improvement
+    verbose=True
+)
+
 
 # Training loop
-def trainClassifier(model,optimizer):
+def trainClassifier(model,optimizer,scheduler):
+    best_loss = float('inf')
+    ESpatience = schedulerPatience * 2  # patience for early stopping
+    counter = 0
     # early stopping by user control ctrl+c to break the training loop
     try:
         for epoch in range(num_epochs):
@@ -231,22 +316,52 @@ def trainClassifier(model,optimizer):
                     correct += (predicted == labels).sum().item()
             accuracy = 100.0 * correct / total
             print(f"Validation Accuracy: {accuracy:.2f}%")
+
+            val_loss = 0.0
+            with torch.no_grad():
+                for sequences, labels in val_loader:
+                    sequences = sequences.to(device)
+                    labels = labels.to(device).float()
+                    outputs = model(sequences)
+                    loss = criterion(outputs, labels)
+                    val_loss += loss.item()
+            avg_val_loss = val_loss / len(val_loader)
+
+            scheduler.step(avg_val_loss)  # <-- update LR based on validation loss
+            if avg_val_loss < best_loss:
+                best_loss = avg_val_loss
+                counter = 0  # reset
+                # save best model if desired
+            else:
+                counter += 1
+                if counter >= ESpatience:
+                    print("Early stopping")
+                    break
+
     except KeyboardInterrupt:
         print("Training interrupted by user.")
         return
 
-print('\nEntering Mamba Training Loop')
-mambaTrainTime = timer()
-trainClassifier(model_mamba,optimizer_mamba)
-mambaTrainTime.toc()
-
 print('\nEntering LSTM Training Loop')
 LSTMTrainTime = timer()
-trainClassifier(model_LSTM,optimizer_LSTM)
+trainClassifier(model_LSTM,optimizer_LSTM,scheduler_LSTM)
 LSTMTrainTime.toc()
-
-printModelParmSize(model_mamba)
 printModelParmSize(model_LSTM)
 
-plt.show()
+print('\nEntering Mamba Training Loop')
+mambaTrainTime = timer()
+trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba)
+mambaTrainTime.toc()
+printModelParmSize(model_mamba)
+
+print('\nEntering Transformer Training Loop')
+transformerTrainTime = timer()
+trainClassifier(model_transformer,optimizer_transformer,scheduler_transformer)
+transformerTrainTime.toc()
+printModelParmSize(model_transformer)
+
+
+
+if plotOn:
+    plt.show()
  
