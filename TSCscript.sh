@@ -1,24 +1,32 @@
 #!/bin/bash
 
-# Run mambaTimeSeriesBinaryClassification.py for various input force constants
-# and capture console output using tee, saving each run's output to a separate file
+# Run mambaTimeSeriesBinaryClassification.py for various force constants and modes
+# Save console output using tee into appropriately named log files
 
 # Force constants to test
 force_constants=(10 1 0.1 0.01)
 
-# Target output directory (convert Windows path to Unix-style if using Git Bash or WSL)
+# Modes to test (third argument to Python script)
+modes=(1 2)
+
+# Output directory (Git Bash format for C:\ drive)
 output_dir="/c/hu650776/SynologyDrive/TSCoutputLogs"
 
-# Make sure the directory exists
+# Create the output directory if it doesn't exist
 mkdir -p "$output_dir"
 
-# Loop through force constants
-for force_constant in "${force_constants[@]}"; do
-  # Define output file based on current force constant
-  output_file="${output_dir}/output_force_${force_constant}.log"
+# Loop through modes and force constants
+for mode in "${modes[@]}"; do
+  for force_constant in "${force_constants[@]}"; do
+    # Sanitize force constant for file name (replace '.' with '_')
+    sanitized_fc=$(echo "$force_constant" | sed 's/\./_/')
 
-  echo "Running with force constant: $force_constant"
-  
-  # Run the script and save output
-  python scripts/conferences/ASC2025/mambaTimeSeriesBinaryClassification.py "$force_constant" 10000 | tee "$output_file"
+    # Construct output filename
+    output_file="${output_dir}/output_force_${sanitized_fc}_layers_${mode}.log"
+
+    echo "Running with force constant: $force_constant, number of layers: $mode"
+
+    # Execute the Python script with the force constant and mode
+    python scripts/conferences/ASC2025/mambaTimeSeriesBinaryClassification.py "$force_constant" 10000 "$mode" | tee "$output_file"
+  done
 done

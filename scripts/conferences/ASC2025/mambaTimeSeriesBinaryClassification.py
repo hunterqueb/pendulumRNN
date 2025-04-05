@@ -29,6 +29,11 @@ if len(sys.argv) > 1:
             print(f"Number of random systems: {numRandSys}")
         else:
             numRandSys = 10000
+        if len(sys.argv) > 3:
+            num_layers = int(sys.argv[3])
+            print(f"Number of layers per NN: {num_layers}")
+        else:
+            num_layers = 1
     except ValueError:
         F0_const = 1.0  # Default value for F0
         numRandSys = 10000
@@ -36,9 +41,10 @@ if len(sys.argv) > 1:
     plotOn = False
 else:
     F0_const = 1.0  # Default value for F0
-    numRandSys = 10000  # Default number of random systems
+    numRandSys = 10000 # Default number of random systems
     print("No command line arguments provided. Using default settings : F0_const = 1.0, numRandSys = 10000")
     plotOn = True
+    num_layers = 1 # Default number of layers per NN
 
 import torch.nn as nn
 class LSTMClassifier(nn.Module):
@@ -142,7 +148,7 @@ t = np.linspace(t0,tf,int(tf/dt))
 # Hyperparameters
 input_size = problemDim   # 2
 hidden_size = 64
-num_layers = 1
+# num_layers = 1
 num_classes = 1  # e.g., binary classification
 learning_rate = 1e-2
 num_epochs = 100
