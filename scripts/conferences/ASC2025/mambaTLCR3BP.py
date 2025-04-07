@@ -7,10 +7,10 @@ import torchinfo
 import sys
 
 from qutils.integrators import ode87
-from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions,plotStatePredictions, plot3dCR3BPPredictions,newPlotSolutionErrors
+from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions,plotStatePredictions, plot3dCR3BPPredictions,newPlotSolutionErrors, plotEnergy
 from qutils.ml import getDevice, create_datasets, genPlotPrediction,transferMamba,LSTMSelfAttentionNetwork,transferLSTM, transferModelAll,LSTM, trainModel
 from qutils.mlExtras import findDecAcc, plotSuperWeight, plotMinWeight, printoutMaxLayerWeight
-from qutils.orbital import returnCR3BPIC, nonDim2Dim6, orbitInitialConditions
+from qutils.orbital import returnCR3BPIC, nonDim2Dim6, orbitInitialConditions, jacobiConstant6,dim2NonDim6
 from qutils.tictoc import timer
 from qutils.mamba import Mamba, MambaConfig
 
@@ -30,14 +30,15 @@ else: # targeted orbit family pairs for transfer learning demonstration
     sourceOrbitFamily = 'longPeriod'
     targetOrbitFamily = 'shortPeriod'
 
-    sourceOrbitFamily = 'butterflySouth'
-    targetOrbitFamily = 'shortPeriod'
+    # sourceOrbitFamily = 'longPeriod'
+    # targetOrbitFamily = 'dragonflySouth'
 
-    sourceOrbitFamily = 'longPeriod'
-    targetOrbitFamily = 'dragonflySouth'
+    # sourceOrbitFamily = 'butterflyNorth'
+    # targetOrbitFamily = 'shortPeriod'
 
-    sourceOrbitFamily = 'shortPeriod'
-    targetOrbitFamily = 'butterflyNorth'
+    # not using
+    # sourceOrbitFamily = 'shortPeriod'
+    # targetOrbitFamily = 'butterflyNorth'
 
     # sourceOrbitFamily = 'halo'
     # targetOrbitFamily = 'quasiperiodic'  # Note: 'quasiperiodic' is not a valid orbit family in JPL database, will use custom IC
@@ -195,6 +196,8 @@ for i in range(numRuns):
 
     newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
 
+
+    plotEnergy(output_seq,networkPrediction,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',nonDim=dim2NonDim6,DU = DU, TU = TU,networkLabel="Mamba")
     # # TRANSFER LEARN
 
     x_0,tEnd = CR3BPIC_target()
@@ -260,6 +263,9 @@ for i in range(numRuns):
     plot3dCR3BPPredictions(output_seq,networkPrediction_target,L=None,earth=False,moon=False)
 
     newPlotSolutionErrors(output_seq,networkPrediction_target,t,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
+
+    plotEnergy(output_seq,networkPrediction_target,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',nonDim=dim2NonDim6,DU = DU, TU = TU,networkLabel="LSTM")
+
 
     errorAvg = np.nanmean(abs(networkPrediction_target-output_seq), axis=0)
     print("Average values of each dimension:")
