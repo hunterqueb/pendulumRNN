@@ -147,6 +147,8 @@ for i in range(numRuns):
     ODEtime.toc()
 
     output_seq = numericResult
+    output_seq_source = output_seq
+    t_source = t / tEnd
 
     # hyperparameters
     n_epochs = 5
@@ -185,8 +187,8 @@ for i in range(numRuns):
     trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
     t = t / tEnd
 
-    networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,timeLabel='Periods')
-    output_seq = nonDim2Dim6(output_seq,DU,TU)
+    networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,timeLabel='Periods',states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'],units=["DU","DU","DU","DU/TU","DU/TU","DU/TU"])
+    # output_seq = nonDim2Dim6(output_seq,DU,TU)
 
     plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
     plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,plane='xz',earth=False,moon=False)
@@ -194,10 +196,10 @@ for i in range(numRuns):
     plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False,networkLabel=modelString)
 
 
-    newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
+    newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'],units=["DU","DU","DU","DU/TU","DU/TU","DU/TU"])
 
 
-    plotEnergy(output_seq,networkPrediction,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',nonDim=dim2NonDim6,DU = DU, TU = TU,networkLabel="Mamba")
+    plotEnergy(output_seq,networkPrediction,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',networkLabel=modelString + " Source Domain",nonDim=True)
     # # TRANSFER LEARN
 
     x_0,tEnd = CR3BPIC_target()
@@ -215,6 +217,8 @@ for i in range(numRuns):
     t , numericResult = ode87(system,[t0,tf],IC,t,rtol=1e-15,atol=1e-15)
 
     output_seq = numericResult
+    output_seq_target = output_seq
+    t_target = t / tEnd
 
     n_epochs = 2
     lr = 0.001
@@ -238,7 +242,7 @@ for i in range(numRuns):
 
     newModel = returnModel(modelString)
 
-    if modelString == "mamba":
+    if modelString == "Mamba":
         newModel = transferMamba(model,newModel,[True,True,False])
     elif modelString == "LSTM":
         newModel = transferLSTM(model,newModel)
@@ -253,24 +257,19 @@ for i in range(numRuns):
     trainModel(model,n_epochs,[train_in,train_out,test_in,test_out],criterion,optimizer,printOutAcc = True,printOutToc = True)
     t = t / tEnd
 
-    networkPrediction_target = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,timeLabel='Periods')
+    networkPrediction_target = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,timeLabel='Periods',states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'],units=["DU","DU","DU","DU/TU","DU/TU","DU/TU"])
 
-    output_seq = nonDim2Dim6(output_seq,DU,TU)
+    # output_seq = nonDim2Dim6(output_seq,DU,TU)
 
     plotCR3BPPhasePredictions(output_seq,networkPrediction_target,L=None,earth=False,moon=False)
     plotCR3BPPhasePredictions(output_seq,networkPrediction_target,L=None,plane='xz',earth=False,moon=False)
     plotCR3BPPhasePredictions(output_seq,networkPrediction_target,L=None,plane='yz',earth=False,moon=False)
     plot3dCR3BPPredictions(output_seq,networkPrediction_target,L=None,earth=False,moon=False,networkLabel=modelString)
 
-    newPlotSolutionErrors(output_seq,networkPrediction_target,t,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
+    newPlotSolutionErrors(output_seq,networkPrediction_target,t,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'],units=["DU","DU","DU","DU/TU","DU/TU","DU/TU"])
 
-    plotEnergy(output_seq,networkPrediction_target,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',nonDim=dim2NonDim6,DU = DU, TU = TU,networkLabel="LSTM")
+    plotEnergy(output_seq,networkPrediction_target,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',networkLabel=modelString + " Target Domain",nonDim=True)
 
-
-    errorAvg = np.nanmean(abs(networkPrediction_target-output_seq), axis=0)
-    print("Average values of each dimension:")
-    for i, avg in enumerate(errorAvg, 1):
-        print(f"Dimension {i}: {avg}")
 
     torchinfo.summary(model)
     torchinfo.summary(newModel)
@@ -293,7 +292,36 @@ for i in range(numRuns):
     del model
     del newModel
 
+    if i == 0:
+        mamba_networkPrediction = networkPrediction
+        mamba_networkPrediction_target = networkPrediction_target
+    else:
+        lstm_networkPrediction = networkPrediction
+        lstm_networkPrediction_target = networkPrediction_target
     modelString = "LSTM"
+
 if plotOn is True:
+    plot3dCR3BPPredictions(output_seq_source,mamba_networkPrediction,L=None,earth=False,moon=False,networkLabel="Mamba")
+    plt.plot(lstm_networkPrediction[:, 0], lstm_networkPrediction[:, 1], lstm_networkPrediction[:, 2], label="LSTM",linestyle='dotted')
+    plt.title("Source Domain Prediction")
+    plt.legend()
+
+    plotEnergy(output_seq_source,mamba_networkPrediction,t_source,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',networkLabel= "Mamba",nonDim=True)
+    plt.plot(t_source,jacobiConstant6(lstm_networkPrediction), label="LSTM",linestyle='dotted')
+    plt.title("Source Domain Conserved Quantity")
+    plt.legend()
+
+
+    plot3dCR3BPPredictions(output_seq_target,mamba_networkPrediction_target,L=None,earth=False,moon=False,networkLabel="Mamba")
+    plt.plot(lstm_networkPrediction_target[:, 0], lstm_networkPrediction_target[:, 1], lstm_networkPrediction_target[:, 2], label="LSTM",linestyle='dotted')
+    plt.title("Target Domain Prediction")
+    plt.legend()
+
+    plotEnergy(output_seq_target,mamba_networkPrediction_target,t_target,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',networkLabel= "Mamba",nonDim=True)
+    plt.plot(t_target,jacobiConstant6(lstm_networkPrediction_target), label="LSTM",linestyle='dotted')
+    plt.title("Target Domain Conserved Quantity")
+    plt.legend()
+
+
     plt.show()
 
