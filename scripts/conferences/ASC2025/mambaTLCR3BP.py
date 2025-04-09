@@ -122,7 +122,7 @@ def system(t, Y,mu=mu):
 
 
 device = getDevice()
-modelString = 'mamba'
+modelString = 'Mamba'
 
 if compareLSTM == True:
     numRuns = 2 # run the LSTM and Mamba models for comparison
@@ -143,7 +143,7 @@ for i in range(numRuns):
     t = np.linspace(t0, tf, nSamples)
 
     ODEtime = timer()
-    t , numericResult = ode87(system,[t0,tf],IC,t)
+    t , numericResult = ode87(system,[t0,tf],IC,t,rtol=1e-9,atol=1e-12)
     ODEtime.toc()
 
     output_seq = numericResult
@@ -167,10 +167,10 @@ for i in range(numRuns):
     # initilizing the model, criterion, and optimizer for the data
     config = MambaConfig(d_model=problemDim, n_layers=num_layers)
 
-    def returnModel(modelString = 'mamba'):
-        if modelString == 'mamba':
+    def returnModel(modelString = 'Mamba'):
+        if modelString == 'Mamba':
             model = Mamba(config).to(device).double()
-        elif modelString == 'lstm':
+        elif modelString == 'LSTM':
             model = LSTM(input_size,30,output_size,num_layers,0).double().to(device)
         elif modelString == "lstmSA":
             model = LSTMSelfAttentionNetwork(input_size,30,output_size,num_layers,0).double().to(device)
@@ -191,7 +191,7 @@ for i in range(numRuns):
     plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
     plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,plane='xz',earth=False,moon=False)
     plotCR3BPPhasePredictions(output_seq,networkPrediction,L=None,plane='yz',earth=False,moon=False)
-    plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False)
+    plot3dCR3BPPredictions(output_seq,networkPrediction,L=None,earth=False,moon=False,networkLabel=modelString)
 
 
     newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
@@ -240,7 +240,7 @@ for i in range(numRuns):
 
     if modelString == "mamba":
         newModel = transferMamba(model,newModel,[True,True,False])
-    elif modelString == "lstm":
+    elif modelString == "LSTM":
         newModel = transferLSTM(model,newModel)
     elif modelString == "lstmSA":
         newModel = transferModelAll(model,newModel)
@@ -260,7 +260,7 @@ for i in range(numRuns):
     plotCR3BPPhasePredictions(output_seq,networkPrediction_target,L=None,earth=False,moon=False)
     plotCR3BPPhasePredictions(output_seq,networkPrediction_target,L=None,plane='xz',earth=False,moon=False)
     plotCR3BPPhasePredictions(output_seq,networkPrediction_target,L=None,plane='yz',earth=False,moon=False)
-    plot3dCR3BPPredictions(output_seq,networkPrediction_target,L=None,earth=False,moon=False)
+    plot3dCR3BPPredictions(output_seq,networkPrediction_target,L=None,earth=False,moon=False,networkLabel=modelString)
 
     newPlotSolutionErrors(output_seq,networkPrediction_target,t,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
 
@@ -293,7 +293,7 @@ for i in range(numRuns):
     del model
     del newModel
 
-    modelString = "lstm"
+    modelString = "LSTM"
 if plotOn is True:
     plt.show()
 
