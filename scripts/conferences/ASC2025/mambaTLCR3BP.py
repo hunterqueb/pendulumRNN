@@ -8,7 +8,7 @@ import sys
 
 from qutils.integrators import ode87
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions,plotStatePredictions, plot3dCR3BPPredictions,newPlotSolutionErrors, plotEnergy
-from qutils.ml import getDevice, create_datasets, genPlotPrediction,transferMamba,LSTMSelfAttentionNetwork,transferLSTM, transferModelAll,LSTM, trainModel
+from qutils.ml import getDevice, create_datasets, genPlotPrediction,transferMamba,LSTMSelfAttentionNetwork,transferLSTM, transferModelAll,LSTM, trainModel,printModelParmSize
 from qutils.mlExtras import findDecAcc, plotSuperWeight, plotMinWeight, printoutMaxLayerWeight
 from qutils.orbital import returnCR3BPIC, nonDim2Dim6, orbitInitialConditions, jacobiConstant6,dim2NonDim6
 from qutils.tictoc import timer
@@ -21,29 +21,60 @@ plt.switch_backend('WebAgg')
 
 
 compareLSTM = True
+plotGen = False
+plotOn = False
 
-# get the source and target orbit families from sys args
-if len(sys.argv) > 1:
+# get the orbit families from the command line arguments or if there is only 1 argument, select family pairs from 1 of 4 options
+if len(sys.argv) > 2:
     sourceOrbitFamily = sys.argv[1]
     targetOrbitFamily = sys.argv[2]
+elif len(sys.argv) == 2:
+    # make sure arg is an int
+    if not sys.argv[1].isdigit():
+        raise ValueError("Argument must be an integer when no orbit family pairs are provided.")
+    orbitPair = int(sys.argv[1])
+    if orbitPair == 1:
+        sourceOrbitFamily = 'longPeriod'
+        targetOrbitFamily = 'shortPeriod'
+        problemString = "LP-SP"
+    elif orbitPair == 2:
+        sourceOrbitFamily = 'longPeriod'
+        targetOrbitFamily = 'dragonflySouth'
+        problemString = "LP-DS"
+    elif orbitPair == 3:
+        sourceOrbitFamily = 'butterflyNorth'
+        targetOrbitFamily = 'shortPeriod'
+        problemString = "BN-SP"
+    elif orbitPair == 4:
+        sourceOrbitFamily = 'halo'
+        targetOrbitFamily = 'quasiperiodic'
+        problemString = "H-QP"
+    elif orbitPair == 5:
+        sourceOrbitFamily = 'shortPeriod'
+        targetOrbitFamily = 'butterflyNorth'
+        problemString = "SP-BN"
+
 else: # targeted orbit family pairs for transfer learning demonstration
     sourceOrbitFamily = 'longPeriod'
     targetOrbitFamily = 'shortPeriod'
+    problemString = "LP-SP"
 
     # sourceOrbitFamily = 'longPeriod'
     # targetOrbitFamily = 'dragonflySouth'
+    # problemString = "LP-DS"
 
     # sourceOrbitFamily = 'butterflyNorth'
     # targetOrbitFamily = 'shortPeriod'
+    # problemString = "BN-SP"
 
     # not using
     # sourceOrbitFamily = 'shortPeriod'
     # targetOrbitFamily = 'butterflyNorth'
+    # problemString = "SP-BN"
 
     # sourceOrbitFamily = 'halo'
     # targetOrbitFamily = 'quasiperiodic'  # Note: 'quasiperiodic' is not a valid orbit family in JPL database, will use custom IC
-
-plotOn = True
+    # problemString = "H-QP"
 
 problemDim = 6
 m_1 = 5.974E24  # kg
@@ -197,6 +228,8 @@ for i in range(numRuns):
 
 
     newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'],units=["DU","DU","DU","DU/TU","DU/TU","DU/TU"])
+    fig = plt.gcf()
+    fig.set_size_inches(10, 8)
 
 
     plotEnergy(output_seq,networkPrediction,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',networkLabel=modelString + " Source Domain",nonDim=True)
@@ -267,12 +300,19 @@ for i in range(numRuns):
     plot3dCR3BPPredictions(output_seq,networkPrediction_target,L=None,earth=False,moon=False,networkLabel=modelString)
 
     newPlotSolutionErrors(output_seq,networkPrediction_target,t,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'],units=["DU","DU","DU","DU/TU","DU/TU","DU/TU"])
+    #get current figure and set size
+    fig = plt.gcf()
+    fig.set_size_inches(10, 8)
+
 
     plotEnergy(output_seq,networkPrediction_target,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',networkLabel=modelString + " Target Domain",nonDim=True)
 
 
     torchinfo.summary(model)
     torchinfo.summary(newModel)
+    
+    printModelParmSize(model)
+    printModelParmSize(newModel)
 
     printoutMaxLayerWeight(model)
     printoutMaxLayerWeight(newModel)
@@ -300,28 +340,60 @@ for i in range(numRuns):
         lstm_networkPrediction_target = networkPrediction_target
     modelString = "LSTM"
 
-if plotOn is True:
+if plotGen is True:
+    # source domain plots
+
     plot3dCR3BPPredictions(output_seq_source,mamba_networkPrediction,L=None,earth=False,moon=False,networkLabel="Mamba")
-    plt.plot(lstm_networkPrediction[:, 0], lstm_networkPrediction[:, 1], lstm_networkPrediction[:, 2], label="LSTM",linestyle='dotted')
+    plt.plot(lstm_networkPrediction[:, 0], lstm_networkPrediction[:, 1], lstm_networkPrediction[:, 2], label="LSTM",linestyle='dashdot')
     plt.title("Source Domain Prediction")
-    plt.legend()
+    plt.legend(loc='upper left')
+    fig.set_size_inches(8, 8)
+    plt.savefig("figures/"+problemString+"-SourceDomainPrediction.pdf", format='pdf', bbox_inches=None)
 
     plotEnergy(output_seq_source,mamba_networkPrediction,t_source,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',networkLabel= "Mamba",nonDim=True)
-    plt.plot(t_source,jacobiConstant6(lstm_networkPrediction), label="LSTM",linestyle='dotted')
+    plt.plot(t_source,jacobiConstant6(lstm_networkPrediction), label="LSTM",linestyle='dashdot')
     plt.title("Source Domain Conserved Quantity")
-    plt.legend()
+    plt.legend(loc='upper left')
+    fig.set_size_inches(8, 8)
+    plt.savefig("figures/"+problemString+"-SourceDomainConservedQuantity.pdf", format='pdf', bbox_inches=None)
 
+
+    newPlotSolutionErrors(output_seq_source,mamba_networkPrediction,t_source,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'],units=["DU","DU","DU","DU/TU","DU/TU","DU/TU"])
+    fig = plt.gcf()
+    fig.set_size_inches(10, 8)
+    plt.savefig("figures/"+problemString+"-SourceDomainPredictionErrorMamba.png", format='png', bbox_inches=None,dpi=600)
+
+    newPlotSolutionErrors(output_seq_source,lstm_networkPrediction,t_source,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'],units=["DU","DU","DU","DU/TU","DU/TU","DU/TU"])
+    fig = plt.gcf()
+    fig.set_size_inches(10, 8)
+    plt.savefig("figures/"+problemString+"-SourceDomainPredictionErrorLSTM.png", format='png', bbox_inches=None,dpi=600)
+
+    # target domain plots
 
     plot3dCR3BPPredictions(output_seq_target,mamba_networkPrediction_target,L=None,earth=False,moon=False,networkLabel="Mamba")
-    plt.plot(lstm_networkPrediction_target[:, 0], lstm_networkPrediction_target[:, 1], lstm_networkPrediction_target[:, 2], label="LSTM",linestyle='dotted')
+    plt.plot(lstm_networkPrediction_target[:, 0], lstm_networkPrediction_target[:, 1], lstm_networkPrediction_target[:, 2], label="LSTM",linestyle='dashdot')
     plt.title("Target Domain Prediction")
-    plt.legend()
+    plt.legend(loc='upper left')
+    fig.set_size_inches(8, 8)
+    plt.savefig("figures/"+problemString+"-TargetDomainPrediction.pdf", format='pdf', bbox_inches=None)
 
     plotEnergy(output_seq_target,mamba_networkPrediction_target,t_target,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',networkLabel= "Mamba",nonDim=True)
-    plt.plot(t_target,jacobiConstant6(lstm_networkPrediction_target), label="LSTM",linestyle='dotted')
+    plt.plot(t_target,jacobiConstant6(lstm_networkPrediction_target), label="LSTM",linestyle='dashdot')
     plt.title("Target Domain Conserved Quantity")
-    plt.legend()
+    plt.legend(loc='upper left')
+    fig.set_size_inches(8, 8)
+    plt.savefig("figures/"+problemString+"-TargetDomainConservedQuantity.pdf", format='pdf', bbox_inches=None)
 
+    newPlotSolutionErrors(output_seq_target,mamba_networkPrediction_target,t_target,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'],units=["DU","DU","DU","DU/TU","DU/TU","DU/TU"])
+    fig = plt.gcf()
+    fig.set_size_inches(10, 8)
+    plt.savefig("figures/"+problemString+"-TargetDomainPredictionErrorMamba.png", format='png', bbox_inches=None,dpi=600)
 
+    newPlotSolutionErrors(output_seq_target,lstm_networkPrediction_target,t_target,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'],units=["DU","DU","DU","DU/TU","DU/TU","DU/TU"])
+    fig = plt.gcf()
+    fig.set_size_inches(10, 8)
+    plt.savefig("figures/"+problemString+"-TargetDomainPredictionErrorLSTM.png", format='png', bbox_inches=None,dpi=600)
+
+if plotOn is True:
     plt.show()
 
