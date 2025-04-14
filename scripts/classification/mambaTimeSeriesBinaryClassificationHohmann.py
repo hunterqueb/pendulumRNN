@@ -1,24 +1,55 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
-import control as ct
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from qutils.tictoc import timer
 
 from qutils.ml import printModelParmSize, getDevice
 from qutils.mamba import Mamba, MambaConfig
-from qutils.integrators import ode87
+from qutils.integrators import ode45 as ode87
 
 #set webagg backend for matplotlib - i've been liking it 
-# plt.switch_backend('WebAgg')
+plt.switch_backend('WebAgg')
 
 import sys
 
-plotOn = True
-seqLength = 100
-numRandSys = 1000
-deltaVConst = 1.0 # m/s
+if len(sys.argv) > 1:
+    try:
+        deltaVConst = float(sys.argv[1])
+        print(f"Command line argument provided: deltaV_const = {deltaVConst}")
+        if len(sys.argv) > 2:
+            numRandSys = int(sys.argv[2])
+            print(f"Number of random systems: {numRandSys}")
+        else:
+            numRandSys = 10000
+        if len(sys.argv) > 3:
+            if int(sys.argv[3]) == 0:
+                trainDim = 4
+                print(f"Command line argument provided: trainDim = {trainDim}")
+            elif int(sys.argv[3]) == 1:
+                trainDim = 2
+                print(f"Command line argument provided: trainDim = {trainDim}")
+            else:
+                trainDim = 4
+                print(f"Invalid command line argument. Using default settings. : trainDim = {trainDim}")
+    except ValueError:
+        deltaVConst = 1.0  # Default value for deltaV
+        numRandSys = 10000
+        trainDim = 4
+        print(f"Invalid command line argument. Using default settings. : deltaVConst = {deltaVConst}, numRandSys = {numRandSys}, trainDim = {trainDim}")                
+    plotOn = False
+else:
+    deltaVConst = 1.0  # Default value for deltaV
+    numRandSys = 10000
+    trainDim = 4
+    print(f"No command line arguments. Using default settings. : deltaVConst = {deltaVConst}, numRandSys = {numRandSys}, trainDim = {trainDim}")                
+    plotOn = True
+
+seqLength = 1000
+
+# numRandSys = 10000
+# deltaVConst = 1.0 # m/s
 
 import torch.nn as nn
 class LSTMClassifier(nn.Module):
@@ -114,7 +145,7 @@ batchSize = 16
 problemDim = 4
 
 # Hyperparameters
-input_size = problemDim   # 2
+input_size = trainDim   # 2
 hidden_size = 64
 num_layers = 1
 num_classes = 1  # e.g., binary classification
@@ -123,9 +154,8 @@ num_epochs = 100
 
 config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
 
-
-numericalResultForced = np.zeros((numRandSys,int(seqLength*2),problemDim))
-numericalResultUnforced = np.zeros((numRandSys,int(seqLength*2),problemDim))
+numericalResultForced = np.zeros((numRandSys,int(seqLength*2),input_size))
+numericalResultUnforced = np.zeros((numRandSys,int(seqLength*2),input_size))
 
 mu = 3.986004418e14  # Earth’s mu in m^3/s^2
 R = 6371e3 # radius of earth in m
@@ -187,24 +217,33 @@ for i in range(numRandSys):
     # concatenate the time vectors
     t = np.concatenate((tODE_beforeBurn,tODE_Burn),axis=0)
 
-   
+    if trainDim == 2:
+        yODE = yODE[:,:2]
+        yOriginalCircOrbit = yOriginalCircOrbit[:,:2]
+        yOriginalCircOrbitPlot = yOriginalCircOrbitPlot[:,:2]
+        
     numericalResultForced[i,:,:] = yODE
     numericalResultUnforced[i,:,:] = yOriginalCircOrbit
 
-print("Time to generate data: {:.2f} seconds".format(timeToGenData.tocVal()))
+    # # if i is 1/10th of numRandSys, plot the data
+    # if plotOn and i % (numRandSys//10) == 0:
+    #     plt.figure(figsize=(6, 6))
+    #     # latex title
+    #     plt.title(r'Hohmann Transfer Orbit with $\Delta V = {:.2f}$ m/s'.format(deltaV))
+    #     plt.plot(yOriginalCircOrbitPlot[:,0], yOriginalCircOrbitPlot[:,1], 'k--', label='Original Circular Orbit')
+    #     # plt.plot(yOriginalCircOrbit[:,0], yOriginalCircOrbit[:,1], 'g--', label='Unforced Orbit')
+    #     plt.plot(yODE_beforeBurn[:,0], yODE_beforeBurn[:,1], 'b-', label='Before Burn')
+    #     plt.plot(yODE_Burn[:,0], yODE_Burn[:,1], 'r-', label='After Burn')
+    #     plt.plot(y_burn1[0], y_burn1[1], 'go', label='Impulse Burn Point')
+    #     plt.xlabel('X Position (m)')
+    #     plt.ylabel('Y Position (m)')
+    #     plt.legend()
+    #     plt.axis('equal')
+    #     plt.tight_layout()
+    #     plt.grid()
+    
 
-plt.figure(figsize=(10, 10))
-plt.title('Hohmann Transfer Orbit')
-plt.plot(yOriginalCircOrbitPlot[:,0], yOriginalCircOrbitPlot[:,1], 'k--', label='Original Circular Orbit')
-plt.plot(yOriginalCircOrbit[:,0], yOriginalCircOrbit[:,1], 'g--', label='Unforced Orbit')
-plt.plot(yODE_beforeBurn[:,0], yODE_beforeBurn[:,1], 'b-', label='Before Burn')
-plt.plot(yODE_Burn[:,0], yODE_Burn[:,1], 'r-', label='After Burn')
-plt.xlabel('X Position (m)')
-plt.ylabel('Y Position (m)')
-plt.legend()
-plt.axis('equal')
-plt.grid()
-plt.show()  # Show the plot of the trajectory
+print("Time to generate data: {:.2f} seconds".format(timeToGenData.tocVal()))
 
 # make data labels for a two class problem of shape numRandSys x 2, 1, 0 for forced and unforced respectively
 ForcedLabel = np.ones(numRandSys)
@@ -366,11 +405,11 @@ trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba)
 mambaTrainTime.toc()
 printModelParmSize(model_mamba)
 
-# print('\nEntering Transformer Training Loop')
-# transformerTrainTime = timer()
-# trainClassifier(model_transformer,optimizer_transformer,scheduler_transformer)
-# transformerTrainTime.toc()
-# printModelParmSize(model_transformer)
+print('\nEntering Transformer Training Loop')
+transformerTrainTime = timer()
+trainClassifier(model_transformer,optimizer_transformer,scheduler_transformer)
+transformerTrainTime.toc()
+printModelParmSize(model_transformer)
 
 
 
