@@ -37,12 +37,12 @@ if len(sys.argv) > 1:
     except ValueError:
         F0_const = 1.0  # Default value for F0
         numRandSys = 10000
-        print("Invalid command line argument. Using default settings. : F0_const = 1.0, numRandSys = 10000")
+        print("Invalid command line argument. Using default settings. : F0_const = {F0_const}, numRandSys = {numRandSys}")
     plotOn = False
 else:
-    F0_const = 1.0  # Default value for F0
-    numRandSys = 10000 # Default number of random systems
-    print("No command line arguments provided. Using default settings : F0_const = 1.0, numRandSys = 10000")
+    F0_const = 10.0  # Default value for F0
+    numRandSys = 10 # Default number of random systems
+    print("No command line arguments provided. Using default settings. : F0_const = {F0_const}, numRandSys = {numRandSys}")
     plotOn = True
     num_layers = 1 # Default number of layers per NN
 
@@ -199,7 +199,7 @@ plt.title("Random Sample Forced and Unforced Responses")
 plt.xlabel("Time (s)")
 plt.ylabel("Displacement (m)")
 plt.legend(["Forced by [0,{}] N Force".format(F0_const),"Unforced Response"])
-
+plt.show()
 # make data labels for a two class problem of shape numRandSys x 2, 1, 0 for forced and unforced respectively
 ForcedLabel = np.ones(numRandSys)
 UnforcedLabel = np.zeros(numRandSys)
