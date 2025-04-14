@@ -178,7 +178,8 @@ for i in range(numRandSys):
     # propagate the system (forced) based on the transfer orbit calculated
     tODE_Burn,yODE_Burn = ode87(fun=lambda t, y: twoBody(t, y, mu), tspan=(t1_beforeBurn, t2_Burn), y0=y_burn1, t_eval = t_Burn,rtol=1e-8, atol=1e-10)
 
-    tOriginalCircOrbit,yOriginalCircOrbit = ode87(fun=lambda t, y: twoBody(t, y, mu),tspan=(0, 2*(np.pi*np.sqrt((r1)**3/mu))),y0=y0,t_eval = np.linspace(0,tf,int(seqLength*2)), rtol=1e-8, atol=1e-10)
+    tOriginalCircOrbit,yOriginalCircOrbit = ode87(fun=lambda t, y: twoBody(t, y, mu),tspan=(0, t2_Burn),y0=y0,t_eval = np.linspace(0,t2_Burn,int(seqLength*2)), rtol=1e-8, atol=1e-10)
+    tOriginalCircOrbitPlot,yOriginalCircOrbitPlot = ode87(fun=lambda t, y: twoBody(t, y, mu),tspan=(0, tf),y0=y0,t_eval = np.linspace(0,tf,int(seqLength*2)), rtol=1e-8, atol=1e-10)
 
 
     # concatenate the two trajectories
@@ -194,7 +195,8 @@ print("Time to generate data: {:.2f} seconds".format(timeToGenData.tocVal()))
 
 plt.figure(figsize=(10, 10))
 plt.title('Hohmann Transfer Orbit')
-plt.plot(yOriginalCircOrbit[:,0], yOriginalCircOrbit[:,1], 'g--', label='Original Circular Orbit')
+plt.plot(yOriginalCircOrbitPlot[:,0], yOriginalCircOrbitPlot[:,1], 'k--', label='Original Circular Orbit')
+plt.plot(yOriginalCircOrbit[:,0], yOriginalCircOrbit[:,1], 'g--', label='Unforced Orbit')
 plt.plot(yODE_beforeBurn[:,0], yODE_beforeBurn[:,1], 'b-', label='Before Burn')
 plt.plot(yODE_Burn[:,0], yODE_Burn[:,1], 'r-', label='After Burn')
 plt.xlabel('X Position (m)')
