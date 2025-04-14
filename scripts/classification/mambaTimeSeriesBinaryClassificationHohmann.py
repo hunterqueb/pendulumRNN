@@ -12,39 +12,75 @@ from qutils.integrators import ode45 as ode87
 #set webagg backend for matplotlib - i've been liking it 
 plt.switch_backend('WebAgg')
 
-import sys
 
-if len(sys.argv) > 1:
-    try:
-        deltaVConst = float(sys.argv[1])
-        print(f"Command line argument provided: deltaV_const = {deltaVConst}")
-        if len(sys.argv) > 2:
-            numRandSys = int(sys.argv[2])
-            print(f"Number of random systems: {numRandSys}")
-        else:
-            numRandSys = 10000
-        if len(sys.argv) > 3:
-            if int(sys.argv[3]) == 0:
-                trainDim = 4
-                print(f"Command line argument provided: trainDim = {trainDim}")
-            elif int(sys.argv[3]) == 1:
-                trainDim = 2
-                print(f"Command line argument provided: trainDim = {trainDim}")
-            else:
-                trainDim = 4
-                print(f"Invalid command line argument. Using default settings. : trainDim = {trainDim}")
-    except ValueError:
-        deltaVConst = 1.0  # Default value for deltaV
-        numRandSys = 10000
-        trainDim = 4
-        print(f"Invalid command line argument. Using default settings. : deltaVConst = {deltaVConst}, numRandSys = {numRandSys}, trainDim = {trainDim}")                
-    plotOn = False
-else:
-    deltaVConst = 1.0  # Default value for deltaV
-    numRandSys = 10000
-    trainDim = 4
-    print(f"No command line arguments. Using default settings. : deltaVConst = {deltaVConst}, numRandSys = {numRandSys}, trainDim = {trainDim}")                
-    plotOn = True
+import argparse
+
+def get_args():
+    parser = argparse.ArgumentParser(
+        description="Configure and launch Hohmann transfer binary classification training run."
+    )
+
+    parser.add_argument(
+        "--deltaVConst", type=float, default=1.0,
+        help="Delta-V constant to apply to all systems (default: 1.0)"
+    )
+    parser.add_argument(
+        "--numRandSys", type=int, default=10000,
+        help="Number of randomized systems to generate (default: 10000)"
+    )
+    parser.add_argument(
+        "--trainDim", type=int, choices=[2, 4], default=4,
+        help="Training dimension: 2 or 4 (default: 4)"
+    )
+    parser.add_argument(
+        "--posNoiseStd", type=float, default=100.0,
+        help="Standard deviation of position noise in meters (default: 100.0)"
+    )
+    parser.add_argument(
+        "--velNoiseStd", type=float, default=1.0,
+        help="Standard deviation of velocity noise in m/s (default: 1.0)"
+    )
+
+    # Plotting flag (default is True, disable with --no-plot)
+    parser.add_argument("--no-plot", dest="plot", action="store_false",
+                        help="Disable plotting (enabled by default)")
+    parser.set_defaults(plot=True)
+
+    # LSTM comparison (default is True, disable with --no-lstm)
+    parser.add_argument("--no-lstm", dest="use_lstm", action="store_false",
+                        help="Disable LSTM comparison (enabled by default)")
+    parser.set_defaults(use_lstm=True)
+
+    # Transformer comparison (default is False, enable with --transformer)
+    parser.add_argument("--transformer", dest="use_transformer", action="store_true",
+                        help="Enable Transformer model comparison (disabled by default)")
+    parser.set_defaults(use_transformer=False)
+
+    return parser.parse_args()
+
+args = get_args()
+
+# Use the parsed values directly
+deltaVConst = args.deltaVConst
+numRandSys = args.numRandSys
+trainDim = args.trainDim
+pos_noise_std = args.posNoiseStd
+vel_noise_std = args.velNoiseStd
+
+plotOn = args.plot
+use_lstm = args.use_lstm
+use_transformer = args.use_transformer
+
+
+print(f"Delta-V Constant      : {deltaVConst}")
+print(f"Number of Rand Systems: {numRandSys}")
+print(f"Training Dimension    : {trainDim}")
+print(f"Position Noise Std    : {pos_noise_std}")
+print(f"Velocity Noise Std    : {vel_noise_std}")
+print(f"Plotting Enabled?     : {plotOn}")
+print(f"LSTM comparison       : {use_lstm}")
+print(f"Transformer comparison: {use_transformer}")
+
 
 seqLength = 1000
 
@@ -216,6 +252,15 @@ for i in range(numRandSys):
     yODE = np.concatenate((yODE_beforeBurn,yODE_Burn),axis=0)
     # concatenate the time vectors
     t = np.concatenate((tODE_beforeBurn,tODE_Burn),axis=0)
+    
+    # simulate measurement noise
+
+    # Draw random noise from Normal(0, sigma)
+    yODE[:,0] = yODE[:,0]  + np.random.normal(0, pos_noise_std)
+    yODE[:,1] = yODE[:,1]  + np.random.normal(0, pos_noise_std)
+    yODE[:,2] = yODE[:,2] + np.random.normal(0, vel_noise_std)
+    yODE[:,3] = yODE[:,3] + np.random.normal(0, vel_noise_std)
+
 
     if trainDim == 2:
         yODE = yODE[:,:2]
@@ -224,6 +269,7 @@ for i in range(numRandSys):
         
     numericalResultForced[i,:,:] = yODE
     numericalResultUnforced[i,:,:] = yOriginalCircOrbit
+
 
     # # if i is 1/10th of numRandSys, plot the data
     # if plotOn and i % (numRandSys//10) == 0:
@@ -235,6 +281,7 @@ for i in range(numRandSys):
     #     plt.plot(yODE_beforeBurn[:,0], yODE_beforeBurn[:,1], 'b-', label='Before Burn')
     #     plt.plot(yODE_Burn[:,0], yODE_Burn[:,1], 'r-', label='After Burn')
     #     plt.plot(y_burn1[0], y_burn1[1], 'go', label='Impulse Burn Point')
+    #     plt.plot(yODE[:,0], yODE[:,1], 'm-.', label='Measured Maneuver')
     #     plt.xlabel('X Position (m)')
     #     plt.ylabel('Y Position (m)')
     #     plt.legend()
@@ -244,6 +291,37 @@ for i in range(numRandSys):
     
 
 print("Time to generate data: {:.2f} seconds".format(timeToGenData.tocVal()))
+
+plt.figure(figsize=(6, 6))
+# latex title
+plt.title(r'Hohmann Transfer Orbit with $\Delta V = {:.2f}$ m/s'.format(deltaV))
+plt.plot(yOriginalCircOrbitPlot[:,0], yOriginalCircOrbitPlot[:,1], 'k--', label='Original Circular Orbit')
+# plt.plot(yOriginalCircOrbit[:,0], yOriginalCircOrbit[:,1], 'g--', label='Unforced Orbit')
+plt.plot(yODE_beforeBurn[:,0], yODE_beforeBurn[:,1], 'b-', label='Before Burn')
+plt.plot(yODE_Burn[:,0], yODE_Burn[:,1], 'r-', label='After Burn')
+plt.plot(y_burn1[0], y_burn1[1], 'go', label='Impulse Burn Point')
+plt.xlabel('X Position (m)')
+plt.ylabel('Y Position (m)')
+plt.legend()
+plt.axis('equal')
+plt.tight_layout()
+plt.grid()
+
+emp = np.ones_like(t) * np.nan
+tODE_beforeBurn = emp[:len(tODE_beforeBurn)] = tODE_beforeBurn
+tODE_Burn = emp[len(tODE_beforeBurn):] = tODE_Burn
+
+plt.figure(figsize=(6, 6))
+plt.title(r'Hohmann Transfer Orbit with $\Delta V = {:.2f}$ m/s in X'.format(deltaV))
+plt.plot(tODE_beforeBurn, yODE_beforeBurn[:,0], 'b-', label='Before Burn')
+plt.plot(tODE_Burn, yODE_Burn[:,0], 'r-', label='After Burn')
+plt.plot(t, yODE[:,0], 'm-.', label='Measured Maneuver')
+plt.plot(tOriginalCircOrbit, yOriginalCircOrbit[:,0], 'g--', label='Unforced Orbit')
+plt.legend()
+plt.xlabel('Time (s)')
+plt.ylabel('X Position (m)')
+plt.grid()
+plt.tight_layout()
 
 # make data labels for a two class problem of shape numRandSys x 2, 1, 0 for forced and unforced respectively
 ForcedLabel = np.ones(numRandSys)
@@ -325,79 +403,75 @@ def trainClassifier(model,optimizer,scheduler):
     best_loss = float('inf')
     ESpatience = schedulerPatience * 2  # patience for early stopping
     counter = 0
-    # early stopping by user control ctrl+c to break the training loop
-    try:
-        for epoch in range(num_epochs):
-            model.train()
-            total_loss = 0.0
+    for epoch in range(num_epochs):
+        model.train()
+        total_loss = 0.0
 
-            for sequences, labels in train_loader:
-                # Move data to GPU
-                sequences = sequences.to(device)  # [batch_size, seq_length, input_size]
-                labels = labels.to(device)        # [batch_size]
-                
-                # Forward pass
-                logits = model(sequences)        # [batch_size, num_classes]
-                loss = criterion(logits, labels.float())  # [batch_size]
-                
-                # Backward pass and optimization
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-                
-                total_loss += loss.item()
+        for sequences, labels in train_loader:
+            # Move data to GPU
+            sequences = sequences.to(device)  # [batch_size, seq_length, input_size]
+            labels = labels.to(device)        # [batch_size]
             
-            avg_loss = total_loss / len(train_loader)
-            print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}")
+            # Forward pass
+            logits = model(sequences)        # [batch_size, num_classes]
+            loss = criterion(logits, labels.float())  # [batch_size]
+            
+            # Backward pass and optimization
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
+            total_loss += loss.item()
+        
+        avg_loss = total_loss / len(train_loader)
+        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}")
 
-            # Validation (optional quick check)
-            model.eval()
-            correct = 0
-            total = 0
-            with torch.no_grad():
-                for sequences, labels in val_loader:
-                    sequences = sequences.to(device)
-                    labels = labels.to(device)
-                    
-                    outputs = model(sequences)
-                    probs = torch.sigmoid(outputs)                  # Convert logits to probabilities
-                    predicted = (probs >= 0.5).float()              # Threshold at 0.5
-                    
-                    total += labels.size(0)
-                    correct += (predicted == labels).sum().item()
-            accuracy = 100.0 * correct / total
-            print(f"Validation Accuracy: {accuracy:.2f}%")
+        # Validation (optional quick check)
+        model.eval()
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for sequences, labels in val_loader:
+                sequences = sequences.to(device)
+                labels = labels.to(device)
+                
+                outputs = model(sequences)
+                probs = torch.sigmoid(outputs)                  # Convert logits to probabilities
+                predicted = (probs >= 0.5).float()              # Threshold at 0.5
+                
+                total += labels.size(0)
+                correct += (predicted == labels).sum().item()
+        accuracy = 100.0 * correct / total
+        print(f"Validation Accuracy: {accuracy:.2f}%")
 
-            val_loss = 0.0
-            with torch.no_grad():
-                for sequences, labels in val_loader:
-                    sequences = sequences.to(device)
-                    labels = labels.to(device).float()
-                    outputs = model(sequences)
-                    loss = criterion(outputs, labels)
-                    val_loss += loss.item()
-            avg_val_loss = val_loss / len(val_loader)
+        val_loss = 0.0
+        with torch.no_grad():
+            for sequences, labels in val_loader:
+                sequences = sequences.to(device)
+                labels = labels.to(device).float()
+                outputs = model(sequences)
+                loss = criterion(outputs, labels)
+                val_loss += loss.item()
+        avg_val_loss = val_loss / len(val_loader)
 
-            scheduler.step(avg_val_loss)  # <-- update LR based on validation loss
-            if avg_val_loss < best_loss:
-                best_loss = avg_val_loss
-                counter = 0  # reset
-                # save best model if desired
-            else:
-                counter += 1
-                if counter >= ESpatience:
-                    print("Early stopping")
-                    break
+        scheduler.step(avg_val_loss)  # <-- update LR based on validation loss
+        if avg_val_loss < best_loss:
+            best_loss = avg_val_loss
+            counter = 0  # reset
+            # save best model if desired
+        else:
+            counter += 1
+            if counter >= ESpatience:
+                print("Early stopping")
+                break
 
-    except KeyboardInterrupt:
-        print("Training interrupted by user.")
-        return
 
-print('\nEntering LSTM Training Loop')
-LSTMTrainTime = timer()
-trainClassifier(model_LSTM,optimizer_LSTM,scheduler_LSTM)
-LSTMTrainTime.toc()
-printModelParmSize(model_LSTM)
+if use_lstm:
+    print('\nEntering LSTM Training Loop')
+    LSTMTrainTime = timer()
+    trainClassifier(model_LSTM,optimizer_LSTM,scheduler_LSTM)
+    LSTMTrainTime.toc()
+    printModelParmSize(model_LSTM)
 
 print('\nEntering Mamba Training Loop')
 mambaTrainTime = timer()
@@ -405,13 +479,12 @@ trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba)
 mambaTrainTime.toc()
 printModelParmSize(model_mamba)
 
-print('\nEntering Transformer Training Loop')
-transformerTrainTime = timer()
-trainClassifier(model_transformer,optimizer_transformer,scheduler_transformer)
-transformerTrainTime.toc()
-printModelParmSize(model_transformer)
-
-
+if use_transformer:
+    print('\nEntering Transformer Training Loop')
+    transformerTrainTime = timer()
+    trainClassifier(model_transformer,optimizer_transformer,scheduler_transformer)
+    transformerTrainTime.toc()
+    printModelParmSize(model_transformer)
 
 if plotOn:
     plt.show()
