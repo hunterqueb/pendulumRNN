@@ -1,18 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
-import torch.nn.functional as F
-import torch.utils.data as data
 import control as ct
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from qutils.tictoc import timer
 
-from qutils.integrators import ode45
 from qutils.ml import printModelParmSize, getDevice
 from qutils.mamba import Mamba, MambaConfig
-from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
-from qutils.mlSuperweight import findMambaSuperActivation,plotSuperActivation,zeroModelWeight
 
 #set webagg backend for matplotlib - i've been liking it 
 plt.switch_backend('WebAgg')
@@ -138,7 +133,7 @@ rng = np.random.default_rng(seed=1) # Seed for reproducibility
 
 device = getDevice()
 
-batchSize = 32
+batchSize = 16
 # numRandSys = 10000
 problemDim = 2
 t0 = 0; tf = 10
