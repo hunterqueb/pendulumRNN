@@ -21,7 +21,7 @@ def get_args():
     )
 
     parser.add_argument(
-        "--deltaVConst", type=float, default=1.0,
+        "--deltaV", type=float, default=1.0,
         help="Delta-V constant to apply to all systems (default: 1.0)"
     )
     parser.add_argument(
@@ -56,12 +56,16 @@ def get_args():
                         help="Enable Transformer model comparison (disabled by default)")
     parser.set_defaults(use_transformer=False)
 
+    parser.add_argument("--nonDim", dest="nonDim", action="store_true",
+                        help="Enable non-dimensionalization of training dataset by DU = earth's radius (disabled by default)")
+    parser.set_defaults(nonDim=False)
+
     return parser.parse_args()
 
 args = get_args()
 
 # Use the parsed values directly
-deltaVConst = args.deltaVConst
+deltaVConst = args.deltaV
 numRandSys = args.numRandSys
 trainDim = args.trainDim
 pos_noise_std = args.posNoiseStd
@@ -71,6 +75,9 @@ plotOn = args.plot
 use_lstm = args.use_lstm
 use_transformer = args.use_transformer
 
+use_nonDim = args.nonDim
+if use_nonDim:
+    from qutils.orbital import nonDim2Dim4, dim2NonDim4
 
 print(f"Delta-V Constant      : {deltaVConst}")
 print(f"Number of Rand Systems: {numRandSys}")
@@ -79,7 +86,8 @@ print(f"Position Noise Std    : {pos_noise_std}")
 print(f"Velocity Noise Std    : {vel_noise_std}")
 print(f"Plotting Enabled?     : {plotOn}")
 print(f"LSTM comparison       : {use_lstm}")
-print(f"Transformer comparison: {use_transformer}")
+print(f"Transformer Comparison: {use_transformer}")
+print(f"Use non-dim Training  : {use_nonDim}")
 
 
 seqLength = 1000
@@ -197,7 +205,8 @@ mu = 3.986004418e14  # Earth’s mu in m^3/s^2
 R = 6371e3 # radius of earth in m
 dt = 1.0 # time step in seconds
 t0 = 0.0 # start time in seconds
-
+DU = R
+TU = np.sqrt(R**3/mu) # time unit in seconds
 
 def twoBody(t, y, p=mu):
     r = y[0:2]
@@ -256,11 +265,15 @@ for i in range(numRandSys):
     # simulate measurement noise
 
     # Draw random noise from Normal(0, sigma)
-    yODE[:,0] = yODE[:,0]  + np.random.normal(0, pos_noise_std)
-    yODE[:,1] = yODE[:,1]  + np.random.normal(0, pos_noise_std)
+    yODE[:,0] = yODE[:,0] + np.random.normal(0, pos_noise_std)
+    yODE[:,1] = yODE[:,1] + np.random.normal(0, pos_noise_std)
     yODE[:,2] = yODE[:,2] + np.random.normal(0, vel_noise_std)
     yODE[:,3] = yODE[:,3] + np.random.normal(0, vel_noise_std)
 
+    yOriginalCircOrbit[:,0] = yOriginalCircOrbit[:,0] + np.random.normal(0, pos_noise_std)
+    yOriginalCircOrbit[:,1] = yOriginalCircOrbit[:,1] + np.random.normal(0, pos_noise_std)
+    yOriginalCircOrbit[:,2] = yOriginalCircOrbit[:,2] + np.random.normal(0, vel_noise_std)
+    yOriginalCircOrbit[:,3] = yOriginalCircOrbit[:,3] + np.random.normal(0, vel_noise_std)
 
     if trainDim == 2:
         yODE = yODE[:,:2]
@@ -316,7 +329,7 @@ plt.title(r'Hohmann Transfer Orbit with $\Delta V = {:.2f}$ m/s in X'.format(del
 plt.plot(tODE_beforeBurn, yODE_beforeBurn[:,0], 'b-', label='Before Burn')
 plt.plot(tODE_Burn, yODE_Burn[:,0], 'r-', label='After Burn')
 plt.plot(t, yODE[:,0], 'm-.', label='Measured Maneuver')
-plt.plot(tOriginalCircOrbit, yOriginalCircOrbit[:,0], 'g--', label='Unforced Orbit')
+plt.plot(tOriginalCircOrbit, yOriginalCircOrbit[:,0], 'g--', label='Measured Unforced Orbit')
 plt.legend()
 plt.xlabel('Time (s)')
 plt.ylabel('X Position (m)')
@@ -333,6 +346,9 @@ dataset_label = np.concatenate((ForcedLabel,UnforcedLabel),axis=0).reshape(2*num
 indices = np.random.permutation(dataset.shape[0])
 
 dataset = dataset[indices]
+if use_nonDim:
+    for i in range(dataset.shape[0]):
+        dataset[i,:,:] = dim2NonDim4(dataset[i,:,:],DU,TU) 
 dataset_label = dataset_label[indices]
 
 train_ratio = 0.7
@@ -478,6 +494,10 @@ mambaTrainTime = timer()
 trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba)
 mambaTrainTime.toc()
 printModelParmSize(model_mamba)
+# save the model
+fileExt = ".pth"
+torch.save(model_mamba.state_dict(), 'models/classification/mamba' + "_delV_" + str(deltaVConst) + "_trainDim_" + str(trainDim) 
+           + "_pN_" + str(pos_noise_std) + "_vN_" + str(vel_noise_std) + "_nonDim_" + str(use_nonDim) + fileExt)
 
 if use_transformer:
     print('\nEntering Transformer Training Loop')
