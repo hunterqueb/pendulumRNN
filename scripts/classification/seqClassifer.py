@@ -2,14 +2,20 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
+import control as ct
 import matplotlib.pyplot as plt
-from torch.utils.data import TensorDataset, DataLoader, random_split
-from sklearn.metrics import precision_score, recall_score, f1_score
+from torch.utils.data import TensorDataset, DataLoader
+from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
 
 from qutils.mamba import Mamba, MambaConfig
 from qutils.ml import getDevice
+from qutils.tictoc import timer
 
-forceConst = 10.0 
+plt.switch_backend('WebAgg')
+
+
+
+forceConst = 10
 
 # Parameters
 num_features = 2     # toy example, 2 features
@@ -23,9 +29,12 @@ seq_len = sampling_rate * duration
 t = np.linspace(0, duration, seq_len)
 
 device = getDevice()
+rng = np.random.default_rng(seed=1) # Seed for reproducibility
 
 # Generate synthetic data
 numRandSys = 1000
+forces_all = np.zeros((numRandSys, seq_len), dtype=np.float32)
+
 def generate_batch_forced_oscillators(num_systems=numRandSys):
     dt = t[1] - t[0]
 
@@ -36,41 +45,55 @@ def generate_batch_forced_oscillators(num_systems=numRandSys):
     labels_all = np.zeros((num_systems, seq_len), dtype=np.float32)
 
     for n in range(num_systems):
-        x = np.zeros(seq_len)
-        v = np.zeros(seq_len)
-        a = np.zeros(seq_len)
+        k = rng.random(); m = rng.random()
+        wr = np.sqrt(k/m)
+        
+        F0 = forceConst * rng.random()
+        c = 0.1 # consider damping for now
 
-        # Random initial conditions
-        x[0] = np.random.rand()
-        v[0] = np.random.rand()
+        x0 = [rng.random(),rng.random()]
 
-        # Random force magnitude in [0, 5]
-        F0 = forceConst * np.random.rand()
+        A = np.array(([0,1],[-k/m,-c/m]))
 
+        B = np.array([0,1])
+
+        C = np.array(([1,0],[0,0]))
+        
+        D = 0
         # Random force duration in (0, 1] seconds
-        force_duration = np.random.uniform(low=0.1, high=1.0)
+        force_duration = rng.uniform(low=0.1, high=1.0)
 
         # Random start time such that force doesn't go past simulation end
         max_start_time = duration - force_duration
-        force_start_time = np.random.uniform(low=0.0, high=max_start_time)
+        force_start_time = rng.uniform(low=0.0, high=max_start_time)
         force_end_time = force_start_time + force_duration
 
         # External force signal
         f = np.zeros(seq_len)
         f[(t >= force_start_time) & (t < force_end_time)] = F0
 
-        # Integrate using Euler
-        for i in range(1, seq_len):
-            a[i-1] = f[i-1] - 2*zeta*omega*v[i-1] - omega**2 * x[i-1]
-            v[i] = v[i-1] + a[i-1] * dt
-            x[i] = x[i-1] + v[i-1] * dt
+        # Integrate using ct
+        sys = ct.StateSpace(A,B,C,D)
 
+        resultsForced = ct.forced_response(sys,t,f,x0)
+        
         # Store features: [x, v]
-        features_all[n, :, 0] = x
-        features_all[n, :, 1] = v
+        features_all[n, :, :] = resultsForced.x.T
 
         # Store label = 1 during force application
         labels_all[n, (t >= force_start_time) & (t < force_end_time)] = 1.0
+
+        # Store forces for visualization
+        forces_all[n, :] = f
+
+    plt.figure()
+    plt.plot(t,resultsForced.x.T, label="Forced Response")
+    plt.plot(t,f, label="Forcing Function")
+    plt.grid()
+    plt.title("Random Sample of Forced Response")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Amplitude")
+    plt.legend(["Position",'Velocity',"Forced by [0,{}] N Linear Force".format(forceConst)])
 
     return (
         torch.tensor(features_all, dtype=torch.float32),  # shape [N, T, 2]
@@ -99,9 +122,9 @@ class LSTMSequenceClassifier(nn.Module):
         logits = logits.squeeze(-1)         # logits: [B, T]
         return logits
 
-class MambaClassifier(nn.Module):
+class MambaSequenceClassifier(nn.Module):
     def __init__(self,config, input_size, hidden_size, num_layers, num_classes):
-        super(MambaClassifier, self).__init__()
+        super(MambaSequenceClassifier, self).__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
 
@@ -226,8 +249,11 @@ def train_model(model, train_loader, val_loader, num_epochs=10):
             if counter >= ESpatience:
                 print("Early stopping")
                 break
+    cm = confusion_matrix(all_targets, all_preds)
+    plotConfusionMatrix(cm)
+
 # Evaluation
-def evaluate_model(model, loader, sample_batch_idx=6, sample_in_batch_idx=6):
+def evaluate_model(model, loader, sample_batch_idx=0, sample_in_batch_idx=0):
     """
     Visualizes per-timestep classification for a sample from a DataLoader.
     
@@ -243,6 +269,8 @@ def evaluate_model(model, loader, sample_batch_idx=6, sample_in_batch_idx=6):
             if batch_idx == sample_batch_idx:
                 x_sample = batch_x[sample_in_batch_idx].unsqueeze(0).to(device)  # [1, T, D]
                 y_sample = batch_y[sample_in_batch_idx].to(device)               # [T]
+                global_index = batch_idx * loader.batch_size + sample_in_batch_idx
+                f_sample = val_force[global_index]
                 break
         else:
             raise ValueError("Sample batch index out of range.")
@@ -251,9 +279,37 @@ def evaluate_model(model, loader, sample_batch_idx=6, sample_in_batch_idx=6):
         probs = torch.sigmoid(logits)                 # [T]
         predictions = (probs > 0.5).long()            # [T]
 
+
+        x_sample = x_sample.cpu().numpy().squeeze(0)  # [T, D]
+        y_sample = y_sample.cpu().numpy()            # [T]
+        predictions = predictions.cpu().numpy()       # [T]
+
+        plt.figure()
+        plt.plot(t,x_sample, label="Forced Response")
+        plt.plot(t,f_sample, label="Forcing Function")
+        # Highlight regions where prediction == 1
+        in_region = False
+        start_idx = 0
+        for i in range(seq_len):
+            if predictions[i] == 1 and not in_region:
+                start_idx = i
+                in_region = True
+            elif predictions[i] == 0 and in_region:
+                plt.axvspan(t[start_idx], t[i], color='orange', alpha=0.3)
+                in_region = False
+        if in_region:
+            plt.axvspan(t[start_idx], t[seq_len-1], color='orange', alpha=0.3)
+
+        plt.grid()
+        plt.title("Random Sample of Forced Response with Prediction")
+        plt.xlabel("Time (s)")
+        plt.ylabel("Amplitude")
+        plt.legend(["Position",'Velocity',"Forced by [0,{}] N Linear Force".format(forceConst),'Predicted Force Application Region'],loc='upper right')
+
+
         plt.figure(figsize=(12, 4))
-        plt.plot(t,y_sample.cpu().numpy(), label='True Label', linewidth=2)
-        plt.plot(t,predictions.cpu().numpy(), linestyle='--', label='Predicted Label', linewidth=1)
+        plt.plot(t,y_sample, label='True Label', linewidth=2)
+        plt.plot(t,predictions, linestyle='--', label='Predicted Label', linewidth=1)
         plt.legend()
         plt.title(f"Per-Timestep Classification (Batch {sample_batch_idx}, Sample {sample_in_batch_idx})")
         plt.xlabel("Time Step")
@@ -261,8 +317,40 @@ def evaluate_model(model, loader, sample_batch_idx=6, sample_in_batch_idx=6):
         plt.grid(True)
         plt.tight_layout()
 
+def plotConfusionMatrix(cm):
+    fig, ax = plt.subplots(figsize=(5, 4))
+    cax = ax.matshow(cm, cmap='Blues')
+    fig.colorbar(cax)
+
+    # Set axis labels
+    ax.set_xlabel('Predicted Label', fontsize=12)
+    ax.set_ylabel('True Label', fontsize=12)
+    ax.set_title('Validation Confusion Matrix', pad=20)
+
+    # Tick labels
+    ax.set_xticks([0, 1])
+    ax.set_yticks([0, 1])
+    ax.set_xticklabels(['No Force (0)', 'Force (1)'])
+    ax.set_yticklabels(['No Force (0)', 'Force (1)'])
+    cm = cm.astype('float') / cm.sum(axis=1, keepdims=True)
+
+    # Annotate cells with values
+    for (i, j), val in np.ndenumerate(cm):
+        ax.text(j, i, f'{val:.2f}', ha='center', va='center', color='black', fontsize=12)
+
+    quad_labels = np.array([["TN", "FP"], ["FN", "TP"]])
+    for i in range(2):
+        for j in range(2):
+            ax.text(j, i + 0.25, quad_labels[i, j], ha='center', va='top',
+                    fontsize=10, color='gray')
+
+    plt.tight_layout()  
+
+
 # Run the pipeline
+timeToGenData = timer()
 x, y = generate_batch_forced_oscillators()
+print("Time to generate data: {:.2f} seconds".format(timeToGenData.tocVal()))
 
 batchSize = 16
 
@@ -281,6 +369,7 @@ train_label = y[:train_end]
 
 val_data = x[train_end:val_end]
 val_label = y[train_end:val_end]
+val_force = forces_all[train_end:val_end]
 
 test_data = x[val_end:]
 test_label = y[val_end:]
@@ -295,18 +384,29 @@ test_loader = DataLoader(test_dataset, batch_size=batchSize, shuffle=False)
 
 model = LSTMSequenceClassifier(input_dim=num_features, hidden_dim=hiddenSize, num_layers=1, num_classes=num_classes).to(device)
 config = MambaConfig(d_model=num_features,n_layers = 1,expand_factor=hiddenSize//num_features,d_state=hiddenSize,d_conv=16,classifer=True)
-mambaModel = MambaClassifier(config, input_size=num_features, hidden_size=hiddenSize, num_layers=1, num_classes=num_classes).to(device)
+mambaModel = MambaSequenceClassifier(config, input_size=num_features, hidden_size=hiddenSize, num_layers=1, num_classes=num_classes).to(device)
 
-train_model(model, train_loader,val_loader, num_epochs=100)
-evaluate_model(model, val_loader)
-plt.gcf()
-plt.title("LSTM Model Evaluation on Random Sample")
+# print("LSTM Model:")
+# train_model(model, train_loader,val_loader, num_epochs=100)
+# plt.gcf()
+# plt.title("LSTM Confusion Matrix")
+# evaluate_model(model, val_loader)
+# plt.gcf()
+# plt.title("LSTM Model Evaluation on Random Sample")
 
+# Validation Precision: 0.8215 | Recall: 0.6532 | F1 Score: 0.7277 - 10
+# Validation Precision: 0.0000 | Recall: 0.0000 | F1 Score: 0.0000 - 1
+# Validation Precision: 0.0000 | Recall: 0.0000 | F1 Score: 0.0000 - 0.5
 print("\n")
 
-train_model(mambaModel, train_loader,val_loader, num_epochs=100)
+print("Mamba Model:")
+train_model(mambaModel, train_loader,val_loader, num_epochs=50)
+plt.gcf()
+plt.title("Mamba Confusion Matrix")
 evaluate_model(mambaModel, val_loader)
 plt.gcf()
 plt.title("Mamba Model Evaluation on Random Sample")
-
+# Validation Precision: 0.8960 | Recall: 0.6814 | F1 Score: 0.7741 - 10
+# Validation Precision: 0.9167 | Recall: 0.5556 | F1 Score: 0.6919 - 1
+# Validation Precision: 0.8549 | Recall: 0.3369 | F1 Score: 0.4833 - 0.5
 plt.show()
