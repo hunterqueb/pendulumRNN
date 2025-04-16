@@ -8,19 +8,55 @@ from torch.utils.data import TensorDataset, DataLoader
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
 
 from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import getDevice
+from qutils.ml import getDevice,printModelParmSize
 from qutils.tictoc import timer
 
 plt.switch_backend('WebAgg')
 
+import argparse
 
+# Command line arguments
+def get_args():
+    parser = argparse.ArgumentParser(
+        description="Configure and launch Hohmann transfer binary classification training run."
+    )
 
-forceConst = 10
+    parser.add_argument(
+        "--forceConst", type=float, default=1.0,
+        help="Force constant to apply to random systems (default: 1.0)"
+    )
+
+    parser.add_argument(
+        "--numRandSys", type=int, default=10000,
+        help="Number of randomized systems to generate (default: 10000)"
+    )
+
+    parser.add_argument("--no-plot", dest="plot", action="store_false",
+                        help="Disable plotting (enabled by default)")
+    parser.set_defaults(plot=True)
+
+    return parser.parse_args()
+
+args = get_args()
+
+# Use the parsed values directly
+forceConst = args.forceConst
+numRandSys = args.numRandSys
+plotOn = args.plot
+
+print(f"Force Constant        : {forceConst}")
+print(f"Number of Rand Systems: {numRandSys}")
+print(f"Plotting Enabled?     : {plotOn}")
+
+# forceConst = 1
+# plotOn = False
+# numRandSys = 1000
+
 
 # Parameters
 num_features = 2     # toy example, 2 features
 num_classes = 1    # binary classification
-hiddenSize = 16
+hiddenSize = 32
 
 sampling_rate = 100  # Hz
 duration = 10        # seconds
@@ -32,21 +68,14 @@ device = getDevice()
 rng = np.random.default_rng(seed=1) # Seed for reproducibility
 
 # Generate synthetic data
-numRandSys = 1000
 forces_all = np.zeros((numRandSys, seq_len), dtype=np.float32)
 
 def generate_batch_forced_oscillators(num_systems=numRandSys):
-    dt = t[1] - t[0]
-
-    omega = 2 * np.pi * 1.0  # natural frequency
-    zeta = 0.1               # damping
-
     features_all = np.zeros((num_systems, seq_len, 2), dtype=np.float32)
     labels_all = np.zeros((num_systems, seq_len), dtype=np.float32)
 
     for n in range(num_systems):
         k = rng.random(); m = rng.random()
-        wr = np.sqrt(k/m)
         
         F0 = forceConst * rng.random()
         c = 0.1 # consider damping for now
@@ -86,14 +115,14 @@ def generate_batch_forced_oscillators(num_systems=numRandSys):
         # Store forces for visualization
         forces_all[n, :] = f
 
-    plt.figure()
-    plt.plot(t,resultsForced.x.T, label="Forced Response")
-    plt.plot(t,f, label="Forcing Function")
-    plt.grid()
-    plt.title("Random Sample of Forced Response")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Amplitude")
-    plt.legend(["Position",'Velocity',"Forced by [0,{}] N Linear Force".format(forceConst)])
+    # plt.figure()
+    # plt.plot(t,resultsForced.x.T, label="Forced Response")
+    # plt.plot(t,f, label="Forcing Function")
+    # plt.grid()
+    # plt.title("Random Sample of Forced Response")
+    # plt.xlabel("Time (s)")
+    # plt.ylabel("Amplitude")
+    # plt.legend(["Position",'Velocity',"Forced by [0,{}] N Linear Force".format(forceConst)])
 
     return (
         torch.tensor(features_all, dtype=torch.float32),  # shape [N, T, 2]
@@ -104,7 +133,8 @@ def generate_batch_forced_oscillators(num_systems=numRandSys):
 class LSTMSequenceClassifier(nn.Module):
     def __init__(self, input_dim, hidden_dim, num_layers, num_classes):
         super().__init__()
-        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True)
+        self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers, batch_first=True,bidirectional=True)
+        self.lstm2 = nn.LSTM(hidden_dim * 2, hidden_dim, num_layers, batch_first=True)
         self.classifier = nn.Linear(hidden_dim, num_classes)
 
     def forward(self, x):
@@ -112,8 +142,8 @@ class LSTMSequenceClassifier(nn.Module):
         x: [batch_size, seq_length, input_size]
         """
         # h0, c0 default to zero if not provided
-        out, (h_n, c_n) = self.lstm(x)
-        
+        out, _ = self.lstm(x)
+        out, _ = self.lstm2(out)
         # h_n is shape [num_layers, batch_size, hidden_size].
         # We typically take the last layer's hidden state: h_n[-1]
         
@@ -253,7 +283,7 @@ def train_model(model, train_loader, val_loader, num_epochs=10):
     plotConfusionMatrix(cm)
 
 # Evaluation
-def evaluate_model(model, loader, sample_batch_idx=0, sample_in_batch_idx=0):
+def evaluate_model(model, loader, sample_batch_idx=0, sample_in_batch_idx=0,modelString="Mamba"):
     """
     Visualizes per-timestep classification for a sample from a DataLoader.
     
@@ -383,30 +413,28 @@ val_loader = DataLoader(val_dataset, batch_size=batchSize, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=batchSize, shuffle=False)
 
 model = LSTMSequenceClassifier(input_dim=num_features, hidden_dim=hiddenSize, num_layers=1, num_classes=num_classes).to(device)
-config = MambaConfig(d_model=num_features,n_layers = 1,expand_factor=hiddenSize//num_features,d_state=hiddenSize,d_conv=16,classifer=True)
+config = MambaConfig(d_model=num_features,n_layers = 2,expand_factor=hiddenSize//num_features,d_state=hiddenSize,d_conv=16,classifer=True)
 mambaModel = MambaSequenceClassifier(config, input_size=num_features, hidden_size=hiddenSize, num_layers=1, num_classes=num_classes).to(device)
 
-# print("LSTM Model:")
-# train_model(model, train_loader,val_loader, num_epochs=100)
-# plt.gcf()
-# plt.title("LSTM Confusion Matrix")
-# evaluate_model(model, val_loader)
-# plt.gcf()
-# plt.title("LSTM Model Evaluation on Random Sample")
+print("LSTM Model:")
+train_model(model, train_loader,val_loader, num_epochs=1000)
+plt.gcf()
+plt.title("LSTM Confusion Matrix")
+evaluate_model(model, val_loader,modelString="LSTM")
+plt.gcf()
+plt.title("LSTM Model Evaluation on Random Sample")
+printModelParmSize(model)
 
-# Validation Precision: 0.8215 | Recall: 0.6532 | F1 Score: 0.7277 - 10
-# Validation Precision: 0.0000 | Recall: 0.0000 | F1 Score: 0.0000 - 1
-# Validation Precision: 0.0000 | Recall: 0.0000 | F1 Score: 0.0000 - 0.5
 print("\n")
 
 print("Mamba Model:")
-train_model(mambaModel, train_loader,val_loader, num_epochs=50)
+train_model(mambaModel, train_loader,val_loader, num_epochs=1000)
 plt.gcf()
 plt.title("Mamba Confusion Matrix")
-evaluate_model(mambaModel, val_loader)
+evaluate_model(mambaModel, val_loader,modelString="Mamba")
 plt.gcf()
 plt.title("Mamba Model Evaluation on Random Sample")
-# Validation Precision: 0.8960 | Recall: 0.6814 | F1 Score: 0.7741 - 10
-# Validation Precision: 0.9167 | Recall: 0.5556 | F1 Score: 0.6919 - 1
-# Validation Precision: 0.8549 | Recall: 0.3369 | F1 Score: 0.4833 - 0.5
-plt.show()
+printModelParmSize(mambaModel)
+
+if plotOn:
+    plt.show()
