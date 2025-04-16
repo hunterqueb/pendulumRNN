@@ -20,10 +20,10 @@ from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeigh
 
 from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
 DEBUG = True
-plotOn = False
+plotOn = True
 printoutSuperweight = True
 compareLSTM = True
-saveData = True
+saveData = False
 
 problemDim = 6
 m_1 = 5.974E24  # kg
@@ -42,7 +42,7 @@ mu = m_2/(m_1 + m_2)
 
 orbitFamily = 'butterfly'
 
-CR3BPIC = returnCR3BPIC(orbitFamily,id=1080)
+CR3BPIC = returnCR3BPIC(orbitFamily,L="north",id=1080)
 
 # orbitFamily = 'longPeriod'
 
@@ -232,12 +232,13 @@ if compareLSTM:
 
     newPlotSolutionErrors(output_seq,networkPredictionLSTM,t,timeLabel="Orbit Periods")
 
-    fig, axes = newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel="Orbit Periods")
-    newPlotSolutionErrors(output_seq,networkPredictionLSTM,t,timeLabel="Orbit Periods",newPlot=axes,networkLabels=["Mamba","LSTM"])
-    mambaLine = mlines.Line2D([], [], color='b', label='Mamba')
-    LSTMLine = mlines.Line2D([], [], color='orange', label='LSTM')
+    fig, axes = newPlotSolutionErrors(output_seq,networkPredictionLSTM,t,timeLabel="Orbit Periods",percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
+    newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel="Orbit Periods",newPlot=axes,networkLabels=["LSTM","Mamba"],percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
+    mambaLine = mlines.Line2D([], [], color='b', label='LSTM')
+    LSTMLine = mlines.Line2D([], [], color='orange', label='Mamba')
     fig.legend(handles=[mambaLine,LSTMLine])
     # fig.tight_layout()
+    fig.set_size_inches(12, 8)  # Adjust the figure size here (width, height)
 
     # plotPercentSolutionErrors(output_seq,networkPredictionLSTM,t,semimajorAxis,max(np.linalg.norm(gmatImport[:,3:6],axis=1)))
 
