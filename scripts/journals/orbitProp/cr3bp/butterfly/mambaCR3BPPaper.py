@@ -20,10 +20,11 @@ from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeigh
 
 from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
 DEBUG = True
-plotOn = True
+plotOn = False
 printoutSuperweight = True
 compareLSTM = True
-saveData = False
+saveData = True
+percentRMSE = True
 
 problemDim = 6
 m_1 = 5.974E24  # kg
@@ -176,7 +177,7 @@ newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel="Orbit Periods")
 
 from qutils.mlExtras import rmse
 
-rmseMamba = rmse(output_seq,networkPrediction)
+rmseMamba = rmse(output_seq,networkPrediction,percentRMSE=True)
 
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)
 print("Average values of each dimension:")
@@ -249,7 +250,7 @@ if compareLSTM:
     plotEnergy(output_seq,networkPrediction,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',nonDim=dim2NonDim6,DU = DU, TU = TU,networkLabel="Mamba")
     plt.legend(loc="lower left")
 
-    rmseLSTM = rmse(output_seq,networkPredictionLSTM)
+    rmseLSTM = rmse(output_seq,networkPredictionLSTM,percentRMSE=True)
 
     errorAvg = np.nanmean(abs(networkPredictionLSTM-output_seq), axis=0)
     print("Average values of each dimension:")

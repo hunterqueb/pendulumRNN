@@ -130,23 +130,34 @@ def generateRMSEViolinPlots(keepLSTM = True):
 
     return
 
-def generateRMSEBoxPlots(keepLSTM = True):
+def generateRMSEBoxPlots(RMSEMambaPos,RMSEMambaVel,RMSELSTMPos,RMSELSTMVel,keepLSTM = True,percentError = False):
     # colors = ['lightblue', 'lightcoral']
     # edge_colors = ['blue', 'red']
+    if percentError:
+        unitsLabelPos = '% Error'
+        unitsLabelVel = '% Error'
 
+        RMSEMambaPos = [RMSEMambaPos[0]*100,RMSEMambaPos[1]*100,RMSEMambaPos[2]*100]
+        RMSEMambaVel = [RMSEMambaVel[0]*100,RMSEMambaVel[1]*100,RMSEMambaVel[2]*100]
+        if keepLSTM:
+            RMSELSTMPos = [RMSELSTMPos[0]*100,RMSELSTMPos[1]*100,RMSELSTMPos[2]*100]
+            RMSELSTMVel = [RMSELSTMVel[0]*100,RMSELSTMVel[1]*100,RMSELSTMVel[2]*100]
+    else:
+        unitsLabelPos = "km"
+        unitsLabelVel = "km/s"
     plt.figure()
-    vpMamba = plt.boxplot(RSMEMambaPos,showmeans=True,sym='')
+    vpMamba = plt.boxplot(RMSEMambaPos,showmeans=True,sym='')
     plt.xticks([1, 2, 3], ['x', 'y','z'])
-    plt.ylabel('Distance (km)')
+    plt.ylabel('Distance ({})'.format(unitsLabelPos))
     plt.grid()
     plt.title("Root Mean Square Error of Position Dimensions")
     # vpMamba['cmeans'].set_color('black') 
     # vpMamba['cmeans'].set_linestyle('--')
 
     plt.figure()
-    vpMamba = plt.boxplot(RSMEMambaVel,showmeans=True,sym='')
+    vpMamba = plt.boxplot(RMSEMambaVel,showmeans=True,sym='')
     plt.xticks([1, 2, 3], ['vx', 'vy','vz'])
-    plt.ylabel('Speed (km/s)')
+    plt.ylabel('Speed ({})'.format(unitsLabelVel))
     plt.grid()
     plt.title("Root Mean Square Error of Velocity Dimensions")
     # vpMamba['cmeans'].set_color('black') 
@@ -155,17 +166,17 @@ def generateRMSEBoxPlots(keepLSTM = True):
     if keepLSTM:
         plt.figure()
 
-        vpLSTM = plt.boxplot(RSMELSTMPos,showmeans=True,sym='')
+        vpLSTM = plt.boxplot(RMSELSTMPos,showmeans=True,sym='')
         plt.xticks([1, 2, 3], ['x', 'y','z'])
-        plt.ylabel('Distance (km)')
+        plt.ylabel('Distance ({})'.format(unitsLabelPos))
         plt.grid()
         plt.title("Root Mean Square Error of Position Dimensions")
 
         
         plt.figure()
-        vpLSTM = plt.boxplot(RSMELSTMPVel,showmeans=True,sym='')
+        vpLSTM = plt.boxplot(RMSELSTMVel,showmeans=True,sym='')
         plt.xticks([1, 2, 3], ['vx', 'vy','vz'])
-        plt.ylabel('Speed (km/s)')
+        plt.ylabel('Speed ({})'.format(unitsLabelVel))
         plt.grid()
         plt.title("Root Mean Square Error of Velocity Dimensions")
 
@@ -212,11 +223,24 @@ if __name__ == "__main__":
 
     fileExt = ".csv"
 
+    import argparse
+    parser = argparse.ArgumentParser(description="Generate Violin Plots")
+    parser.add_argument('--file', type=str, default='cr3bp', help='Orbit Type(p2bp/cr3bp)')
+    parser.add_argument('--suffix', type=str, default='', help='File Suffix')
+    parser.add_argument('--percent', dest='percent', action="store_true", help='Disable Percent Error for RMSE')
+    parser.set_defaults(percent=False)
+
+    args = parser.parse_args()
+
+    fileName = args.file
+    suffix = args.suffix
+    percentError = args.percent
+
     # fileName = "p2bp"
-    fileName = "cr3bp"
+    # fileName = "cr3bp"
 
     # suffix = ''
-    suffix = 'Short'
+    # suffix = 'Short'
 
     fileName = fileName + suffix
 
@@ -236,20 +260,20 @@ if __name__ == "__main__":
     filepath = fileName + "RMSEMamba" + fileExt
     data_dict = csv_columns_to_numpy(filepath)
 
-    RSMEMambaPos = [data_dict["x"],data_dict["y"],data_dict["z"]]
-    RSMEMambaVel = [data_dict["vx"],data_dict["vy"],data_dict["vz"]]
+    RMSEMambaPos = [data_dict["x"],data_dict["y"],data_dict["z"]]
+    RMSEMambaVel = [data_dict["vx"],data_dict["vy"],data_dict["vz"]]
 
     filepath = fileName + "RMSELSTM" + fileExt
     data_dict = csv_columns_to_numpy(filepath)
 
-    RSMELSTMPos = [data_dict["x"],data_dict["y"],data_dict["z"]]
-    RSMELSTMPVel = [data_dict["vx"],data_dict["vy"],data_dict["vz"]]
+    RMSELSTMPos = [data_dict["x"],data_dict["y"],data_dict["z"]]
+    RMSELSTMVel = [data_dict["vx"],data_dict["vy"],data_dict["vz"]]
 
 
     # generateRMSEViolinPlots(keepLSTM=True)
     # generateRMSEViolinPlots(keepLSTM=False)
 
-    generateRMSEBoxPlots(keepLSTM=True)
+    generateRMSEBoxPlots(RMSEMambaPos,RMSEMambaVel,RMSELSTMPos,RMSELSTMVel,keepLSTM=True,percentError=percentError)
 
 
     # generateP2BPEnergyPlots()

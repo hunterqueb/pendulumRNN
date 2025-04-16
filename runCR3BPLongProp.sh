@@ -8,7 +8,7 @@ fi
 COUNT=$1
 
 for i in $(seq 1 $COUNT); do
-  python scripts/journals/orbitProp/cr3bp/butterfly/mambaCR3BPPaper.py > /dev/null 2>&1
+  python scripts/journals/orbitProp/cr3bp/butterfly/mambaCR3BPPaper.py #> /dev/null 2>&1
   echo "Run $i is done."
 
 done

@@ -22,9 +22,10 @@ from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeigh
 from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
 
 compareLSTM = True
-plotOn = True
+plotOn = False
 printoutSuperweight = False
-saveData = False
+saveData = True
+percentRMSE=True
 
 problemDim = 6
 
@@ -113,7 +114,7 @@ plotEnergy(output_seq,networkPrediction,t/tPeriod,orbitalEnergy,xLabel='Number o
 
 from qutils.mlExtras import rmse
 
-rmseMamba = rmse(output_seq,networkPrediction)
+rmseMamba = rmse(output_seq,networkPrediction,percentRMSE=True)
 
 
 
@@ -180,7 +181,7 @@ if compareLSTM:
     plt.plot(t/tPeriod,orbitalEnergy(networkPredictionLSTM),label='LSTM',linestyle='dashed')
     plt.legend()
 
-    rmseLSTM = rmse(output_seq,networkPredictionLSTM)
+    rmseLSTM = rmse(output_seq,networkPredictionLSTM,percentRMSE=True)
 
 
     errorAvg = np.nanmean(abs(networkPredictionLSTM-output_seq), axis=0)
