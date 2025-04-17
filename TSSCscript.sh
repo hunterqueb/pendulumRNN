@@ -9,7 +9,7 @@ force_constants=(10 1 0.1)
 
 # Output directory (Git Bash format for C:\ drive)
 # output_dir="/c/Users/hu650776/SynologyDrive/TSSCoutput"
-output_dir="e/SynologyDrive/TSSCoutput"
+output_dir="/e/SynologyDrive/TSSCoutput"
 
 # Create the output directory if it doesn't exist
 mkdir -p "$output_dir"

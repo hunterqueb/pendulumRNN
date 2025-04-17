@@ -18,7 +18,7 @@ import argparse
 # Command line arguments
 def get_args():
     parser = argparse.ArgumentParser(
-        description="Configure and launch Hohmann transfer binary classification training run."
+        description="Configure and launch time series sequence classification training run."
     )
 
     parser.add_argument(
