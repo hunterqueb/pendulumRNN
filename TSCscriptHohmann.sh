@@ -22,11 +22,11 @@ for mode in "${modes[@]}"; do
     sanitized_fc=$(echo "$force_constant" | sed 's/\./_/')
 
     # Construct output filename
-    output_file="${output_dir}/output_force_${sanitized_fc}_pos_${mode}.log"
+    output_file="${output_dir}/output_force_${sanitized_fc}_noise_pos_${mode}.log"
 
     echo "Running with force constant: $force_constant, only using pos data: $mode"
 
     # Execute the Python script with the force constant and mode
-    python scripts/classification/mambaTimeSeriesBinaryClassificationHohmann.py --deltaV "$force_constant" --trainDim "$mode" --no-plot --transformer | tee "$output_file"
+    python scripts/classification/mambaTimeSeriesBinaryClassificationHohmann.py --deltaV "$force_constant" --trainDim "$mode" --no-plot | tee "$output_file"
   done
 done
