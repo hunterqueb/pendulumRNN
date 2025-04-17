@@ -224,27 +224,34 @@ if __name__ == "__main__":
     fileExt = ".csv"
 
     import argparse
-    parser = argparse.ArgumentParser(description="Generate Violin Plots")
-    parser.add_argument('--file', type=str, default='cr3bp', help='Orbit Type(p2bp/cr3bp)')
-    parser.add_argument('--suffix', type=str, default='', help='File Suffix')
+    parser = argparse.ArgumentParser(description="Generate Box Plots for Journal Paper")
+    parser.add_argument('--file', type=str, default='cr3bp', help='Orbit Type (p2bp/cr3bp)')
+    parser.add_argument('--suffix', type=str, default='', help='File Suffix (""/"Short")')
     parser.add_argument('--percent', dest='percent', action="store_true", help='Disable Percent Error for RMSE')
     parser.set_defaults(percent=False)
-
+    parser.add_argument('--desktop',dest='desktop', action="store_true", help='Box Plots for Desktop Runtime Results')
+    parser.set_defaults(desktop=False)
+    parser.add_argument('--path', type=str, default='data/journalPaper/', help='Path to the CSV files. Default is "data/journalPaper"')
     args = parser.parse_args()
 
     fileName = args.file
     suffix = args.suffix
     percentError = args.percent
+    desktop = args.desktop
+    path = args.path
 
     # fileName = "p2bp"
     # fileName = "cr3bp"
 
     # suffix = ''
     # suffix = 'Short'
-
+    fileName = path + fileName
     fileName = fileName + suffix
 
-    filepath = fileName + "Time" + fileExt
+    if desktop:
+        fileName = fileName + "Time_desktop"
+    else:
+        filepath = fileName + "Time" + fileExt
     data_dict = csv_columns_to_numpy(filepath)
     # Each key in data_dict corresponds to a field name, and the value is a NumPy array.
     mambaTrain = data_dict["Mamba Train"]
@@ -257,13 +264,19 @@ if __name__ == "__main__":
 
     # ==========================================================================================
 
-    filepath = fileName + "RMSEMamba" + fileExt
+    if percentError:
+        filepath = fileName + "RMSPEMamba" + fileExt
+    else:
+        filepath = fileName + "RMSEMamba" + fileExt
     data_dict = csv_columns_to_numpy(filepath)
 
     RMSEMambaPos = [data_dict["x"],data_dict["y"],data_dict["z"]]
     RMSEMambaVel = [data_dict["vx"],data_dict["vy"],data_dict["vz"]]
 
-    filepath = fileName + "RMSELSTM" + fileExt
+    if percentError:
+        filepath = fileName + "RMSPELSTM" + fileExt
+    else:
+        filepath = fileName + "RMSELSTM" + fileExt
     data_dict = csv_columns_to_numpy(filepath)
 
     RMSELSTMPos = [data_dict["x"],data_dict["y"],data_dict["z"]]
