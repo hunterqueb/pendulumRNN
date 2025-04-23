@@ -182,10 +182,10 @@ def generateRMSEBoxPlots(RMSEMambaPos,RMSEMambaVel,RMSELSTMPos,RMSELSTMVel,keepL
 
     return
 
-def generateSWBoxPlots(SW,fieldnames = [r"in_proj",r"conv1d",r"x_proj",r"\Delta t_proj",r"out_proj"]):
+def generateSWBoxPlots(SW,fieldnames = [r"in_proj",r"conv1d",r"x_proj",r"dt_proj",r"out_proj"]):
     plt.figure()
     plt.boxplot(SW,showmeans=True,sym='')    
-    plt.xticks((0,1,2,3,4),fieldnames)
+    plt.xticks((1,2,3,4,5),fieldnames)
     plt.ylabel('Max Activation Value')
     plt.grid()
     plt.title("Output Activation At Each Layer")

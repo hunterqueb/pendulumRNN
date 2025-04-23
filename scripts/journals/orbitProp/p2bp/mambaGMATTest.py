@@ -207,13 +207,6 @@ if compareLSTM:
     printModelParmSize(modelLSTM)
     torchinfo.summary(modelLSTM)
 
-# round trip closure
-finalConditions = networkPrediction[-1,:]
-
-finalConditionsLSTM = networkPredictionLSTM[-1,:]
-print(finalConditions)
-print(finalConditionsLSTM)
-
 if plotOn is True:
     plt.show()
 
