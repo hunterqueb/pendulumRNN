@@ -68,67 +68,67 @@ def generateTimeViolinPlots():
         body.set_edgecolor(edge_colors[i])
         body.set_alpha(0.7)  # Set transparency
 
-def generateRMSEViolinPlots(keepLSTM = True):
-    # colors = ['lightblue', 'lightcoral']
-    # edge_colors = ['blue', 'red']
+# def generateRMSEViolinPlots(keepLSTM = True):
+#     # colors = ['lightblue', 'lightcoral']
+#     # edge_colors = ['blue', 'red']
 
-    plt.figure()
-    vpMamba = plt.violinplot(RSMEMambaPos,showmeans=True)
-    plt.xticks([1, 2, 3], ['x', 'y','z'])
-    plt.ylabel('Distance (km)')
-    plt.grid()
-    plt.title("Root Mean Square Error of Position Dimensions")
-    vpMamba['cmeans'].set_color('black') 
-    vpMamba['cmeans'].set_linestyle('--')
+#     plt.figure()
+#     vpMamba = plt.violinplot(RSMEMambaPos,showmeans=True)
+#     plt.xticks([1, 2, 3], ['x', 'y','z'])
+#     plt.ylabel('Distance (km)')
+#     plt.grid()
+#     plt.title("Root Mean Square Error of Position Dimensions")
+#     vpMamba['cmeans'].set_color('black') 
+#     vpMamba['cmeans'].set_linestyle('--')
 
-    for i, body in enumerate(vpMamba['bodies']):
-        # body.set_facecolor(colors[i])
-        # body.set_edgecolor(edge_colors[i])
-        body.set_alpha(0.7)  # Set transparency
+#     for i, body in enumerate(vpMamba['bodies']):
+#         # body.set_facecolor(colors[i])
+#         # body.set_edgecolor(edge_colors[i])
+#         body.set_alpha(0.7)  # Set transparency
 
-    if keepLSTM:
-        vpLSTM = plt.violinplot(RSMELSTMPos,showmeans=True)
-        plt.xticks([1, 2, 3], ['x', 'y','z'])
-        vpLSTM['cmeans'].set_color('black') 
-        vpLSTM['cmeans'].set_linestyle('--')
-        for i, body in enumerate(vpLSTM['bodies']):
-            # body.set_facecolor(colors[i])
-            # body.set_edgecolor(edge_colors[i])
-            body.set_alpha(0.7)  # Set transparency
+#     if keepLSTM:
+#         vpLSTM = plt.violinplot(RSMELSTMPos,showmeans=True)
+#         plt.xticks([1, 2, 3], ['x', 'y','z'])
+#         vpLSTM['cmeans'].set_color('black') 
+#         vpLSTM['cmeans'].set_linestyle('--')
+#         for i, body in enumerate(vpLSTM['bodies']):
+#             # body.set_facecolor(colors[i])
+#             # body.set_edgecolor(edge_colors[i])
+#             body.set_alpha(0.7)  # Set transparency
 
-        mambaLine = mlines.Line2D([], [], color='b', label='Mamba')
-        LSTMLine = mlines.Line2D([], [], color='orange', label='LSTM')
-        meanLine = mlines.Line2D([], [], color='black', label='Mean',linestyle='dashed')
+#         mambaLine = mlines.Line2D([], [], color='b', label='Mamba')
+#         LSTMLine = mlines.Line2D([], [], color='orange', label='LSTM')
+#         meanLine = mlines.Line2D([], [], color='black', label='Mean',linestyle='dashed')
         
-        plt.legend(handles=[mambaLine,LSTMLine,meanLine])
+#         plt.legend(handles=[mambaLine,LSTMLine,meanLine])
 
-    plt.figure()
-    vpMamba = plt.violinplot(RSMEMambaVel,showmeans=True)
-    plt.xticks([1, 2, 3], ['vx', 'vy','vz'])
-    plt.ylabel('Speed (km/s)')
-    plt.grid()
-    plt.title("Root Mean Square Error of Velocity Dimensions")
-    vpMamba['cmeans'].set_color('black') 
-    vpMamba['cmeans'].set_linestyle('--')
+#     plt.figure()
+#     vpMamba = plt.violinplot(RSMEMambaVel,showmeans=True)
+#     plt.xticks([1, 2, 3], ['vx', 'vy','vz'])
+#     plt.ylabel('Speed (km/s)')
+#     plt.grid()
+#     plt.title("Root Mean Square Error of Velocity Dimensions")
+#     vpMamba['cmeans'].set_color('black') 
+#     vpMamba['cmeans'].set_linestyle('--')
 
-    for i, body in enumerate(vpMamba['bodies']):
-        # body.set_facecolor(colors[i])
-        # body.set_edgecolor(edge_colors[i])
-        body.set_alpha(0.7)  # Set transparency
+#     for i, body in enumerate(vpMamba['bodies']):
+#         # body.set_facecolor(colors[i])
+#         # body.set_edgecolor(edge_colors[i])
+#         body.set_alpha(0.7)  # Set transparency
 
-    if keepLSTM:
-        vpLSTM = plt.violinplot(RSMELSTMPVel,showmeans=True)
-        vpLSTM['cmeans'].set_color('black') 
-        vpLSTM['cmeans'].set_linestyle('--')
-        for i, body in enumerate(vpLSTM['bodies']):
-            # body.set_facecolor(colors[i])
-            # body.set_edgecolor(edge_colors[i])
-            body.set_alpha(0.7)  # Set transparency
+#     if keepLSTM:
+#         vpLSTM = plt.violinplot(RSMELSTMPVel,showmeans=True)
+#         vpLSTM['cmeans'].set_color('black') 
+#         vpLSTM['cmeans'].set_linestyle('--')
+#         for i, body in enumerate(vpLSTM['bodies']):
+#             # body.set_facecolor(colors[i])
+#             # body.set_edgecolor(edge_colors[i])
+#             body.set_alpha(0.7)  # Set transparency
         
-        plt.legend(handles=[mambaLine,LSTMLine,meanLine])
+#         plt.legend(handles=[mambaLine,LSTMLine,meanLine])
 
 
-    return
+#     return
 
 def generateRMSEBoxPlots(RMSEMambaPos,RMSEMambaVel,RMSELSTMPos,RMSELSTMVel,keepLSTM = True,percentError = False):
     # colors = ['lightblue', 'lightcoral']
@@ -150,7 +150,7 @@ def generateRMSEBoxPlots(RMSEMambaPos,RMSEMambaVel,RMSELSTMPos,RMSELSTMVel,keepL
     plt.xticks([1, 2, 3], ['x', 'y','z'])
     plt.ylabel('Distance ({})'.format(unitsLabelPos))
     plt.grid()
-    plt.title("Root Mean Square Error of Position Dimensions")
+    plt.title("Root Mean Square Percent Error of Position Dimensions")
     # vpMamba['cmeans'].set_color('black') 
     # vpMamba['cmeans'].set_linestyle('--')
 
@@ -159,7 +159,7 @@ def generateRMSEBoxPlots(RMSEMambaPos,RMSEMambaVel,RMSELSTMPos,RMSELSTMVel,keepL
     plt.xticks([1, 2, 3], ['vx', 'vy','vz'])
     plt.ylabel('Speed ({})'.format(unitsLabelVel))
     plt.grid()
-    plt.title("Root Mean Square Error of Velocity Dimensions")
+    plt.title("Root Mean Square Percent Error of Velocity Dimensions")
     # vpMamba['cmeans'].set_color('black') 
     # vpMamba['cmeans'].set_linestyle('--')
 
@@ -170,7 +170,7 @@ def generateRMSEBoxPlots(RMSEMambaPos,RMSEMambaVel,RMSELSTMPos,RMSELSTMVel,keepL
         plt.xticks([1, 2, 3], ['x', 'y','z'])
         plt.ylabel('Distance ({})'.format(unitsLabelPos))
         plt.grid()
-        plt.title("Root Mean Square Error of Position Dimensions")
+        plt.title("Root Mean Square Percent Error of Position Dimensions")
 
         
         plt.figure()
@@ -178,9 +178,18 @@ def generateRMSEBoxPlots(RMSEMambaPos,RMSEMambaVel,RMSELSTMPos,RMSELSTMVel,keepL
         plt.xticks([1, 2, 3], ['vx', 'vy','vz'])
         plt.ylabel('Speed ({})'.format(unitsLabelVel))
         plt.grid()
-        plt.title("Root Mean Square Error of Velocity Dimensions")
+        plt.title("Root Mean Square Percent Error of Velocity Dimensions")
 
     return
+
+def generateSWBoxPlots(SW,fieldnames = [r"in_proj",r"conv1d",r"x_proj",r"\Delta t_proj",r"out_proj"]):
+    plt.figure()
+    plt.boxplot(SW,showmeans=True,sym='')    
+    plt.xticks((0,1,2,3,4),fieldnames)
+    plt.ylabel('Max Activation Value')
+    plt.grid()
+    plt.title("Output Activation At Each Layer")
+
 
 def generateRMSEBoxPlotsDiff(keepLSTM = True):
     return
@@ -290,5 +299,14 @@ if __name__ == "__main__":
 
 
     # generateP2BPEnergyPlots()
+    # ==========================================================================================
+
+    filepath = fileName + "SW" + fileExt
+    data_dict = csv_columns_to_numpy(filepath)
+    SW = [data_dict["in_proj"],data_dict["conv1d"],data_dict["x_proj"],data_dict["dt_proj"],data_dict["out_proj"]]
+    generateSWBoxPlots(SW)
+
+
+    # ==========================================================================================
 
     plt.show()

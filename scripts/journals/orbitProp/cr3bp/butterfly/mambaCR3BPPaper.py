@@ -22,8 +22,8 @@ from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
 DEBUG = True
 plotOn = False
 printoutSuperweight = True
-compareLSTM = True
-saveData = True
+compareLSTM = False
+saveData = False
 percentRMSE = True
 
 problemDim = 6
@@ -187,12 +187,28 @@ for i, avg in enumerate(errorAvg, 1):
 printModelParmSize(model)
 torchinfo.summary(model)
 
-if printoutSuperweight is True:
+if printoutSuperweight:
     printoutMaxLayerWeight(model)
     getSuperWeight(model)
     plotSuperWeight(model)
+
     magnitude, index = findMambaSuperActivation(model,test_in)
     plotSuperActivation(magnitude, index)
+
+    import csv
+    import os
+
+    fieldnames = ["in_proj","conv1d","x_proj","dt_proj","out_proj"]
+    new_data_mamba = {"in_proj":magnitude[0].norm().item(),"conv1d":magnitude[1].norm().item(),"x_proj":magnitude[2].norm().item(),"dt_proj":magnitude[3].norm().item(),"out_proj":magnitude[4].norm().item()}
+
+    file_path = 'cr3bpSW.csv'
+    file_exists = os.path.isfile(file_path)
+
+    with open(file_path, 'a', newline='') as file:
+        writer = csv.DictWriter(file,fieldnames=fieldnames)
+        if not file_exists or os.path.getsize(file_path) == 0:
+            writer.writeheader()
+        writer.writerow(new_data_mamba)
 
 if compareLSTM:
     del model
