@@ -1,0 +1,1 @@
+["hydra.job.chdir=True", "hydra/launcher=submitit_local", "hydra.launcher.nodes=1", "hydra.launcher.cpus_per_task=2", "hydra.launcher.tasks_per_node=10", "hydra.launcher.mem_gb=16"]
