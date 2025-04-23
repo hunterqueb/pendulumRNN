@@ -30,3 +30,5 @@ for mode in "${modes[@]}"; do
     python scripts/classification/mambaTimeSeriesBinaryClassificationHohmann.py --deltaV "$force_constant" --trainDim "$mode" --no-plot | tee "$output_file"
   done
 done
+
+  python scripts/classification/mambaTimeSeriesBinaryClassificationHohmann.py --deltaV 1 --trainDim 2 --no-plot --posNoiseStd 0 --velNoiseStd 0 | tee /c/Users/hu650776/SynologyDrive/TSCHohmannOutputLogs/output_force_1_pos_1.log
