@@ -21,7 +21,7 @@ plt.switch_backend('WebAgg')
 
 
 compareLSTM = True
-plotGen = False
+plotGen = True
 plotOn = False
 
 # get the orbit families from the command line arguments or if there is only 1 argument, select family pairs from 1 of 4 options
@@ -45,23 +45,23 @@ elif len(sys.argv) == 2:
         sourceOrbitFamily = 'butterflyNorth'
         targetOrbitFamily = 'shortPeriod'
         problemString = "BN-SP"
-    elif orbitPair == 4:
-        sourceOrbitFamily = 'halo'
-        targetOrbitFamily = 'quasiperiodic'
-        problemString = "H-QP"
-    elif orbitPair == 5:
-        sourceOrbitFamily = 'shortPeriod'
-        targetOrbitFamily = 'butterflyNorth'
-        problemString = "SP-BN"
+    # elif orbitPair == 4:
+    #     sourceOrbitFamily = 'halo'
+    #     targetOrbitFamily = 'quasiperiodic'
+    #     problemString = "H-QP"
+    # elif orbitPair == 5:
+    #     sourceOrbitFamily = 'shortPeriod'
+    #     targetOrbitFamily = 'butterflyNorth'
+    #     problemString = "SP-BN"
 
 else: # targeted orbit family pairs for transfer learning demonstration
     sourceOrbitFamily = 'longPeriod'
     targetOrbitFamily = 'shortPeriod'
     problemString = "LP-SP"
 
-    # sourceOrbitFamily = 'longPeriod'
-    # targetOrbitFamily = 'dragonflySouth'
-    # problemString = "LP-DS"
+    sourceOrbitFamily = 'longPeriod'
+    targetOrbitFamily = 'dragonflySouth'
+    problemString = "LP-DS"
 
     # sourceOrbitFamily = 'butterflyNorth'
     # targetOrbitFamily = 'shortPeriod'
@@ -358,12 +358,12 @@ if plotGen is True:
     plt.savefig("figures/"+problemString+"-SourceDomainConservedQuantity.pdf", format='pdf', bbox_inches=None)
 
 
-    newPlotSolutionErrors(output_seq_source,mamba_networkPrediction,t_source,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'],units=["DU","DU","DU","DU/TU","DU/TU","DU/TU"])
+    newPlotSolutionErrors(output_seq_source,mamba_networkPrediction,t_source,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
     fig = plt.gcf()
     fig.set_size_inches(10, 8)
     plt.savefig("figures/"+problemString+"-SourceDomainPredictionErrorMamba.png", format='png', bbox_inches=None,dpi=600)
 
-    newPlotSolutionErrors(output_seq_source,lstm_networkPrediction,t_source,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'],units=["DU","DU","DU","DU/TU","DU/TU","DU/TU"])
+    newPlotSolutionErrors(output_seq_source,lstm_networkPrediction,t_source,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
     fig = plt.gcf()
     fig.set_size_inches(10, 8)
     plt.savefig("figures/"+problemString+"-SourceDomainPredictionErrorLSTM.png", format='png', bbox_inches=None,dpi=600)
@@ -384,12 +384,12 @@ if plotGen is True:
     fig.set_size_inches(8, 8)
     plt.savefig("figures/"+problemString+"-TargetDomainConservedQuantity.pdf", format='pdf', bbox_inches=None)
 
-    newPlotSolutionErrors(output_seq_target,mamba_networkPrediction_target,t_target,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'],units=["DU","DU","DU","DU/TU","DU/TU","DU/TU"])
+    newPlotSolutionErrors(output_seq_target,mamba_networkPrediction_target,t_target,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
     fig = plt.gcf()
     fig.set_size_inches(10, 8)
     plt.savefig("figures/"+problemString+"-TargetDomainPredictionErrorMamba.png", format='png', bbox_inches=None,dpi=600)
 
-    newPlotSolutionErrors(output_seq_target,lstm_networkPrediction_target,t_target,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'],units=["DU","DU","DU","DU/TU","DU/TU","DU/TU"])
+    newPlotSolutionErrors(output_seq_target,lstm_networkPrediction_target,t_target,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
     fig = plt.gcf()
     fig.set_size_inches(10, 8)
     plt.savefig("figures/"+problemString+"-TargetDomainPredictionErrorLSTM.png", format='png', bbox_inches=None,dpi=600)

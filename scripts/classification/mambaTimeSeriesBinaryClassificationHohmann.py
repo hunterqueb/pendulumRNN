@@ -106,8 +106,10 @@ class LSTMClassifier(nn.Module):
             input_size=input_size,
             hidden_size=hidden_size,
             num_layers=num_layers,
-            batch_first=True
+            batch_first=True, bidirectional=True
         )
+        self.lstm2 = nn.LSTM(hidden_size * 2, hidden_size, num_layers, batch_first=True)
+
         self.fc = nn.Linear(hidden_size, num_classes)
         
     def forward(self, x):
@@ -115,11 +117,11 @@ class LSTMClassifier(nn.Module):
         x: [batch_size, seq_length, input_size]
         """
         # h0, c0 default to zero if not provided
-        out, (h_n, c_n) = self.lstm(x)
-        
-        # h_n is shape [num_layers, batch_size, hidden_size].
-        # We typically take the last layer's hidden state: h_n[-1]
-        last_hidden = h_n[-1]  # [batch_size, hidden_size]
+        out, (hn, cn) = self.lstm(x)
+        out, (hn, cn) = self.lstm2(out)
+
+        # Use the last hidden state from the final layer for classification
+        last_hidden = hn[-1]  # [batch_size, hidden_size]
         
         # Pass the last hidden state through a linear layer for classification
         logits = self.fc(last_hidden)  # [batch_size, num_classes]
@@ -169,7 +171,7 @@ class MambaClassifier(nn.Module):
         x: [batch_size, seq_length, input_size]
         """
         
-        h_n = self.mamba(x)
+        h_n = self.mamba(x) # [batch_size, seq_length, hidden_size]
         
         # h_n is shape [batch_size, seq_length, hidden_size].
         # We typically take the last layer's hidden state: h_n[:,-1,:]
