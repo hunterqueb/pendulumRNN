@@ -4,31 +4,30 @@
 # Save console output using tee into appropriately named log files
 
 # Force constants to test
-force_constants=(10000 100 1)
+force_constants=(1)
 
 # Modes to test (third argument to Python script)
-modes=(4 2)
+modes=(3)
+
+#  sequence lengths to test
+seq_lengths=(500 250 100 50 10)
 
 # Output directory (Git Bash format for C:\ drive)
-output_dir="/c/Users/hu650776/SynologyDrive/TSCHohmannOutputLogs"
+output_dir="/e/SynologyDrive/TSCHohmannOutputLogs"
 
 # Create the output directory if it doesn't exist
 mkdir -p "$output_dir"
 
 # Loop through modes and force constants
 for mode in "${modes[@]}"; do
-  for force_constant in "${force_constants[@]}"; do
-    # Sanitize force constant for file name (replace '.' with '_')
-    sanitized_fc=$(echo "$force_constant" | sed 's/\./_/')
+  for seq_length in "${seq_lengths[@]}"; do
 
     # Construct output filename
-    output_file="${output_dir}/output_force_${sanitized_fc}_noise_pos_${mode}.log"
+    output_file="${output_dir}/output_force_1_noise_pos_${mode}_sl_${seq_length}.log"
 
-    echo "Running with force constant: $force_constant, only using pos data: $mode"
+    echo "Running with sequence length: $seq_length, only using pos data: $mode"
 
     # Execute the Python script with the force constant and mode
-    python scripts/classification/mambaTimeSeriesBinaryClassificationHohmann.py --deltaV "$force_constant" --trainDim "$mode" --no-plot | tee "$output_file"
+    python scripts/classification/mambaTimeSeriesBinaryClassificationHohmannComplexForce.py --trainDim "$mode" --no-plot --seqLength "$seq_length" | tee "$output_file"
   done
 done
-
-  python scripts/classification/mambaTimeSeriesBinaryClassificationHohmann.py --deltaV 1 --trainDim 2 --no-plot --posNoiseStd 0 --velNoiseStd 0 | tee /c/Users/hu650776/SynologyDrive/TSCHohmannOutputLogs/output_force_1_pos_1.log
