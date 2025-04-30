@@ -120,7 +120,7 @@ t = np.linspace(t0,tf,int(tf/dt))
 # Hyperparameters
 input_size = problemDim   # 2
 hidden_size = 64
-num_layers = 1
+num_layers = 2
 learning_rate = 1e-2
 num_epochs = 100
 
@@ -153,8 +153,10 @@ for i in range(numRandSys):
 
     sys = ct.StateSpace(A,B,C,D)
 
-    resultsForced = ct.forced_response(sys,t,u,[1,0])
-    resultsUnforced = ct.forced_response(sys,t,u * 0,[1,0])
+    x0 = [rng.random(),rng.random()]
+
+    resultsForced = ct.forced_response(sys,t,u,x0)
+    resultsUnforced = ct.forced_response(sys,t,u * 0,x0)
 
     numericalResultForced[i,:,:] = resultsForced.x.T
     numericalResultUnforced[i,:,:] = resultsUnforced.x.T
@@ -181,8 +183,12 @@ plt.legend(["Forced by [0,{}] N Force".format(F0_const),"Unforced Response"])
 # dataset_label = np.concatenate((ForcedLabel,UnforcedLabel),axis=0)
 
 # construct a dataset labeling mass ranges from 0 to 10kg, in 5 bins
-dataset = numericalResultForced
+dataset = numericalResultUnforced
 dataset_label = numericalResultLabel
+
+dataset = np.concatenate((numericalResultForced,numericalResultUnforced),axis=0)
+dataset_label = np.concatenate((numericalResultLabel,numericalResultLabel),axis=0)
+
 
 indices = np.random.permutation(dataset.shape[0])
 
