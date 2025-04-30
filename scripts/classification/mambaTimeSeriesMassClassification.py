@@ -23,7 +23,8 @@ parser = argparse.ArgumentParser(description='Mamba Time Series Classification f
 parser.add_argument('--num_classes', type=int, default=5, help='Number of classes for mass classification')
 parser.add_argument('--numRandSys', type=int, default=10000, help='Number of random systems to generate')
 parser.add_argument('--mass', type=int, default=10, help='Maximum mass for classification')
-
+parser.add_argument('--layers', type=int, default=1, help='Number of Layers for NN')
+parser.add_argument('--damping',type=float,default=0.1,help="Damping Ratio of the Mass")
 # LSTM comparison (default is True, disable with --no-lstm)
 parser.add_argument("--no-lstm", dest="use_lstm", action="store_false",
                     help="Disable LSTM comparison (enabled by default)")
@@ -40,12 +41,16 @@ numRandSys = args.numRandSys
 mass_max = args.mass
 use_lstm = args.use_lstm
 use_transformer = args.use_transformer
+num_layers = args.layers
+damping = args.damping
 
 print(f"Maximum mass for classification : {mass_max} kg")
 print(f"Number of equispaced classes    : {num_classes}")
 print(f"Number of random systems        : {numRandSys}")
 print(f"Use LSTM comparison             : {use_lstm}")
 print(f"Use Transformer comparison      : {use_transformer}")
+print(f"Number of Layers                : {num_layers}")
+print(f"Damping of System               : {damping}")
 
 import torch.nn as nn
 class LSTMClassifier(nn.Module):
@@ -120,7 +125,6 @@ t = np.linspace(t0,tf,int(tf/dt))
 # Hyperparameters
 input_size = problemDim   # 2
 hidden_size = 64
-num_layers = 2
 learning_rate = 1e-2
 num_epochs = 100
 
@@ -139,7 +143,7 @@ for i in range(numRandSys):
     wr = np.sqrt(k/m)
     F0_const = 0.1 
     F0 = F0_const * rng.random()
-    c = 0.1 * m # consider proportional damping 
+    c = damping * m # consider proportional damping 
 
     A = np.array(([0,1],[-k/m,-c/m]))
 
