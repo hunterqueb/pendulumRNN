@@ -2,12 +2,12 @@
 #
 #
 #SBATCH --job-name=massClass
-#SBATCH --array=0-17%4                # 9 damping values × 2 layer options = 18 elements - with 4 concurrent jobs
-#SBATCH --cpus-per-task=4
+#SBATCH --array=0-17                # 9 damping values × 2 layer options = 18 elements
+#SBATCH --cpus-per-task=2
 #SBATCH --mem=4G
-#SBATCH --time=2:00:00
-#SBATCH --gres=gpu:4
-#SBATCH --output=logs/%x_%A_%a.out  # separate stdout/stderr per element
+#SBATCH --time=2:30:00
+#SBATCH --gres=gpu:1
+#SBATCH --output=logs/dampingMassClass/%x_%A_%a.out  # separate stdout/stderr per element
 
 module load anaconda/anaconda-2023.09
 conda activate ~/envs/ml
