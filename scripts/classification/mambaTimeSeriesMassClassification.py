@@ -235,8 +235,7 @@ scheduler_mamba = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer_mamba,
     mode='min',             # or 'max' for accuracy
     factor=0.5,             # shrink LR by 50%
-    patience=schedulerPatience,             # wait for 3 epochs of no improvement
-    verbose=True
+    patience=schedulerPatience             # wait for 3 epochs of no improvement
 )
 
 
@@ -311,8 +310,7 @@ if use_lstm:
         optimizer_LSTM,
         mode='min',             # or 'max' for accuracy
         factor=0.5,             # shrink LR by 50%
-        patience=schedulerPatience,             # wait for 3 epochs of no improvement
-        verbose=True
+        patience=schedulerPatience
     )
 
     print('\nEntering LSTM Training Loop')
@@ -334,8 +332,7 @@ if use_transformer:
         optimizer_transformer,
         mode='min',             # or 'max' for accuracy
         factor=0.5,             # shrink LR by 50%
-        patience=schedulerPatience,             # wait for 3 epochs of no improvement
-        verbose=True
+        patience=schedulerPatience             # wait for 3 epochs of no improvement
     )
 
     print('\nEntering Transformer Training Loop')
