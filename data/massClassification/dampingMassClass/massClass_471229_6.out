@@ -1,0 +1,87 @@
+Maximum mass for classification : 10 kg
+Number of equispaced classes    : 5
+Number of random systems        : 10000
+Use LSTM comparison             : True
+Use Transformer comparison      : False
+Number of Layers                : 1
+Damping of System               : 0.4
+GPU is available
+Time to generate data: 138.19 seconds
+
+Entering LSTM Training Loop
+Epoch [1/100], Training Loss: 1.6092
+Validation Loss: 1.6206, Validation Accuracy: 21.40%
+Epoch [2/100], Training Loss: 1.5744
+Validation Loss: 1.5370, Validation Accuracy: 28.43%
+Epoch [3/100], Training Loss: 1.5319
+Validation Loss: 1.5226, Validation Accuracy: 28.37%
+Epoch [4/100], Training Loss: 1.5297
+Validation Loss: 1.5091, Validation Accuracy: 29.23%
+Epoch [5/100], Training Loss: 1.5198
+Validation Loss: 1.4974, Validation Accuracy: 31.00%
+Epoch [6/100], Training Loss: 1.5861
+Validation Loss: 1.6130, Validation Accuracy: 21.27%
+Epoch [7/100], Training Loss: 1.6048
+Validation Loss: 1.5850, Validation Accuracy: 24.07%
+Epoch [8/100], Training Loss: 1.5781
+Validation Loss: 1.5952, Validation Accuracy: 25.63%
+Epoch [9/100], Training Loss: 1.5460
+Validation Loss: 1.5213, Validation Accuracy: 28.33%
+Epoch [10/100], Training Loss: 1.5227
+Validation Loss: 1.5216, Validation Accuracy: 27.73%
+Epoch [11/100], Training Loss: 1.5206
+Validation Loss: 1.5119, Validation Accuracy: 29.10%
+Early stopping triggered.
+
+	Elapsed time is 465.2257 seconds.
+
+==========================================================================================
+Total parameters: 17733
+Total memory (bytes): 141864
+Total memory (MB): 0.13529205322265625
+==========================================================================================
+
+Entering Mamba Training Loop
+Epoch [1/100], Training Loss: 1.3140
+Validation Loss: 1.2511, Validation Accuracy: 44.30%
+Epoch [2/100], Training Loss: 1.2292
+Validation Loss: 1.2053, Validation Accuracy: 43.03%
+Epoch [3/100], Training Loss: 1.2296
+Validation Loss: 1.2159, Validation Accuracy: 44.53%
+Epoch [4/100], Training Loss: 1.2060
+Validation Loss: 1.1993, Validation Accuracy: 45.93%
+Epoch [5/100], Training Loss: 1.2021
+Validation Loss: 1.2436, Validation Accuracy: 45.30%
+Epoch [6/100], Training Loss: 1.1987
+Validation Loss: 1.2235, Validation Accuracy: 45.00%
+Epoch [7/100], Training Loss: 1.2498
+Validation Loss: 1.2224, Validation Accuracy: 44.07%
+Epoch [8/100], Training Loss: 1.2111
+Validation Loss: 1.2391, Validation Accuracy: 43.07%
+Epoch [9/100], Training Loss: 1.2174
+Validation Loss: 1.1916, Validation Accuracy: 46.33%
+Epoch [10/100], Training Loss: 1.1925
+Validation Loss: 1.1918, Validation Accuracy: 45.30%
+Epoch [11/100], Training Loss: 1.1893
+Validation Loss: 1.1856, Validation Accuracy: 46.40%
+Epoch [12/100], Training Loss: 1.1870
+Validation Loss: 1.1898, Validation Accuracy: 45.43%
+Epoch [13/100], Training Loss: 1.1833
+Validation Loss: 1.1928, Validation Accuracy: 43.93%
+Epoch [14/100], Training Loss: 1.1852
+Validation Loss: 1.1891, Validation Accuracy: 46.13%
+Epoch [15/100], Training Loss: 1.1843
+Validation Loss: 1.2054, Validation Accuracy: 45.70%
+Epoch [16/100], Training Loss: 1.1759
+Validation Loss: 1.2017, Validation Accuracy: 47.00%
+Epoch [17/100], Training Loss: 1.1761
+Validation Loss: 1.1921, Validation Accuracy: 46.67%
+Early stopping triggered.
+
+	Elapsed time is 469.5769 seconds.
+
+==========================================================================================
+Total parameters: 8199
+Total memory (bytes): 65592
+Total memory (MB): 0.06255340576171875
+==========================================================================================

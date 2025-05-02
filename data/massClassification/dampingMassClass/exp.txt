@@ -1,0 +1,1 @@
+sweeping damping from 0.1 to 0.9 training both single and double layer networks
