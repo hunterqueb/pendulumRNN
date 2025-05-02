@@ -19,4 +19,5 @@ module load anaconda/anaconda-2023.09
 conda activate ~/envs/ml
 
 # Run a Python script
-python ~/pendulumRNN/scripts/classification/mambaTimeSeriesMassClassification.py --damping 0.5
+python ~/pendulumRNN/scripts/classification/mambaTimeSeriesMassClassification.py --damping 0.6
+python ~/pendulumRNN/scripts/classification/mambaTimeSeriesMassClassification.py --damping 0.7
