@@ -31,17 +31,17 @@ id=$SLURM_ARRAY_TASK_ID      # shorthand
 # ───────── index math ─────────
 nc_idx=$((  id                % nc          ))           # 0‑1
 layer_idx=$(( (id /  nc)      % nl          ))           # 0‑1
-damp_idx=$((  id / (nc*nl) ))                             # 0‑8
+mass_idx=$((  id / (nc*nl) ))                             # 0‑8
 
-DAMPING=${damp_values[$damp_idx]}
+MASS=${mass_values[$mass_idx]}
 LAYERS=${layer_values[$layer_idx]}
 NUM_CLASSES=${num_classes_values[$nc_idx]}
 
-echo "Running: damping=$DAMPING  layers=$LAYERS  num_classes=$NUM_CLASSES"
+# echo "Running: damping=$DAMPING  layers=$LAYERS  num_classes=$NUM_CLASSES"
 
 # ───────── run the model ─────────
 python ~/pendulumRNN/scripts/classification/mambaTimeSeriesMassClassification.py \
-       --damping      "$DAMPING" \
+       --mass      "$MASS" \
        --layers       "$LAYERS" \
        --num_classes  "$NUM_CLASSES" \
        --transformer
