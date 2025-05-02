@@ -8,9 +8,9 @@
 
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=4G
-#SBATCH --time=1:00:00
+#SBATCH --time=2:00:00
 #SBATCH --gres=gpu:1
-1
+
 # The anaconda module provides Python
 module load anaconda/anaconda-2023.09
 
