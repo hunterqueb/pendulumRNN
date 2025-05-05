@@ -1,0 +1,118 @@
+Maximum mass for classification : 10 kg
+Number of equispaced classes    : 3
+Number of random systems        : 10000
+Use LSTM comparison             : True
+GPU is available
+Time to generate data: 101.28 seconds
+
+Entering LSTM Training Loop
+Epoch [1/100], Training Loss: 11.1234
+Validation Loss: 9.7968, Classification Accuracy: 33.07%, Regression RMSE: 2.9419
+Epoch [2/100], Training Loss: 9.1783
+Validation Loss: 8.8476, Classification Accuracy: 35.60%, Regression RMSE: 2.7788
+Epoch [3/100], Training Loss: 8.7088
+Validation Loss: 8.6032, Classification Accuracy: 36.73%, Regression RMSE: 2.7397
+Epoch [4/100], Training Loss: 8.0251
+Validation Loss: 7.4953, Classification Accuracy: 43.33%, Regression RMSE: 2.5423
+Epoch [5/100], Training Loss: 8.1194
+Validation Loss: 8.7187, Classification Accuracy: 34.40%, Regression RMSE: 2.7543
+Epoch [6/100], Training Loss: 8.5402
+Validation Loss: 8.8261, Classification Accuracy: 37.20%, Regression RMSE: 2.7775
+Epoch [7/100], Training Loss: 8.5398
+Validation Loss: 8.3694, Classification Accuracy: 40.60%, Regression RMSE: 2.6998
+Epoch [8/100], Training Loss: 8.1163
+Validation Loss: 8.2006, Classification Accuracy: 43.60%, Regression RMSE: 2.6702
+Epoch 00008: reducing learning rate of group 0 to 5.0000e-03.
+Epoch [9/100], Training Loss: 7.8524
+Validation Loss: 7.8711, Classification Accuracy: 46.20%, Regression RMSE: 2.6127
+Epoch [10/100], Training Loss: 7.6259
+Validation Loss: 7.8073, Classification Accuracy: 46.73%, Regression RMSE: 2.6033
+Early stopping triggered.
+
+        Elapsed time is 14.4956 seconds.
+
+==========================================================================================
+Total parameters: 21828
+Total memory (bytes): 87312
+Total memory (MB): 0.0832672119140625
+==========================================================================================
+
+Entering Mamba Training Loop
+Epoch [1/100], Training Loss: 10.0902
+Validation Loss: 6.1746, Classification Accuracy: 47.33%, Regression RMSE: 2.2818
+Epoch [2/100], Training Loss: 5.4588
+Validation Loss: 4.9384, Classification Accuracy: 63.13%, Regression RMSE: 2.0341
+Epoch [3/100], Training Loss: 4.9545
+Validation Loss: 4.6439, Classification Accuracy: 64.27%, Regression RMSE: 1.9677
+Epoch [4/100], Training Loss: 4.9297
+Validation Loss: 4.7196, Classification Accuracy: 63.33%, Regression RMSE: 1.9827
+Epoch [5/100], Training Loss: 5.0723
+Validation Loss: 4.7985, Classification Accuracy: 65.87%, Regression RMSE: 2.0019
+Epoch [6/100], Training Loss: 4.7751
+Validation Loss: 4.5218, Classification Accuracy: 64.60%, Regression RMSE: 1.9366
+Epoch [7/100], Training Loss: 4.8209
+Validation Loss: 4.5137, Classification Accuracy: 65.47%, Regression RMSE: 1.9380
+Epoch [8/100], Training Loss: 4.7651
+Validation Loss: 4.5378, Classification Accuracy: 64.27%, Regression RMSE: 1.9393
+Epoch [9/100], Training Loss: 4.7954
+Validation Loss: 4.5194, Classification Accuracy: 65.47%, Regression RMSE: 1.9384
+Epoch [10/100], Training Loss: 4.7371
+Validation Loss: 4.7265, Classification Accuracy: 51.27%, Regression RMSE: 1.9811
+Epoch [11/100], Training Loss: 4.7454
+Validation Loss: 4.4749, Classification Accuracy: 65.93%, Regression RMSE: 1.9238
+Epoch [12/100], Training Loss: 4.6966
+Validation Loss: 4.4809, Classification Accuracy: 65.07%, Regression RMSE: 1.9281
+Epoch [13/100], Training Loss: 4.7211
+Validation Loss: 4.5641, Classification Accuracy: 62.80%, Regression RMSE: 1.9445
+Epoch [14/100], Training Loss: 4.7629
+Validation Loss: 4.5225, Classification Accuracy: 65.13%, Regression RMSE: 1.9393
+Epoch [15/100], Training Loss: 4.7182
+Validation Loss: 4.5914, Classification Accuracy: 65.07%, Regression RMSE: 1.9563
+Epoch 00015: reducing learning rate of group 0 to 5.0000e-03.
+Epoch [16/100], Training Loss: 4.6452
+Validation Loss: 4.4009, Classification Accuracy: 65.87%, Regression RMSE: 1.9090
+Epoch [17/100], Training Loss: 4.6208
+Validation Loss: 4.3903, Classification Accuracy: 66.13%, Regression RMSE: 1.9052
+Epoch [18/100], Training Loss: 4.6207
+Validation Loss: 4.4196, Classification Accuracy: 65.53%, Regression RMSE: 1.9140
+Epoch [19/100], Training Loss: 4.6117
+Validation Loss: 4.5617, Classification Accuracy: 64.80%, Regression RMSE: 1.9473
+Epoch [20/100], Training Loss: 4.6436
+Validation Loss: 4.4640, Classification Accuracy: 65.60%, Regression RMSE: 1.9253
+Epoch [21/100], Training Loss: 4.6087
+Validation Loss: 4.4191, Classification Accuracy: 65.13%, Regression RMSE: 1.9124
+Epoch 00021: reducing learning rate of group 0 to 2.5000e-03.
+Epoch [22/100], Training Loss: 4.5863
+Validation Loss: 4.4201, Classification Accuracy: 65.53%, Regression RMSE: 1.9139
+Epoch [23/100], Training Loss: 4.5909
+Validation Loss: 4.3862, Classification Accuracy: 65.87%, Regression RMSE: 1.9059
+Epoch [24/100], Training Loss: 4.5849
+Validation Loss: 4.4967, Classification Accuracy: 65.60%, Regression RMSE: 1.9334
+Epoch [25/100], Training Loss: 4.6055
+Validation Loss: 4.5464, Classification Accuracy: 65.27%, Regression RMSE: 1.9427
+Epoch [26/100], Training Loss: 4.6000
+Validation Loss: 4.3944, Classification Accuracy: 65.60%, Regression RMSE: 1.9078
+Epoch [27/100], Training Loss: 4.5966
+Validation Loss: 4.3760, Classification Accuracy: 66.07%, Regression RMSE: 1.9033
+Epoch [28/100], Training Loss: 4.5848
+Validation Loss: 4.4136, Classification Accuracy: 66.27%, Regression RMSE: 1.9129
+Epoch [29/100], Training Loss: 4.5887
+Validation Loss: 4.3957, Classification Accuracy: 65.67%, Regression RMSE: 1.9083
+Epoch [30/100], Training Loss: 4.5938
+Validation Loss: 4.4135, Classification Accuracy: 66.73%, Regression RMSE: 1.9144
+Epoch [31/100], Training Loss: 4.5831
+Validation Loss: 4.3828, Classification Accuracy: 65.87%, Regression RMSE: 1.9032
+Epoch 00031: reducing learning rate of group 0 to 1.2500e-03.
+Epoch [32/100], Training Loss: 4.5583
+Validation Loss: 4.4104, Classification Accuracy: 65.67%, Regression RMSE: 1.9114
+Epoch [33/100], Training Loss: 4.5481
+Validation Loss: 4.3779, Classification Accuracy: 66.07%, Regression RMSE: 1.9042
+Early stopping triggered.
+
+        Elapsed time is 4768.4327 seconds.
+
+==========================================================================================
+Total parameters: 12294
+Total memory (bytes): 49176
+Total memory (MB): 0.04689788818359375
+==========================================================================================

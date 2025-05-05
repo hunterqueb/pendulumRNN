@@ -1,0 +1,15 @@
+NumClasses,NumLayers,MaxValAcc_LSTM,MaxValAcc_Mamba,File
+3,1,43.8,58.6,output_classes_3_layers_1_0_1.log
+3,2,31.93,61.97,output_classes_3_layers_2_0_1.log
+4,1,31.2,44.67,output_classes_4_layers_1_0_1.log
+4,2,30,54.2,output_classes_4_layers_2_0_1.log
+5,1,27.73,38.8,output_classes_5_layers_1_0_1.log
+5,2,24.4,46.43,output_classes_5_layers_2_0_1.log
+6,1,25,36.07,output_classes_6_layers_1_0_1.log
+6,2,17.1,41.07,output_classes_6_layers_2_0_1.log
+7,1,21.73,33.33,output_classes_7_layers_1_0_1.log
+7,2,18.43,33.03,output_classes_7_layers_2_0_1.log
+8,1,19.2,27.6,output_classes_8_layers_1_0_1.log
+8,2,11.13,31.1,output_classes_8_layers_2_0_1.log
+9,1,17.2,26.87,output_classes_9_layers_1_0_1.log
+10,1,14.73,22.8,output_classes_10_layers_1_0_1.log
