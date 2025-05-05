@@ -159,7 +159,7 @@ input_size = problemDim   # 2
 hidden_size = 66 # needs to be divisible by input_size
 learning_rate = 1e-2
 num_epochs = 100
-batchSize = 64
+batchSize = 32
 
 # Orbital Parameters
 mu = 3.986004418e14  # Earth’s mu in m^3/s^2
@@ -185,18 +185,18 @@ for i in range(numRandSys):
     # Random Conditions for dataset generation
     m_sat = mass_max * rng.random() + mass_max # mass of satellite in kg
     a = rng.uniform(R + 100e3,R + 200e3) # random semimajor axis in m
-    e = 0.01 * rng.random() # eccentricity
+    e = 0 * rng.random() # eccentricity
     inc = np.deg2rad(10 * rng.random()) # inclination
 
     h = np.sqrt(mu*a*(1-e)) # specific angular momentum
 
-    OE = [a,e,inc,0,0,0]
+    OE = [a,e,10,0,0,0]
     y0 = OE2ECI(OE,mu=mu)
     # print(y0)
 
     tf = 2*np.pi*a**2*np.sqrt(1-e**2)/h * numOrbits # time of flight
 
-    teval = np.linspace(0, tf, 1000) # time to evaluate the solution
+    teval = np.linspace(0, tf, timeSeriesLength) # time to evaluate the solution
 
     t,y = ode45(fun=lambda t, y: twoBodyJ2Drag(t, y, mu,m_sat),tspan=(0, tf),y0=y0, t_eval=teval, rtol=1e-8, atol=1e-10)
     

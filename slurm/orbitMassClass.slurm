@@ -8,7 +8,7 @@
 #SBATCH --mem=4G
 #SBATCH --time=3:00:00
 #SBATCH --gres=gpu:1
-#SBATCH --output=logs/%x_%A_%a.out
+#SBATCH --output=logs/orbitMass/%x_%A_%a.out   # one log file per element
 
 module load anaconda/anaconda-2023.09
 conda activate ~/envs/ml
