@@ -70,6 +70,34 @@ class MambaClassifier(nn.Module):
         
         return logits
     
+class TransformerClassifier(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers, num_classes):
+        super(TransformerClassifier, self).__init__()
+        
+        self.d_model = hidden_size  # Output of transformer & input to fc
+        self.embedding = nn.Linear(input_size, self.d_model)  # Project input to match d_model
+
+        self.transformer = nn.Transformer(
+            d_model=self.d_model,
+            nhead=8,  # Make sure d_model % nhead == 0
+            num_encoder_layers=num_layers,
+            num_decoder_layers=num_layers,
+            dim_feedforward=64,  # Internal feedforward layer size inside Transformer
+            batch_first=True
+        )
+        
+        self.fc = nn.Linear(self.d_model, num_classes)  # Final classification layer
+
+    def forward(self, x):
+        """
+        x: [batch_size, seq_length, input_size]
+        """
+        x = self.embedding(x)         # [batch_size, seq_length, d_model]
+        out = self.transformer(x, x)  # [batch_size, seq_length, d_model]
+        last_output = out[:, -1, :]   # [batch_size, d_model]
+        logits = self.fc(last_output) # [batch_size, num_classes]
+        return logits
+
 def twoBodyJ2Drag(t, y, mu,m_sat):
     # two body problem with J2 perturbation in 6 dimensions taken from astroforge library
     # https://github.com/mit-ll/AstroForge/blob/main/src/astroforge/force_models/_models.py
@@ -119,16 +147,20 @@ parser.add_argument('--mass', type=int, default=100, help='Maximum mass for clas
 parser.add_argument('--layers', type=int, default=1, help='Number of Layers for NN')
 parser.add_argument('--orbits',type=int,default=1,help="Number of Orbits for Propagation")
 parser.add_argument('--timeSeriesLength',type=int,default=1000,help="Number of time steps in the time series")
+parser.add_argument('--e',type=int,default=0,help="Max eccentricity of the Orbit Regimes")
+parser.add_argument('--i',type=float,default=0,help="Max inclination of the orbit regimes in degrees")
 
 # LSTM comparison (default is True, disable with --no-lstm)
 parser.add_argument("--no-lstm", dest="use_lstm", action="store_false",
                     help="Disable LSTM comparison (enabled by default)")
 parser.set_defaults(use_lstm=True)
-
 # Transformer comparison (default is False, enable with --transformer)
 parser.add_argument("--transformer", dest="use_transformer", action="store_true",
                     help="Enable Transformer model comparison (disabled by default)")
 parser.set_defaults(use_transformer=False)
+parser.add_argument("--constant-a",dest="constant-a", action="store_false",
+                    help="Randomize the semi-major axis (default is false)")
+parser.set_defaults(constant_a=True)
 
 args = parser.parse_args()
 num_classes = args.num_classes
@@ -139,16 +171,22 @@ use_transformer = args.use_transformer
 num_layers = args.layers
 numOrbits = args.orbits
 timeSeriesLength = args.timeSeriesLength
+e_max = args.e
+inc_max = args.i
+constant_a = args.constant_a
 
 print(f"Maximum mass for classification : {mass_max * 2} kg")
 print(f"Number of equispaced classes    : {num_classes}")
 print(f"Number of random systems        : {numRandSys}")
 print(f"Number of Layers                : {num_layers}")
 print(f"Number of Orbits to Propagate   : {numOrbits}")
+print(f"Max Eccentricity of Orbits      : {e_max}")
+print(f"Max Inclination of Orbits in deg: {inc_max}")
 print(f"Length of Time Series           : {timeSeriesLength}")
+
+print(f"Constant Semimajor Axis         : {constant_a}")
 print(f"Use LSTM comparison             : {use_lstm}")
 print(f"Use Transformer comparison      : {use_transformer}")
-
 
 
 rng = np.random.default_rng() # Seed for reproducibility
@@ -156,41 +194,54 @@ rng = np.random.default_rng() # Seed for reproducibility
 # Hyperparameters
 problemDim = 6
 input_size = problemDim   # 2
-hidden_size = 66 # needs to be divisible by input_size
-learning_rate = 1e-2
+hidden_size = 48 # needs to be divisible by input_size
+learning_rate = 1e-3
 num_epochs = 100
 batchSize = 32
 
 # Orbital Parameters
+G = 6.67430e-11 # m^3/kg/s^2, gravitational constant
+M_earth = 5.97219e24 # kg, mass of Earth
 mu = 3.986004418e14  # Earth’s mu in m^3/s^2
 R = 6371e3 # radius of earth in m
 
 DU = R
 TU = np.sqrt(R**3/mu) # time unit in seconds
+A_sat = 10 # m^2, cross section area of satellite
 
-pam = [mu,1.08263e-3]
-c_d = 2.1 #shperical model
-A_sat = 1.0013
-h_scale = 5000
+# Atmospheric model parameters
 rho_0 = 1.29 # kg/m^3
+c_d = 2.1 #shperical model
+h_scale = 5000
 
+
+timeToGenData = timer()
 
 bin_edges = np.linspace(mass_max, mass_max * 2, num_classes + 1)  # +1 because edges are one more than bins
 numericalResult = np.zeros((numRandSys,timeSeriesLength,problemDim))
 numericalResultLabel = np.zeros((numRandSys,1))
 
+# define the semimajor axis as a function of the random number generator if constant_a is False
+# otherwise, use a constant value
+if constant_a:
+    semimajorAxis = lambda: rng.uniform(R + 100e3,R + 200e3) # random semimajor axis in m
+else:
+    semimajorAxis = lambda: (R + 150e3) # constant semimajor axis in m
 
-timeToGenData = timer()
 for i in range(numRandSys):
     # Random Conditions for dataset generation
     m_sat = mass_max * rng.random() + mass_max # mass of satellite in kg
-    a = rng.uniform(R + 100e3,R + 200e3) # random semimajor axis in m
-    e = 0 * rng.random() # eccentricity
-    inc = np.deg2rad(10 * rng.random()) # inclination
+    e = e_max * rng.random() # eccentricity
+    inc = np.deg2rad(inc_max * rng.random()) # inclination
+    a = semimajorAxis()
+    nu = np.deg2rad(5*rng.random()) # true anomaly
+
+    # calc mu from mass of satellite and earth to get better accuracy(??)
+    mu = G * (M_earth + m_sat) # gravitational parameter in m^3/s^2
 
     h = np.sqrt(mu*a*(1-e)) # specific angular momentum
 
-    OE = [a,e,10,0,0,0]
+    OE = [a,e,inc,0,0,nu]
     y0 = OE2ECI(OE,mu=mu)
     # print(y0)
 
@@ -199,7 +250,7 @@ for i in range(numRandSys):
     teval = np.linspace(0, tf, timeSeriesLength) # time to evaluate the solution
 
     t,y = ode45(fun=lambda t, y: twoBodyJ2Drag(t, y, mu,m_sat),tspan=(0, tf),y0=y0, t_eval=teval, rtol=1e-8, atol=1e-10)
-    
+
     numericalResult[i,:,:] = y
     # check mass range and assign label in 5 bins mutually exclusive
     label = np.digitize(m_sat, bin_edges) - 1  # -1 to make it 0-indexed
@@ -217,7 +268,6 @@ dataset_label = dataset_label[indices]
 train_ratio = 0.7
 val_ratio = 0.15
 test_ratio = 0.15
-
 
 total_samples = len(dataset)
 train_end = int(train_ratio * total_samples)
@@ -246,7 +296,7 @@ config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidd
 model_mamba = MambaClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device).double()
 optimizer_mamba = torch.optim.Adam(model_mamba.parameters(), lr=learning_rate)
 
-schedulerPatience = 3
+schedulerPatience = 5
 scheduler_mamba = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer_mamba,
     mode='min',             # or 'max' for accuracy
@@ -258,7 +308,7 @@ scheduler_mamba = torch.optim.lr_scheduler.ReduceLROnPlateau(
 # Training loop
 def trainClassifier(model,optimizer,scheduler):
     best_loss = float('inf')
-    ESpatience = schedulerPatience * 2  # early stopping patience
+    ESpatience = schedulerPatience * 2
     counter = 0
     for epoch in range(num_epochs):
         model.train()
@@ -342,7 +392,7 @@ mambaTrainTime.toc()
 printModelParmSize(model_mamba)
 
 if use_transformer:
-    model_transformer = MambaClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device).double()
+    model_transformer = TransformerClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device).double()
     optimizer_transformer = torch.optim.Adam(model_transformer.parameters(), lr=learning_rate)
     scheduler_transformer = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer_transformer,
