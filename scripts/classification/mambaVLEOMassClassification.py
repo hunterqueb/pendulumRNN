@@ -147,7 +147,7 @@ parser.add_argument('--mass', type=int, default=100, help='Maximum mass for clas
 parser.add_argument('--layers', type=int, default=1, help='Number of Layers for NN')
 parser.add_argument('--orbits',type=int,default=1,help="Number of Orbits for Propagation")
 parser.add_argument('--timeSeriesLength',type=int,default=1000,help="Number of time steps in the time series")
-parser.add_argument('--e',type=int,default=0,help="Max eccentricity of the Orbit Regimes")
+parser.add_argument('--e',type=float,default=0,help="Max eccentricity of the Orbit Regimes")
 parser.add_argument('--i',type=float,default=0,help="Max inclination of the orbit regimes in degrees")
 
 # LSTM comparison (default is True, disable with --no-lstm)
