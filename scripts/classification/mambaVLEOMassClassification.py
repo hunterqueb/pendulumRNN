@@ -70,6 +70,67 @@ class MambaClassifier(nn.Module):
         
         return logits
     
+class HybridClassifier(nn.Module):
+    def __init__(self,config, input_size, hidden_size, num_layers, num_classes):
+        super(HybridClassifier, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        
+        self.lstm = nn.LSTM(
+            input_size=input_size,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            batch_first=True,
+            bidirectional=True  # Bidirectional LSTM
+        )
+        self.mamba = Mamba(config)
+        self.fc = nn.Linear(hidden_size * 2, num_classes)
+        
+    def forward(self, x):
+        """
+        x: [batch_size, seq_length, input_size]
+        """
+        # h0, c0 default to zero if not provided
+        out, (h_n, c_n) = self.lstm(x)
+        h_n = self.mamba(out) # [batch_size, seq_length, hidden_size]
+
+        # h_n is shape [num_layers, batch_size, hidden_size].
+        # We typically take the last layer's hidden state: h_n[-1]
+        last_hidden = h_n[:,-1,:]  # [batch_size, hidden_size]
+        
+        # Pass the last hidden state through a linear layer for classification
+        logits = self.fc(last_hidden)  # [batch_size, num_classes]
+        
+        return logits
+        
+
+
+class MambaClassifier(nn.Module):
+    def __init__(self,config, input_size, hidden_size, num_layers, num_classes):
+        super(MambaClassifier, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+
+        self.mamba = Mamba(config)
+        self.fc = nn.Linear(hidden_size, num_classes)
+        
+    def forward(self, x):
+        """
+        x: [batch_size, seq_length, input_size]
+        """
+        
+        h_n = self.mamba(x) # [batch_size, seq_length, hidden_size]
+        
+        # h_n is shape [batch_size, seq_length, hidden_size].
+        # We typically take the last layer's hidden state: h_n[:,-1,:]
+        last_hidden = h_n[:,-1,:]  # [batch_size, hidden_size]
+        
+        # Pass the last hidden state through a linear layer for classification
+        logits = self.fc(last_hidden)  # [batch_size, num_classes]
+        
+        return logits
+
+
 class TransformerClassifier(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, num_classes):
         super(TransformerClassifier, self).__init__()
@@ -370,7 +431,6 @@ def trainClassifier(model,optimizer,scheduler):
 
 if use_lstm:
     model_LSTM = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device).double()
-
     optimizer_LSTM = torch.optim.Adam(model_LSTM.parameters(), lr=learning_rate)
     scheduler_LSTM = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer_LSTM,
@@ -392,7 +452,7 @@ mambaTrainTime.toc()
 printModelParmSize(model_mamba)
 
 if use_transformer:
-    model_transformer = TransformerClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device).double()
+    model_transformer = TransformerClassifier(input_size, hidden_size, num_layers, num_classes).to(device).double()
     optimizer_transformer = torch.optim.Adam(model_transformer.parameters(), lr=learning_rate)
     scheduler_transformer = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer_transformer,
@@ -406,3 +466,20 @@ if use_transformer:
     trainClassifier(model_transformer,optimizer_transformer,scheduler_transformer)
     transformerTrainTime.toc()
     printModelParmSize(model_transformer)
+
+config_hybrid = MambaConfig(d_model=hidden_size,n_layers = 1,expand_factor=2,d_state=32,d_conv=16,classifer=True)
+
+model_hybrid = HybridClassifier(config_hybrid,input_size, hidden_size, 1, num_classes).to(device).double()
+optimizer_hybrid = torch.optim.Adam(model_hybrid.parameters(), lr=learning_rate)
+scheduler_hybrid = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer_hybrid,
+    mode='min',             # or 'max' for accuracy
+    factor=0.5,             # shrink LR by 50%
+    patience=schedulerPatience             # wait for 3 epochs of no improvement
+)
+
+print("\nEntering Hybrid Training Loop")
+hybridTrainTime = timer()
+trainClassifier(model_hybrid,optimizer_hybrid,scheduler_hybrid)
+hybridTrainTime.toc()
+printModelParmSize(model_hybrid)
