@@ -38,6 +38,7 @@ import json
 submitit_json = [
     "hydra.job.chdir=True",
     "hydra/launcher=submitit_local",
+    # "hydra/launcher=submitit_slurm",
     "hydra.launcher.nodes=1",
     "hydra.launcher.cpus_per_task=2",
     "hydra.launcher.tasks_per_node=10",
@@ -139,3 +140,4 @@ launcher(
     sim_duration_days=sim_duration_days,
     random_seed=0,
 )
+
