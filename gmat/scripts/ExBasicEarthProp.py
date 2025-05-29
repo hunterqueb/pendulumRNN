@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 gmatInstall = '..' # path to the GMAT installation directory, e.g., '/path/to/gmat' - this path assumes you are running the file from the gmat/api folder
-gravPotFile = gmatInstall + "/data/gravity/earth/JGM3.cof" # must point to the gravity potential file.
+gravPotFile = gmatInstall + "/data/gravity/earth/EGM96.cof" # must point to the gravity potential file.
 
 
 # -----------configuration preliminaries----------------------------
@@ -46,12 +46,17 @@ earthorb.SetField("DryMass", 80)
 fm = gmat.Construct("ForceModel", "FM")
 fm.SetField("CentralBody", "Earth")
 
-# An 8x8 JGM-3 Gravity Model
+# A Full High-Fidelity 360x360 gravity field (incredibly slow)
 earthgrav = gmat.Construct("GravityField")
 earthgrav.SetField("BodyName","Earth")
 earthgrav.SetField("PotentialFile",gravPotFile)
-earthgrav.SetField("Degree",8)
-earthgrav.SetField("Order",8)
+earthgrav.SetField("Degree",360)
+earthgrav.SetField("Order",360)
+
+# A faster 8x8 degree and order
+# earthgrav.SetField("Degree",8)
+# earthgrav.SetField("Order",8)
+
 
 # Drag using Jacchia-Roberts
 jrdrag = gmat.Construct("DragForce", "JRDrag")
