@@ -2,9 +2,6 @@ from load_gmat import *
 import numpy as np  
 from matplotlib import pyplot as plt
 
-gmatInstall = '..' # path to the GMAT installation directory, e.g., '/path/to/gmat' - this path assumes you are running the file from the gmat/api folder
-gravPotFile = gmatInstall + "/data/gravity/earth/EGM96.cof" # must point to the gravity potential file.
-
 
 # -----------configuration preliminaries----------------------------
 
@@ -49,11 +46,12 @@ fm.SetField("CentralBody", "Earth")
 # A Full High-Fidelity 360x360 gravity field (incredibly slow)
 earthgrav = gmat.Construct("GravityField")
 earthgrav.SetField("BodyName","Earth")
-earthgrav.SetField("PotentialFile",gravPotFile)
+earthgrav.SetField("PotentialFile", 'EGM96.cof')
 earthgrav.SetField("Degree",360)
 earthgrav.SetField("Order",360)
 
 # A faster 8x8 degree and order
+# earthgrav.SetField("PotentialFile", 'JGM2.cof')
 # earthgrav.SetField("Degree",8)
 # earthgrav.SetField("Order",8)
 
@@ -97,6 +95,37 @@ pdprop.AddPropObject(earthorb)
 pdprop.PrepareInternals()
 # Refresh the 'gator reference
 gator = pdprop.GetPropagator()
+
+# -------------Propagation of the spacecraft------------------------
+
+problemDim = 6
+numSteps = 144
+
+stateArray = np.zeros((numSteps,problemDim))
+
+# Take a 600 second steps for 1 day
+time = 0.0
+step = 600.0
+print(time, " sec, state = ", gator.GetState())
+
+stateArray[0,:] = gator.GetState()
+
+# Propagate for 1 day (via 144 10-minute steps)
+for x in range(numSteps-1):
+    gator.Step(step)
+    time = time + step
+    # print(time, " sec, state = ", gator.GetState())
+    stateArray[x+1,:] = gator.GetState()
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.plot(stateArray[:,0],stateArray[:,1],stateArray[:,2])
+ax.set_xlabel('X (km)')
+ax.set_ylabel('Y (km)')
+ax.set_zlabel('Z (km)')
+ax.set_title('3D Trajectory of Earth Orbiter')
+
+plt.show()
 
 # -------------Propagation of the spacecraft------------------------
 
