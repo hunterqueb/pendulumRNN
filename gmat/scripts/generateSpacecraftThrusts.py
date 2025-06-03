@@ -117,7 +117,7 @@ burnForce = setThrust(earthorb, burn)
 gmat.Initialize()
 
 
-for i in range(1):
+for i in range(numRandSys):
     earthorb.SetField("SMA", 7000) # km
     earthorb.SetField("ECC", 0.05)
     earthorb.SetField("INC", 10) # deg
@@ -127,8 +127,8 @@ for i in range(1):
 
     tank.SetField("FuelMass", 200.0)
 
-    thruster.SetField("C1",100000*rng.random()) # sets the first thrust coefficent. by default, chemical thrusters are set to a constant force output of 10 N and a 300 Ns impulse governed by a complex polynomial. See https://documentation.help/gmat/Thruster.html for specifics
-    thruster.SetField("K1",3*rng.random())
+    thruster.SetField("C1",100*rng.random()) # sets the first thrust coefficent. by default, chemical thrusters are set to a constant force output of 10 N and a 300 Ns impulse governed by a complex polynomial. See https://documentation.help/gmat/Thruster.html for specifics
+    thruster.SetField("K1",300*rng.random())
     # Perform initializations
     gmat.Initialize()
 
@@ -150,10 +150,12 @@ for i in range(1):
     earthorb.IsManeuvering(True)
     burn.SetSpacecraftToManeuver(earthorb)
     # # Add the thrust to the force model
-    fm.AddForce(burnForce)
+    pdprop.AddForce(burnForce)
     psm = pdprop.GetPropStateManager()
     psm.SetProperty("MassFlow")
     # -----------------------------
+    pdprop.PrepareInternals()
+    gator = pdprop.GetPropagator()
 
     for j in range(numMinProp):
         gator.Step(dt)
@@ -171,7 +173,6 @@ for i in range(1):
 
 t = np.linspace(0,numMinProp*dt,len(statesArrayChemical[0,:,0]))
 
-print(statesArrayChemical[0,:,0])
 
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
