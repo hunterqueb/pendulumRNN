@@ -24,6 +24,7 @@ parser = argparse.ArgumentParser(description='Mamba Time Series Classification f
 parser.add_argument('--num_classes', type=int, default=5, help='Number of classes for mass classification')
 parser.add_argument('--numRandSys', type=int, default=10000, help='Number of random systems to generate')
 parser.add_argument('--mass', type=int, default=10, help='Maximum mass for classification')
+parser.add_argument('--damping', type=float, default=0.1, help='Drag constant for the system')
 
 # LSTM comparison (default is True, disable with --no-lstm)
 parser.add_argument("--no-lstm", dest="use_lstm", action="store_false",
@@ -34,6 +35,7 @@ args = parser.parse_args()
 num_classes = args.num_classes
 numRandSys = args.numRandSys
 mass_max = args.mass
+dragConst = args.damping
 use_lstm = args.use_lstm
 
 print(f"Maximum mass for classification : {mass_max} kg")
@@ -127,7 +129,7 @@ for i in range(numRandSys):
     wr = np.sqrt(k/m)
     F0_const = 0.1
     F0 = F0_const * rng.random()
-    c = 0.1 * m
+    c = dragConst * m
 
     A = np.array(([0, 1], [-k/m, -c/m]))
     B = np.array([0, 1])

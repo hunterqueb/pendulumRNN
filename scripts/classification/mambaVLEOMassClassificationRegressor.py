@@ -12,6 +12,7 @@ from qutils.orbital import OE2ECI
 from qutils.mamba import Mamba, MambaConfig
 from qutils.tictoc import timer
 
+
 import torch.nn as nn
 class LSTMClassifier(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, num_classes):
@@ -61,6 +62,20 @@ class MambaClassifier(nn.Module):
 
         return class_logits, mass_pred
     
+def calcDragForce(y,m_sat):
+    x = y[:3]
+    v = y[3:]
+
+    r = np.sqrt(x @ x) # faster than np.linalg.norm(x) (original line in Astroforge)
+    v_norm = np.sqrt(v @ v) # faster than np.linalg.norm(v)
+
+    # Atmospheric drag force
+    rho = rho_0 * np.exp(-(r-R) / h_scale)  # Atmospheric density model
+    drag_factor = -0.5 * (rho / m_sat) * c_d * A_sat * v_norm
+
+    a_drag = v * drag_factor
+
+    return a_drag
 
 def twoBodyJ2Drag(t, y, mu,m_sat):
     # two body problem with J2 perturbation in 6 dimensions taken from astroforge library
@@ -93,7 +108,7 @@ def twoBodyJ2Drag(t, y, mu,m_sat):
     rho = rho_0 * np.exp(-(r-R) / h_scale)  # Atmospheric density model
     drag_factor = -0.5 * (rho / m_sat) * c_d * A_sat * v_norm
 
-    a_drag = ydot[3:] * drag_factor
+    a_drag = v * drag_factor
     ydot[3:] += a_drag
 
     # print(f"rho: {rho}, satellite mass: {m_sat}, a_drag: {a_drag}, force: {np.linalg.norm(ydot[3:]*m_sat)}")

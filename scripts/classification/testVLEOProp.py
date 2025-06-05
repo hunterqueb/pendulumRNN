@@ -20,10 +20,12 @@ TU = np.sqrt(R**3/mu) # time unit in seconds
 
 pam = [mu,1.08263e-3]
 
-c_d = 2.1 #shperical model
-A_sat = 1.0013
-h_scale = 5000
+A_sat = 10 # m^2, cross section area of satellite
+
+# Atmospheric model parameters
 rho_0 = 1.29 # kg/m^3
+c_d = 2.1 #shperical model
+h_scale = 5000
 
 numOrbits = 10
 
@@ -58,7 +60,7 @@ def twoBodyJ2Drag(t, y, mu,m_sat):
     rho = rho_0 * np.exp(-(r-R) / h_scale)  # Atmospheric density model
     drag_factor = -0.5 * (rho / m_sat) * c_d * A_sat * v_norm
 
-    a_drag = ydot[3:] * drag_factor
+    a_drag = v * drag_factor
     ydot[3:] += a_drag
 
     # print(f"rho: {rho}, satellite mass: {m_sat}, a_drag: {a_drag}, force: {np.linalg.norm(ydot[3:]*m_sat)}")

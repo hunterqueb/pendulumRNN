@@ -190,7 +190,7 @@ def twoBodyJ2Drag(t, y, mu,m_sat):
     rho = rho_0 * np.exp(-(r-R) / h_scale)  # Atmospheric density model
     drag_factor = -0.5 * (rho / m_sat) * c_d * A_sat * v_norm
 
-    a_drag = ydot[3:] * drag_factor
+    a_drag = v * drag_factor
     ydot[3:] += a_drag
 
     # print(f"rho: {rho}, satellite mass: {m_sat}, a_drag: {a_drag}, force: {np.linalg.norm(ydot[3:]*m_sat)}")
@@ -469,17 +469,17 @@ if use_transformer:
 
 config_hybrid = MambaConfig(d_model=hidden_size,n_layers = 1,expand_factor=2,d_state=32,d_conv=16,classifer=True)
 
-model_hybrid = HybridClassifier(config_hybrid,input_size, hidden_size, 1, num_classes).to(device).double()
-optimizer_hybrid = torch.optim.Adam(model_hybrid.parameters(), lr=learning_rate)
-scheduler_hybrid = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer_hybrid,
-    mode='min',             # or 'max' for accuracy
-    factor=0.5,             # shrink LR by 50%
-    patience=schedulerPatience             # wait for 3 epochs of no improvement
-)
+# model_hybrid = HybridClassifier(config_hybrid,input_size, hidden_size, 1, num_classes).to(device).double()
+# optimizer_hybrid = torch.optim.Adam(model_hybrid.parameters(), lr=learning_rate)
+# scheduler_hybrid = torch.optim.lr_scheduler.ReduceLROnPlateau(
+#     optimizer_hybrid,
+#     mode='min',             # or 'max' for accuracy
+#     factor=0.5,             # shrink LR by 50%
+#     patience=schedulerPatience             # wait for 3 epochs of no improvement
+# )
 
-print("\nEntering Hybrid Training Loop")
-hybridTrainTime = timer()
-trainClassifier(model_hybrid,optimizer_hybrid,scheduler_hybrid)
-hybridTrainTime.toc()
-printModelParmSize(model_hybrid)
+# print("\nEntering Hybrid Training Loop")
+# hybridTrainTime = timer()
+# trainClassifier(model_hybrid,optimizer_hybrid,scheduler_hybrid)
+# hybridTrainTime.toc()
+# printModelParmSize(model_hybrid)

@@ -123,7 +123,7 @@ def generate_batch_forced_oscillators(num_systems=numRandSys):
     # plt.xlabel("Time (s)")
     # plt.ylabel("Amplitude")
     # plt.legend(["Position",'Velocity',"Forced by [0,{}] N Linear Force".format(forceConst)])
-
+    # plt.show()
     return (
         torch.tensor(features_all, dtype=torch.float32),  # shape [N, T, 2]
         torch.tensor(labels_all, dtype=torch.float32)     # shape [N, T]
@@ -203,8 +203,7 @@ def train_model(model, train_loader, val_loader, num_epochs=10):
         optimizer,
         mode='min',
         factor=0.5,
-        patience=schedulerPatience,
-        verbose=True
+        patience=schedulerPatience
     )
 
     for epoch in range(num_epochs):
