@@ -5,15 +5,14 @@ from matplotlib import pyplot as plt
 problemDim = 6
 numRandSys = 10
 mu = 398600  # Earth’s mu in km^3/s^2
-R = 6371 # radius of earth in km
-numMinProp = 60 * 24 # take a step 60 times in an hour and for 24 hours
-numMinProp = 80 # take a step 60 times in an hour and for 24 hours
+R = 6378 # radius of earth in km
+# numMinProp = 60 * 24 # take a step 60 times in an hour and for 24 hours
+numMinProp = 100 # take a step 60 times in an hour and for 24 hours
 dt = 60.0 # step every 60 secs
 elapsed = 0.0
 
 # -----------configuration preliminaries----------------------------
 
-mu = 398600
 
 # Spacecraft
 earthorb = gmat.Construct("Spacecraft", "EarthOrbiter") # create a spacecraft object named EarthOrbiter
@@ -77,20 +76,12 @@ pdprop.SetField("MinStep", 0.0)
 rng = np.random.default_rng()
 rng.random()
 
-## Generate Random Orbital Elements
-earthorb.SetField("SMA", 7000) # km
-earthorb.SetField("ECC", 0.05)
-earthorb.SetField("INC", 10) # deg
-earthorb.SetField("RAAN", 0) # deg
-earthorb.SetField("AOP", 0) # deg
-earthorb.SetField("TA", 0) # deg
-
 
 statesArrayChemical = np.zeros((numRandSys,numMinProp,problemDim))
 
 tank = gmat.Construct("ChemicalTank", "Fuel") # create a chemical tank with the name "Fuel"
 thruster = gmat.Construct("ChemicalThruster", "Thruster") # create a chemical thruster with the name "Thruster"
-thruster.SetField("DecrementMass", False)
+thruster.SetField("DecrementMass", True)
 thruster.SetField("Tank", "Fuel") # set the tank for the "Thruster" to use the "Fuel" object
 earthorb.SetField("Tanks", "Fuel") # set possible tanks for the "Thruster" to use the "Fuel" object
 earthorb.SetField("Thrusters", "Thruster") # set possible thrusters to use the "Thruster" object
@@ -116,19 +107,31 @@ burnForce = setThrust(earthorb, burn)
 
 gmat.Initialize()
 
+SMA = np.zeros(numRandSys)
+ECC = np.zeros(numRandSys)
+INC = np.zeros(numRandSys)
+RAAN = np.zeros(numRandSys)
+AOP = np.zeros(numRandSys)
+TA = np.zeros(numRandSys)
 
 for i in range(numRandSys):
-    earthorb.SetField("SMA", 7000) # km
-    earthorb.SetField("ECC", 0.05)
-    earthorb.SetField("INC", 10) # deg
-    earthorb.SetField("RAAN", 0) # deg
-    earthorb.SetField("AOP", 0) # deg
-    earthorb.SetField("TA", 0) # deg
+
+    SMA[i] = rng.uniform(R + 200,R + 250) # km
+    ECC[i] = 0.01 * rng.random()
+    INC[i] = 10 * rng.random() # deg
+    RAAN[i] = 0 # deg
+    AOP[i] = 0 # deg
+    TA[i] = rng.uniform(-2, 2) # deg
+
+    earthorb.SetField("SMA", SMA[i]) # km
+    earthorb.SetField("ECC", ECC[i])
+    earthorb.SetField("INC", INC[i]) # deg
+    earthorb.SetField("RAAN", RAAN[i]) # deg
+    earthorb.SetField("AOP", AOP[i]) # deg
+    earthorb.SetField("TA", TA[i]) # deg
 
     tank.SetField("FuelMass", 200.0)
 
-    thruster.SetField("C1",100*rng.random()) # sets the first thrust coefficent. by default, chemical thrusters are set to a constant force output of 10 N and a 300 Ns impulse governed by a complex polynomial. See https://documentation.help/gmat/Thruster.html for specifics
-    thruster.SetField("K1",300*rng.random())
     # Perform initializations
     gmat.Initialize()
 
@@ -171,17 +174,137 @@ for i in range(numRandSys):
     pdprop.PrepareInternals()
     gator = pdprop.GetPropagator()
 
-t = np.linspace(0,numMinProp*dt,len(statesArrayChemical[0,:,0]))
+    if (i % 100 == 0):
+        print("Finished Propagation for System ", i+1, " of ", numRandSys)
 
+statesArrayElectric = np.zeros((numRandSys,numMinProp,problemDim))
+
+
+ETank = gmat.Construct("ElectricTank", "EFuel") # create an electric tank with the name "Fuel"
+EThruster = gmat.Construct("ElectricThruster", "EThruster") # create an electric thruster with the name "Thruster"
+powerSystem = gmat.Construct("SolarPowerSystem", "EPS") # create a power system with the name "EPS"
+EThruster.SetField("DecrementMass", True)
+EThruster.SetField("Tank", "EFuel") # set the tank for the "EThruster" to use the "EFuel" object
+earthorb.SetField("Tanks", "EFuel") # set possible tanks for the "EThruster" to use the "EFuel" object
+earthorb.SetField("Thrusters", "EThruster") # set possible thrusters to use the "EThruster" object
+earthorb.SetField("PowerSystem", "EPS") # set the power system of the spacecraft to use the "EPS" object
+gmat.Initialize()
+
+# construct the burn force model (the burn force model is the same for both chemical and electric thrusters)
+burn = gmat.Construct("FiniteBurn", "TheEBurn")
+burn.SetField("Thrusters", "EThruster")
+burn.SetSolarSystem(gmat.GetSolarSystem())
+burn.SetSpacecraftToManeuver(earthorb)
+
+# burnForce = setThrust(earthorb, burn)
+
+
+gmat.Initialize()
+
+
+for i in range(numRandSys):
+    earthorb.SetField("SMA", SMA[i]) # km
+    earthorb.SetField("ECC", ECC[i])
+    earthorb.SetField("INC", INC[i]) # deg
+    earthorb.SetField("RAAN", RAAN[i]) # deg
+    earthorb.SetField("AOP", AOP[i]) # deg
+    earthorb.SetField("TA", TA[i]) # deg
+
+    ETank.SetField("FuelMass", 200.0)
+
+    # Perform initializations
+    gmat.Initialize()
+
+    # Refresh the 'gator reference
+    gator = pdprop.GetPropagator()
+
+    gmat.Initialize()
+    
+    pdprop.AddPropObject(earthorb)
+    pdprop.PrepareInternals()
+
+    theThruster = earthorb.GetRefObject(gmat.THRUSTER, "EThruster")
+
+    # -----------------------------
+    # Finite Burn Specific Settings
+    # -----------------------------
+    # Turn on the thruster
+    theThruster.SetField("IsFiring", True)
+    earthorb.IsManeuvering(True)
+    burn.SetSpacecraftToManeuver(earthorb)
+    # # Add the thrust to the force model
+    pdprop.AddForce(burnForce)
+    psm = pdprop.GetPropStateManager()
+    psm.SetProperty("MassFlow")
+    # -----------------------------
+    pdprop.PrepareInternals()
+    gator = pdprop.GetPropagator()
+
+    for j in range(numMinProp):
+        gator.Step(dt)
+        elapsed = elapsed + dt
+        state = gator.GetState()
+        statesArrayElectric[i,j,:] = state[0:6]
+        gator.UpdateSpaceObject()
+
+    fm = pdprop.GetODEModel()
+    fm.DeleteForce(burnForce)
+    theThruster.SetField("IsFiring", False)
+    earthorb.IsManeuvering(False)
+    pdprop.PrepareInternals()
+    gator = pdprop.GetPropagator()
+
+
+tank = gmat.Construct("ChemicalTank", "impFuel") # create a chemical tank with the name "Fuel"
+thruster = gmat.Construct("ChemicalThruster", "Thruster") # create a chemical thruster with the name "Thruster"
+thruster.SetField("DecrementMass", True)
+thruster.SetField("Tank", "impFuel") # set the tank for the "Thruster" to use the "Fuel" object
+earthorb.SetField("Tanks", "impFuel") # set possible tanks for the "Thruster" to use the "Fuel" object
+earthorb.SetField("Thrusters", "Thruster") # set possible thrusters to use the "Thruster" object
+
+
+burn = gmat.Construct("ImpulsiveBurn", "Burn1")
+burn.setField("Tank", "impFuel")
+# for i in range(numRandSys):
+
+
+
+t = np.linspace(0,numMinProp*dt,len(statesArrayChemical[0,:,0]))
 
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
 ax.plot(statesArrayChemical[0,:,0],statesArrayChemical[0,:,1],statesArrayChemical[0,:,2],label='Chemical')
+ax.plot(statesArrayElectric[0,:,0],statesArrayElectric[0,:,1],statesArrayElectric[0,:,2],label='Electric')
 ax.set_xlabel('X (km)')
 ax.set_ylabel('Y (km)')
 ax.set_zlabel('Z (km)')
 ax.set_title('3D Trajectory of Earth Orbiter')
 ax.legend()
 ax.axis('equal')
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.plot(statesArrayChemical[1,:,0],statesArrayChemical[1,:,1],statesArrayChemical[1,:,2],label='Chemical')
+ax.plot(statesArrayElectric[1,:,0],statesArrayElectric[1,:,1],statesArrayElectric[1,:,2],label='Electric')
+ax.set_xlabel('X (km)')
+ax.set_ylabel('Y (km)')
+ax.set_zlabel('Z (km)')
+ax.set_title('3D Trajectory of Earth Orbiter')
+ax.legend()
+ax.axis('equal')
+
+
+plt.figure()
+plt.plot(t, statesArrayChemical[0,:,0], label='Chemical X')
+plt.plot(t, statesArrayElectric[0,:,0], label='Electric X')
+plt.plot(t, statesArrayChemical[0,:,1], label='Chemical Y')
+plt.plot(t, statesArrayElectric[0,:,1], label='Electric Y')
+plt.plot(t, statesArrayChemical[0,:,2], label='Chemical Z')
+plt.plot(t, statesArrayElectric[0,:,2], label='Electric Z')
+plt.xlabel('Time (s)')
+plt.ylabel('Position (km)')
+plt.title('Position vs Time for Chemical and Electric Thrusters')
+plt.legend()
+plt.grid()
 
 plt.show()
