@@ -26,6 +26,24 @@ from qutils.tictoc import timer
 
 from qutils.mamba import Mamba, MambaConfig
 
+import argparse
+
+parser = argparse.ArgumentParser(description='Mamba 4D Perturbation Example')
+parser.add_argument("--leo", dest="leo", action="store_true",
+                    help="Use LEO orbit for the simulation")
+parser.set_defaults(leo=False)
+parser.add_argument("--meo", dest="meo", action="store_true",
+                    help="Use MEO orbit for the simulation")
+parser.set_defaults(meo=False)
+parser.add_argument("--geo", dest="geo", action="store_true",
+                    help="Use gEO orbit for the simulation")
+parser.set_defaults(geo=False)
+args = parser.parse_args()
+
+leo = args.leo
+meo = args.meo
+geo = args.geo
+
 # seed any random functions
 random.seed(123)
 
@@ -49,21 +67,30 @@ else:
 
 problemDim = 4 
 
-muR = 3.96800e14
-DU = 6378.1e3 # radius of earth in km
+muR = 396800
+DU = 6378.1 # radius of earth in km
 TU = ((DU)**3 / muR)**0.5
 
-rLEO = np.array([6.611344740000000e+06,0])
-vLEO = np.sqrt(muR/np.linalg.norm(rLEO))
-vLEO = np.array([0,vLEO])
-TLEO = 2*np.pi * np.sqrt(np.linalg.norm(rLEO)**3 / muR)
+if not leo and not meo and not geo:
+    leo = True
+
+if leo:
+    r = np.array([6611.344740000000,0])
+    v = np.sqrt(muR/np.linalg.norm(r))
+    v = np.array([0,v])
+    T = 2*np.pi * np.sqrt(np.linalg.norm(r)**3 / muR)
+if geo:
+    r = np.array([42164.0, 0])  # GEO radius in m
+    v = np.sqrt(muR / np.linalg.norm(r))
+    v = np.array([0, v])
+    T = 2 * np.pi * np.sqrt(np.linalg.norm(r)**3 / muR)
+if meo:
+    r = np.array([26560.0, 0])  # MEO radius in m
+    v = np.sqrt(muR / np.linalg.norm(r))
+    v = np.array([0, v])
+    T = 2 * np.pi * np.sqrt(np.linalg.norm(r)**3 / muR)
 
 # dimensionalized units
-mu = 1
-r = rLEO/DU
-v = vLEO * TU / DU
-T = TLEO / TU
-pam = mu
 a = np.linalg.norm(r)
 h = np.cross(r,v)
 
@@ -75,10 +102,6 @@ config = MambaConfig(d_model=problemDim, n_layers=1)
 model = Mamba(config).to(device).double()
 
 
-muR = 396800
-DU = 6378.1 # radius of earth in km
-TU = ((DU)**3 / muR)**0.5
-
 p = 20410 # km
 e = 0.2
 
@@ -88,10 +111,16 @@ rHEO = np.array([(p/(1+e)),0])
 vHEO = np.array([0,np.sqrt(muR*((2/rHEO[0])-(1/a)))])
 THEO = 2*np.pi*np.sqrt(a**3/muR)
 
+
+print(f"HEO: {rHEO}, {vHEO}, {THEO}")
+print(f"LEO: {r}, {v}, {T}")
+
 mu = 1
-r = rHEO / DU
-v = vHEO * TU / DU
-T = THEO / TU
+r = r/DU
+v = v * TU / DU
+T = T / TU
+pam = mu
+
 
 J2 = 1.08263e-3
 
@@ -132,7 +161,7 @@ def twoBodyPert(t, y, p=pam):
 
     return np.array([dydt1, dydt2,dydt3,dydt4])
 
-numPeriods = 2
+numPeriods = 1
 
 n_epochs = 5
 
@@ -144,7 +173,7 @@ output_size = problemDim
 num_layers = 1
 p_dropout = 0.0
 lookback = 1
-p_motion_knowledge = 1/numPeriods
+p_motion_knowledge = 1/2
 
 sysfuncptr = twoBodyPert
 # sim time
