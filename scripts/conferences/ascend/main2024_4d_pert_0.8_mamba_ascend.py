@@ -134,7 +134,7 @@ def twoBodyPert(t, y, p=pam):
 
 numPeriods = 2
 
-n_epochs = 10
+n_epochs = 5
 
 
 
@@ -170,6 +170,9 @@ loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, 
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 
+mambaTTT = timer()
+
+
 for epoch in range(n_epochs):
 
     model.train()
@@ -193,8 +196,9 @@ for epoch in range(n_epochs):
 
     print("Epoch %d: train loss %.4f, test loss %.4f\n" % (epoch, train_loss, test_loss))
 
+print("Total Time to Train: {}".format(mambaTTT.tocVal()))
 
-networkPrediction = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU)
+networkPrediction, mambaTestTimeToc = plotStatePredictions(model,t,output_seq,train_in,test_in,train_size,test_size,DU=DU,TU=TU,outputToc=True)
 output_seq = nonDim2Dim4(output_seq,DU,TU)
 
 # networkPrediction = nonDim2Dim6(networkPrediction,DU,TU)
@@ -252,7 +256,7 @@ netptrd = FeedforwardCos
 
 learningRate = 6e-4
 
-desiredSegs = numPeriods * 20
+desiredSegs = numPeriods * 10
 
 tParts = np.linspace(t0,tf, desiredSegs + 1)
 
@@ -278,15 +282,17 @@ pinnSolution.setToTrain()
 # train each set of networks
 timeToTrain = timer()
 pinnSolution.trainAnalytical(systemTensor,criterion,epochList)
-print('Total Time to Train: {}'.format(timeToTrain.tocVal()))
+print('Total Time to Train PINN: {}'.format(timeToTrain.tocVal()))
 
 # set to evaluation
 pinnSolution.setToEvaluate()
 
 # evaluate networks
+PINNTimeToc = timer()
 t,yTest = pinnSolution()
 t = t * TU
 yTruth = pinnSolution.getTrueSolution()
+print("Total Time to Evaluate PINN: {}".format(PINNTimeToc.tocVal()))
 
 yTruth = nonDim2Dim4(yTruth,DU,TU)
 yTest = nonDim2Dim4(yTest,DU,TU)
@@ -320,4 +326,6 @@ print("Average values of each dimension:")
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg}")
 
-plt.show()
+printModelParmSize(pinnSolution.nets[0])
+
+# plt.show()
