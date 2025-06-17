@@ -355,6 +355,5 @@ print("Average values of each dimension:")
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg}")
 
-printModelParmSize(pinnSolution.nets[0])
 
-# plt.show()
+plt.show()
