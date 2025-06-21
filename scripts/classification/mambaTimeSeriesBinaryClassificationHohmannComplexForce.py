@@ -9,6 +9,8 @@ from qutils.ml import printModelParmSize, getDevice
 from qutils.mamba import Mamba, MambaConfig
 from qutils.integrators import ode45 as ode87
 
+from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
+
 #set webagg backend for matplotlib - i've been liking it 
 plt.switch_backend('WebAgg')
 
@@ -63,6 +65,11 @@ def get_args():
     parser.add_argument("--nonDim", dest="nonDim", action="store_true",
                         help="Enable non-dimensionalization of training dataset by DU = earth's radius (disabled by default)")
     parser.set_defaults(nonDim=False)
+    parser.add_argument("--SW", dest="printotuSuperweight", action="store_true",
+                        help="Enable superweight plotting of Mamba Layer (disabled by default)")
+    parser.set_defaults(printotuSuperweight=False)
+
+
 
     return parser.parse_args()
 
@@ -84,6 +91,8 @@ use_nonDim = args.nonDim
 if use_nonDim:
     from qutils.orbital import nonDim2Dim4, dim2NonDim4
 
+printoutSuperweight = args.printotuSuperweight
+
 print(f"Delta-V Constant      : {deltaVConst}")
 print(f"Number of Rand Systems: {numRandSys}")
 print(f"Training Dimension    : {trainDim}")
@@ -94,6 +103,7 @@ print(f"Plotting Enabled?     : {plotOn}")
 print(f"LSTM comparison       : {use_lstm}")
 print(f"Transformer Comparison: {use_transformer}")
 print(f"Use non-dim Training  : {use_nonDim}")
+print(f"Printout Superweight  : {printoutSuperweight}")
 
 
 # numRandSys = 10000
@@ -200,7 +210,7 @@ hidden_size = 48 # must be multiple of train dim
 num_layers = 1
 num_classes = 1  # e.g., binary classification
 learning_rate = 1e-2
-num_epochs = 100
+num_epochs = 15
 
 config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
 
@@ -228,7 +238,6 @@ def twoBodyJ2(t, y, p=mu):
 
     M2 = J2 * np.diag(np.array([0.5, 0.5, -1.0]))
     r = np.sqrt(x @ x) # faster than np.linalg.norm(x) (original line in Astroforge)
-
     # compute monopole force
     F0 = -mu * x / r**3
 
@@ -526,6 +535,9 @@ if use_transformer:
     transformerTrainTime.toc()
     printModelParmSize(model_transformer)
 
+if printoutSuperweight:
+    magnitude, index = findMambaSuperActivation(model_mamba.mamba,val_dataset)
+    plotSuperActivation(magnitude, index)
+
 if plotOn:
     plt.show()
- 
