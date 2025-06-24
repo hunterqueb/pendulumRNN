@@ -12,7 +12,7 @@ elapsed = 0.0
 
 parser = argparse.ArgumentParser(description='Mamba Time Series Classification for Mass Classification')
 parser.add_argument('--deltaV', type=float, default=1.0, help='Delta V for impulsive burn in km/s')
-parser.add_argument('--numRandSys', type=int, default=10, help='Number of random systems to generate')
+parser.add_argument('--numRandSys', type=int, default=1000, help='Number of random systems to generate')
 parser.add_argument('--numMinProp', type=int, default=100, help='Number of minutes to propagate')
 parser.add_argument('--chemThrust',type=float, default=10, help='Chemical thrust coefficent')
 parser.add_argument('--elecThrust',type=float, default=-5.19082, help='Electric thrust coefficent')
@@ -205,8 +205,20 @@ for i in range(numRandSys):
     pdprop.PrepareInternals()
     gator = pdprop.GetPropagator()
 
+    del(theThruster)
+    del(gator)
+    del(fm)
+    del(psm)
+
 print("Chemical Thruster Data Generation Complete.")
 
+if saveOn:
+    if slurm:
+        saveDest = '~/pendulumRNN/gmat/data/classification/'
+    else:
+        saveDest = 'gmat/data/classification/'
+
+    np.savez(saveDest+'statesArrayChemical.npz', statesArrayChemical=statesArrayChemical)
 
 statesArrayElectric = np.zeros((numRandSys,numMinProp,problemDim))
 
@@ -285,8 +297,19 @@ for i in range(numRandSys):
     earthorb.IsManeuvering(False)
     pdprop.PrepareInternals()
     gator = pdprop.GetPropagator()
-
+    del(theThruster)
+    del(gator)
+    del(fm)
+    del(psm)
 print("Electric Thruster Data Generation Complete.")
+
+if saveOn:
+    if slurm:
+        saveDest = '~/pendulumRNN/gmat/data/classification/'
+    else:
+        saveDest = 'gmat/data/classification/'
+
+    np.savez(saveDest+'statesArrayElectric.npz', statesArrayElectric=statesArrayElectric)
 
 
 statesArrayImpBurn = np.zeros((numRandSys,numMinProp,problemDim))
@@ -320,6 +343,8 @@ for i in range(numRandSys):
             earthorb.SetField("VY", craftVel[1])
             earthorb.SetField("VZ", craftVel[2])
 
+            gator.UpdateSpaceObject()
+            gmat.Initialize()
             pdprop.PrepareInternals()
 
         gator.Step(dt)
@@ -328,8 +353,17 @@ for i in range(numRandSys):
         statesArrayImpBurn[i,j,:] = state[0:6]
         gator.UpdateSpaceObject()
 
+    del(gator)
+
 print("Impulsive Burn Data Generation Complete.")
 
+if saveOn:
+    if slurm:
+        saveDest = '~/pendulumRNN/gmat/data/classification/'
+    else:
+        saveDest = 'gmat/data/classification/'
+
+    np.savez(saveDest+'statesArrayImpBurn.npz', statesArrayImpBurn=statesArrayImpBurn)
 
 
 statesArrayNoThrust = np.zeros((numRandSys,numMinProp,problemDim))
@@ -359,6 +393,8 @@ for i in range(numRandSys):
         state = gator.GetState()
         statesArrayNoThrust[i,j,:] = state[0:6]
         gator.UpdateSpaceObject()
+    
+    del(gator)
 
 print("No Thrust Data Generation Complete.")
 
@@ -370,9 +406,9 @@ if saveOn:
         saveDest = 'gmat/data/classification/'
 
     np.savez(saveDest+'statesArrayChemical.npz', statesArrayChemical=statesArrayChemical)
-    np.savez(saveDest+'gmat/data/classification/statesArrayElectric.npz', statesArrayElectric=statesArrayElectric)
-    np.savez(saveDest+'gmat/data/classification/statesArrayImpBurn.npz', statesArrayImpBurn=statesArrayImpBurn)
-    np.savez(saveDest+'gmat/data/classification/statesArrayNoThrust.npz', statesArrayNoThrust=statesArrayNoThrust)
+    np.savez(saveDest+'statesArrayElectric.npz', statesArrayElectric=statesArrayElectric)
+    np.savez(saveDest+'statesArrayImpBurn.npz', statesArrayImpBurn=statesArrayImpBurn)
+    np.savez(saveDest+'statesArrayNoThrust.npz', statesArrayNoThrust=statesArrayNoThrust)
 
 t = np.linspace(0,numMinProp*dt,len(statesArrayChemical[0,:,0]))
 

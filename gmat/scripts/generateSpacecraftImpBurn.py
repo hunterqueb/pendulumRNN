@@ -13,8 +13,6 @@ numMinProp = 80 # take a step 60 times in an hour and for 24 hours
 dt = 60.0 # step every 60 secs
 elapsed = 0.0
 
-deltaV = 1
-
 # -----------configuration preliminaries----------------------------
 
 # Spacecraft
@@ -88,6 +86,17 @@ earthorb.SetField("Tanks", "impFuel") # set the tank for the spacecraft to use t
 
 gmat.Initialize()
 
+burn = gmat.Construct("ImpulsiveBurn", "EarthOrbiterBurn")
+# burn.SetField("Tank", "impFuel") # set the tank for the "Burn" to use the "Fuel" object
+burn.SetField("CoordinateSystem", "Local")
+burn.SetField("Element1", 10)
+burn.SetField("Element2", 0)
+burn.SetField("Element3", 0)
+burn.SetSolarSystem(gmat.GetSolarSystem())
+burn.SetSpacecraftToManeuver(earthorb)
+
+gmat.Initialize()
+
 # burn_maneuver = gmat.Construct("Maneuver", "BurnManeuver")
 # burn_maneuver.SetField("Burn", "EarthOrbiterBurn")
 # burn_maneuver.SetField("Spacecraft", "EarthOrbiter")
@@ -120,21 +129,30 @@ for i in range(numRandSys):
     for j in range(numMinProp):
 
         if j == 40:
-            craftVel = state[3:6]
+            propS = gmat.Command("Propagate", "PDProp(EarthOrbiter) {EarthOrbiter.ElapsedSecs = 60.0}") 
+            maneuver = gmat.Command("Maneuver", "EarthOrbiterBurn(EarthOrbiter)")  
+            gmat.Initialize()
+            
+            status = gmat.Execute()
+            print(status)
+            # after the burn, we can check the state of the spacecraft
+            print("State after burn:")
+            # earthorb.UpdateSpaceObject()
+            print(earthorb.GetState().GetState())
+            statesArrayImpBurn[i,j,:] = earthorb.GetState().GetState()
 
-            craftVel = craftVel/np.linalg.norm(craftVel) * deltaV + craftVel
-
-            earthorb.SetField("VX", craftVel[0])
-            earthorb.SetField("VY", craftVel[1])
-            earthorb.SetField("VZ", craftVel[2])
-
+            gmat.Initialize()
             pdprop.PrepareInternals()
+            gator = pdprop.GetPropagator()
+            # gator.UpdateSpaceObject()
 
-        gator.Step(dt)
-        elapsed = elapsed + dt
-        state = gator.GetState()
-        statesArrayImpBurn[i,j,:] = state[0:6]
-        gator.UpdateSpaceObject()
+
+        else:
+            gator.Step(dt)
+            elapsed = elapsed + dt
+            state = gator.GetState()
+            statesArrayImpBurn[i,j,:] = state[0:6]
+            gator.UpdateSpaceObject()
 
     t = np.linspace(0,numMinProp*dt,len(statesArrayImpBurn[0,:,0]))
 

@@ -80,13 +80,13 @@ rng.random()
 
 statesArrayElectric = np.zeros((numRandSys,numMinProp,problemDim))
 
-ETank = gmat.Construct("ElectricTank", "EFuel") # create a chemical tank with the name "Fuel"
-EThruster = gmat.Construct("ElectricThruster", "EThruster") # create a chemical thruster with the name "Thruster"
+ETank = gmat.Construct("ElectricTank", "EFuel") # create an electric tank with the name "EFuel"
+EThruster = gmat.Construct("ElectricThruster", "EThruster") # create an electric thruster with the name "EThruster"
 powerSystem = gmat.Construct("SolarPowerSystem", "EPS") # create a power system with the name "EPS"
 EThruster.SetField("DecrementMass", False)
-EThruster.SetField("Tank", "EFuel") # set the tank for the "Thruster" to use the "Fuel" object
-earthorb.SetField("Tanks", "EFuel") # set possible tanks for the "Thruster" to use the "Fuel" object
-earthorb.SetField("Thrusters", "EThruster") # set possible thrusters to use the "Thruster" object
+EThruster.SetField("Tank", "EFuel") # set the tank for the "EThruster" to use the "EFuel" object
+earthorb.SetField("Tanks", "EFuel") # set possible tanks for the "EThruster" to use the "Fuel" object
+earthorb.SetField("Thrusters", "EThruster") # set possible thrusters to use the "EThruster" object
 earthorb.SetField("PowerSystem", "EPS") # set the power system to use the "EPS" object
 gmat.Initialize()
 
