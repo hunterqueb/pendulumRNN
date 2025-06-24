@@ -3,10 +3,11 @@ import matplotlib.pyplot as plt
 
 dt = 60
 
-numMinProp = 100
-numRandSys = 10
+numMinProp = 30
+numRandSys = 10000
+orbitType = "leo"
 
-dataLoc = "gmat/data/classification/" + str(numMinProp) + "min-" + str(numRandSys)
+dataLoc = "gmat/data/classification/" + orbitType + "/" + str(numMinProp) + "min-" + str(numRandSys)
 
 # get npz files in folder and load them into script
 
@@ -75,4 +76,29 @@ plt.title('Position vs Time for Different Thruster Profiles')
 plt.legend(loc='lower left')
 plt.grid()
 
+def plotDiffFromNoThrust(statesArray, label):
+    plt.figure()
+    plt.plot(t, statesArray[0,:,0]-statesArrayNoThrust[0,:,0], label=label+' X')
+    plt.plot(t, statesArray[0,:,1]-statesArrayNoThrust[0,:,1], label=label+' Y')
+    plt.plot(t, statesArray[0,:,2]-statesArrayNoThrust[0,:,2], label=label+' Z')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Position Difference from No Thrust (km)')
+    plt.title(f'Position Difference from No Thrust vs Time for {label} Thruster Profile')
+    plt.legend()
+    plt.grid()
+
+    plt.figure()
+    plt.plot(t, statesArray[0,:,3]-statesArrayNoThrust[0,:,3], label=label+' VX')
+    plt.plot(t, statesArray[0,:,4]-statesArrayNoThrust[0,:,4], label=label+' VY')
+    plt.plot(t, statesArray[0,:,5]-statesArrayNoThrust[0,:,5], label=label+' VZ')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Position Difference from No Thrust (km/s)')
+    plt.title(f'Position Difference from No Thrust vs Time for {label} Thruster Profile')
+    plt.legend()
+    plt.grid()
+
+
+plotDiffFromNoThrust(statesArrayChemical, 'Chemical')
+plotDiffFromNoThrust(statesArrayElectric, 'Electric')
+plotDiffFromNoThrust(statesArrayImpBurn, 'Impulsive')
 plt.show()

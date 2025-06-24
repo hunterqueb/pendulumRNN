@@ -344,7 +344,7 @@ elif propType == 'imp':
         pdprop.AddPropObject(earthorb)
         pdprop.PrepareInternals()
 
-        randImpTime = np.random.randint(0, numMinProp-1) # randomly select a time to apply the impulsive burn
+        randImpTime = np.random.randint(1, numMinProp-1) # randomly select a time to apply the impulsive burn
         for j in range(numMinProp):
             if j == randImpTime:  
                 craftVel = state[3:6]
@@ -353,8 +353,7 @@ elif propType == 'imp':
                 earthorb.SetField("VX", craftVel[0])
                 earthorb.SetField("VY", craftVel[1])
                 earthorb.SetField("VZ", craftVel[2])
-                gator.UpdateSpaceObject()
-                gmat.Initialize()
+
                 pdprop.PrepareInternals()
 
             try:
