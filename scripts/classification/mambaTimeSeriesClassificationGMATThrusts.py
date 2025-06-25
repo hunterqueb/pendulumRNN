@@ -5,8 +5,8 @@ import torch.nn.functional as F
 import torch.utils.data as data
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
-from qutils.tictoc import timer
 
+from qutils.tictoc import timer
 from qutils.ml import getDevice, trainClassifier, LSTMClassifier, MambaClassifier, printModelParmSize, validateMultiClassClassifier
 from qutils.mamba import Mamba, MambaConfig
 from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
@@ -19,29 +19,43 @@ parser.add_argument('--no-lstm',dest="use_lstm", action='store_false', help='Use
 parser.add_argument("--systems", type=int, default=10000, help="Number of random systems to access")
 parser.add_argument("--propMin", type=int, default=30, help="Minimum propagation time in minutes")
 parser.add_argument("--orbit", type=str, default="vleo", help="Orbit type: vleo, leo")
+parser.add_argument("--OE", action='store_true', help="Use OE elements instead of ECI states")
 parser.set_defaults(use_lstm=True)
+parser.set_defaults(OE=False)
 
 args = parser.parse_args()
 use_lstm = args.use_lstm
 numMinProp = args.propMin
 numRandSys = args.systems
 orbitType = args.orbit
+useOE = args.OE
 
 dataLoc = "gmat/data/classification/"+ orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
 
+
 # get npz files in folder and load them into script
+if useOE:
+    a = np.load(f"{dataLoc}/OEArrayChemical.npz")
+    statesArrayChemical = a['OEArrayChemical'][:,:,0:6]
+    a = np.load(f"{dataLoc}/OEArrayElectric.npz")
+    statesArrayElectric = a['OEArrayElectric'][:,:,0:6]
+    a = np.load(f"{dataLoc}/OEArrayImpBurn.npz")
+    statesArrayImpBurn = a['OEArrayImpBurn'][:,:,0:6]
+    a = np.load(f"{dataLoc}/OEArrayNoThrust.npz")
+    statesArrayNoThrust = a['OEArrayNoThrust'][:,:,0:6]
 
-a = np.load(f"{dataLoc}/statesArrayChemical.npz")
-statesArrayChemical = a['statesArrayChemical']
+else:
+    a = np.load(f"{dataLoc}/statesArrayChemical.npz")
+    statesArrayChemical = a['statesArrayChemical']
 
-a = np.load(f"{dataLoc}/statesArrayElectric.npz")
-statesArrayElectric = a['statesArrayElectric']
+    a = np.load(f"{dataLoc}/statesArrayElectric.npz")
+    statesArrayElectric = a['statesArrayElectric']
 
-a = np.load(f"{dataLoc}/statesArrayImpBurn.npz")
-statesArrayImpBurn = a['statesArrayImpBurn']
+    a = np.load(f"{dataLoc}/statesArrayImpBurn.npz")
+    statesArrayImpBurn = a['statesArrayImpBurn']
 
-a = np.load(f"{dataLoc}/statesArrayNoThrust.npz")
-statesArrayNoThrust = a['statesArrayNoThrust']
+    a = np.load(f"{dataLoc}/statesArrayNoThrust.npz")
+    statesArrayNoThrust = a['statesArrayNoThrust']
 
 del a
 
@@ -53,7 +67,7 @@ problemDim = 6
 # Hyperparameters
 input_size = problemDim 
 hidden_size = 48 # must be multiple of train dim
-num_layers = 2
+num_layers = 1
 num_classes = 4  # e.g., multiclass classification
 learning_rate = 1e-3
 num_epochs = 100
