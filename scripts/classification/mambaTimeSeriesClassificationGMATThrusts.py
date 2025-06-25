@@ -21,9 +21,11 @@ parser.add_argument("--propMin", type=int, default=30, help="Minimum propagation
 parser.add_argument("--orbit", type=str, default="vleo", help="Orbit type: vleo, leo")
 parser.add_argument("--OE", action='store_true', help="Use OE elements instead of ECI states")
 parser.add_argument("--noise", action='store_true', help="Add noise to the data")
+parser.add_argument("--norm", action='store_true', help="Normalize the semi-major axis by Earth's radius")
 parser.set_defaults(use_lstm=True)
 parser.set_defaults(OE=False)
 parser.set_defaults(noise=False)
+parser.set_defaults(norm=False)
 
 args = parser.parse_args()
 use_lstm = args.use_lstm
@@ -32,6 +34,9 @@ numRandSys = args.systems
 orbitType = args.orbit
 useOE = args.OE
 useNoise = args.noise
+useNorm = args.norm
+
+R = 6378.1363 # km
 
 dataLoc = "gmat/data/classification/"+ orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
 
@@ -61,6 +66,12 @@ if useOE:
         statesArrayElectric = apply_noise(statesArrayElectric, 1e-3, 1e-3)
         statesArrayImpBurn = apply_noise(statesArrayImpBurn, 1e-3, 1e-3)
         statesArrayNoThrust = apply_noise(statesArrayNoThrust, 1e-3, 1e-3)
+    if useNorm:
+        statesArrayChemical[:,:,0] = statesArrayChemical[:,:,0] / R
+        statesArrayElectric[:,:,0] = statesArrayElectric[:,:,0] / R
+        statesArrayImpBurn[:,:,0] = statesArrayImpBurn[:,:,0] / R
+        statesArrayNoThrust[:,:,0] = statesArrayNoThrust[:,:,0] / R
+
 else:
     a = np.load(f"{dataLoc}/statesArrayChemical.npz")
     statesArrayChemical = a['statesArrayChemical']
@@ -101,6 +112,7 @@ noThrustLabel = 0
 chemicalLabel = 1
 electricLabel = 2
 impBurnLabel = 3
+
 
 # Create labels for each dataset
 labelsChemical = np.full((statesArrayChemical.shape[0],1),chemicalLabel)
