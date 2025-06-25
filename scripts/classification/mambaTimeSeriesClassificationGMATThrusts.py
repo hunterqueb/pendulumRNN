@@ -20,8 +20,10 @@ parser.add_argument("--systems", type=int, default=10000, help="Number of random
 parser.add_argument("--propMin", type=int, default=30, help="Minimum propagation time in minutes")
 parser.add_argument("--orbit", type=str, default="vleo", help="Orbit type: vleo, leo")
 parser.add_argument("--OE", action='store_true', help="Use OE elements instead of ECI states")
+parser.add_argument("--noise", action='store_true', help="Add noise to the data")
 parser.set_defaults(use_lstm=True)
 parser.set_defaults(OE=False)
+parser.set_defaults(noise=False)
 
 args = parser.parse_args()
 use_lstm = args.use_lstm
@@ -29,8 +31,18 @@ numMinProp = args.propMin
 numRandSys = args.systems
 orbitType = args.orbit
 useOE = args.OE
+useNoise = args.noise
 
 dataLoc = "gmat/data/classification/"+ orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
+
+def apply_noise(data, pos_noise_std, vel_noise_std):
+    mid = data.shape[1] // 2  # Split index
+    pos_noise = np.random.normal(0, pos_noise_std, size=data[:, :mid].shape)
+    vel_noise = np.random.normal(0, vel_noise_std, size=data[:, mid:].shape)
+    noisy_data = data.copy()
+    noisy_data[:, :mid] += pos_noise
+    noisy_data[:, mid:] += vel_noise
+    return noisy_data
 
 
 # get npz files in folder and load them into script
@@ -44,6 +56,11 @@ if useOE:
     a = np.load(f"{dataLoc}/OEArrayNoThrust.npz")
     statesArrayNoThrust = a['OEArrayNoThrust'][:,:,0:6]
 
+    if useNoise:
+        statesArrayChemical = apply_noise(statesArrayChemical, 1e-3, 1e-3)
+        statesArrayElectric = apply_noise(statesArrayElectric, 1e-3, 1e-3)
+        statesArrayImpBurn = apply_noise(statesArrayImpBurn, 1e-3, 1e-3)
+        statesArrayNoThrust = apply_noise(statesArrayNoThrust, 1e-3, 1e-3)
 else:
     a = np.load(f"{dataLoc}/statesArrayChemical.npz")
     statesArrayChemical = a['statesArrayChemical']
@@ -56,6 +73,12 @@ else:
 
     a = np.load(f"{dataLoc}/statesArrayNoThrust.npz")
     statesArrayNoThrust = a['statesArrayNoThrust']
+
+    if useNoise:
+        statesArrayChemical = apply_noise(statesArrayChemical, 1e-3, 1e-3)
+        statesArrayElectric = apply_noise(statesArrayElectric, 1e-3, 1e-3)
+        statesArrayImpBurn = apply_noise(statesArrayImpBurn, 1e-3, 1e-3)
+        statesArrayNoThrust = apply_noise(statesArrayNoThrust, 1e-3, 1e-3)
 
 del a
 
