@@ -139,7 +139,7 @@ dataset_label = dataset_label[indices]
 train_ratio = 0.7
 val_ratio = 0.15
 test_ratio = 0.15
-model_mamba = MambaClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device)
+model_mamba = MambaClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device).double()
 
 if useOneShot is not None:
     train_ratio = 0.0001
@@ -188,7 +188,7 @@ scheduler_mamba = torch.optim.lr_scheduler.ReduceLROnPlateau(
 classlabels = ['No Thrust','Chemical','Electric','Impulsive']
 
 if use_lstm:
-    model_LSTM = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device)
+    model_LSTM = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device).double()
     optimizer_LSTM = torch.optim.Adam(model_LSTM.parameters(), lr=learning_rate)
     scheduler_LSTM = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer_LSTM,
@@ -198,16 +198,12 @@ if use_lstm:
     )
 
     print('\nEntering LSTM Training Loop')
-    LSTMTrainTime = timer()
     trainClassifier(model_LSTM,optimizer_LSTM,scheduler_LSTM,[train_loader,test_loader,val_loader],criterion,num_epochs,device)
-    LSTMTrainTime.toc()
     printModelParmSize(model_LSTM)
     validateMultiClassClassifier(model_LSTM,val_loader,criterion,num_classes,device,classlabels)
 
 print('\nEntering Mamba Training Loop')
-mambaTrainTime = timer()
 trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba,[train_loader,test_loader,val_loader],criterion,num_epochs,device)
-mambaTrainTime.toc()
 printModelParmSize(model_mamba)
 validateMultiClassClassifier(model_mamba,val_loader,criterion,num_classes,device,classlabels)
 torch.save(model_mamba.state_dict(), f"{dataLoc}/mambaTimeSeriesClassificationGMATThrusts"+ orbitType +".pt")
