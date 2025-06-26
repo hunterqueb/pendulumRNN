@@ -201,3 +201,12 @@ trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba,[train_loader,test_l
 mambaTrainTime.toc()
 printModelParmSize(model_mamba)
 validateMultiClassClassifier(model_mamba,val_loader,criterion,num_classes,device,classlabels)
+
+# # example onnx export
+# # # generate example inputs for ONNX export
+# example_inputs = torch.randn(1, numMinProp, input_size).to(device).double()
+# # export the model to ONNX format
+# # Note: `dynamo=True` is used to enable PyTorch's dynamo for better performance and compatibility.
+# onnx_path = f"{dataLoc}/mambaTimeSeriesClassificationGMATThrusts.onnx"
+# onnx_program = torch.onnx.export(model_mamba, example_inputs,onnx_path)
+# print(f"ONNX model saved to {onnx_path}")
