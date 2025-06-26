@@ -11,6 +11,7 @@ from qutils.ml import getDevice, trainClassifier, LSTMClassifier, MambaClassifie
 from qutils.mamba import Mamba, MambaConfig
 from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
 from qutils.mlSuperweight import findMambaSuperActivation,plotSuperActivation,zeroModelWeight
+from qutils.orbital import dim2NonDim6
 
 import argparse
 
@@ -90,7 +91,12 @@ else:
         statesArrayElectric = apply_noise(statesArrayElectric, 1e-3, 1e-3)
         statesArrayImpBurn = apply_noise(statesArrayImpBurn, 1e-3, 1e-3)
         statesArrayNoThrust = apply_noise(statesArrayNoThrust, 1e-3, 1e-3)
-
+    if useNorm:
+        for i in range(statesArrayChemical.shape[0]):
+            statesArrayChemical[i,:,:] = dim2NonDim6(statesArrayChemical[i,:,:])
+            statesArrayElectric[i,:,:] = dim2NonDim6(statesArrayElectric[i,:,:])
+            statesArrayImpBurn[i,:,:] = dim2NonDim6(statesArrayImpBurn[i,:,:])
+            statesArrayNoThrust[i,:,:] = dim2NonDim6(statesArrayNoThrust[i,:,:])
 del a
 
 device = getDevice()
