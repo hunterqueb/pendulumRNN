@@ -23,6 +23,7 @@ parser.add_argument("--orbit", type=str, default="vleo", help="Orbit type: vleo,
 parser.add_argument("--OE", action='store_true', help="Use OE elements instead of ECI states")
 parser.add_argument("--noise", action='store_true', help="Add noise to the data")
 parser.add_argument("--norm", action='store_true', help="Normalize the semi-major axis by Earth's radius")
+parser.add_argument("--one-shot",type=str, default=None, help="Use one shot transfer learning")
 parser.set_defaults(use_lstm=True)
 parser.set_defaults(OE=False)
 parser.set_defaults(noise=False)
@@ -36,6 +37,7 @@ orbitType = args.orbit
 useOE = args.OE
 useNoise = args.noise
 useNorm = args.norm
+useOneShot = args.one_shot
 
 R = 6378.1363 # km
 
@@ -137,7 +139,15 @@ dataset_label = dataset_label[indices]
 train_ratio = 0.7
 val_ratio = 0.15
 test_ratio = 0.15
+model_mamba = MambaClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device)
 
+if useOneShot is not None:
+    train_ratio = 0.0001
+    # split the rest into validation and test sets evenly 
+    val_ratio = 0.5 * (1 - train_ratio)
+    test_ratio = 0.5 * (1 - train_ratio)
+    model_mamba.load_state_dict(torch.load(useOneShot, weights_only=True))
+    
 total_samples = len(dataset)
 train_end = int(train_ratio * total_samples)
 val_end = int((train_ratio + val_ratio) * total_samples)
@@ -163,7 +173,6 @@ test_loader = DataLoader(test_dataset, batch_size=batchSize, shuffle=False,pin_m
 
 criterion = torch.nn.CrossEntropyLoss()
 config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
-model_mamba = MambaClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device).double()
 optimizer_mamba = torch.optim.Adam(model_mamba.parameters(), lr=learning_rate)
 
 schedulerPatience = 5
@@ -179,7 +188,7 @@ scheduler_mamba = torch.optim.lr_scheduler.ReduceLROnPlateau(
 classlabels = ['No Thrust','Chemical','Electric','Impulsive']
 
 if use_lstm:
-    model_LSTM = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device).double()
+    model_LSTM = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device)
     optimizer_LSTM = torch.optim.Adam(model_LSTM.parameters(), lr=learning_rate)
     scheduler_LSTM = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer_LSTM,
@@ -201,6 +210,7 @@ trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba,[train_loader,test_l
 mambaTrainTime.toc()
 printModelParmSize(model_mamba)
 validateMultiClassClassifier(model_mamba,val_loader,criterion,num_classes,device,classlabels)
+torch.save(model_mamba.state_dict(), f"{dataLoc}/mambaTimeSeriesClassificationGMATThrusts"+ orbitType +".pt")
 
 # # example onnx export
 # # # generate example inputs for ONNX export
