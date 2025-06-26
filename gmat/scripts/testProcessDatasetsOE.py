@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 
 dt = 60
 
-numMinProp = 100
+numMinProp = 10
 numRandSys = 10000
-orbitType = "leo"
+orbitType = "vleo"
+norm = True
 
 dataLoc = "gmat/data/classification/" + orbitType + "/" + str(numMinProp) + "min-" + str(numRandSys)
 
@@ -27,6 +28,14 @@ print(statesArrayChemical.shape)
 print(statesArrayElectric.shape)
 print(statesArrayImpBurn.shape)
 print(statesArrayNoThrust.shape)
+
+if norm:
+    R = 6378.1363 # km
+    statesArrayChemical[:,:,0] = statesArrayChemical[:,:,0] / R
+    statesArrayElectric[:,:,0] = statesArrayElectric[:,:,0] / R
+    statesArrayImpBurn[:,:,0] = statesArrayImpBurn[:,:,0] / R
+    statesArrayNoThrust[:,:,0] = statesArrayNoThrust[:,:,0] / R
+
 
 t = np.linspace(0,numMinProp*dt,len(statesArrayChemical[0,:,0]))
 

@@ -1,11 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from qutils.orbital import dim2NonDim6
 
 dt = 60
 
-numMinProp = 30
+numMinProp = 100
 numRandSys = 10000
 orbitType = "leo"
+norm = True
 
 dataLoc = "gmat/data/classification/" + orbitType + "/" + str(numMinProp) + "min-" + str(numRandSys)
 
@@ -27,6 +29,13 @@ print(statesArrayChemical.shape)
 print(statesArrayElectric.shape)
 print(statesArrayImpBurn.shape)
 print(statesArrayNoThrust.shape)
+
+if norm:
+    for i in range(statesArrayChemical.shape[0]):
+        statesArrayChemical[i,:,:] = dim2NonDim6(statesArrayChemical[i,:,:])
+        statesArrayElectric[i,:,:] = dim2NonDim6(statesArrayElectric[i,:,:])
+        statesArrayImpBurn[i,:,:] = dim2NonDim6(statesArrayImpBurn[i,:,:])
+        statesArrayNoThrust[i,:,:] = dim2NonDim6(statesArrayNoThrust[i,:,:])
 
 t = np.linspace(0,100*dt,len(statesArrayChemical[0,:,0]))
 
