@@ -92,16 +92,23 @@ dataLoc = "gmat/data/classification/"+ orbitType +"/" + str(numMinProp) + "min-"
 
 if save_to_log:
     import sys
+
     strAdd = ""
     if useOE:
         strAdd = strAdd + "OE"
     if useNorm:
         strAdd = strAdd + "Norm"
+    if useNoise:
+        strAdd = strAdd + "Noise"
+    if useOneShot:
+        strAdd = strAdd + "OneShot"
+    if useOnePass:
+        strAdd = strAdd + "OnePass"
+    
+    # file to open
     f = open(dataLoc+"/"+str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log', 'w')
+    # change stdout to write to file -- this allows for printing from functions to a file
     sys.stdout = f
-
-R = 6378.1363 # km
-
 
 def apply_noise(data, pos_noise_std, vel_noise_std):
     mid = data.shape[1] // 2  # Split index
@@ -130,6 +137,7 @@ if useOE:
         statesArrayImpBurn = apply_noise(statesArrayImpBurn, 1e-3, 1e-3)
         statesArrayNoThrust = apply_noise(statesArrayNoThrust, 1e-3, 1e-3)
     if useNorm:
+        R = 6378.1363 # km
         statesArrayChemical[:,:,0] = statesArrayChemical[:,:,0] / R
         statesArrayElectric[:,:,0] = statesArrayElectric[:,:,0] / R
         statesArrayImpBurn[:,:,0] = statesArrayImpBurn[:,:,0] / R
