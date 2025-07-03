@@ -10,10 +10,11 @@ from torch import nn
 
 # script usage
 
-# call the script from the main folder directory, as well as pipe it the output to the location of the dataset used
+# call the script from the main folder directory, adding --save saves the output to a log file in the location of the datasets
 # $ python scripts/classification/mambaTimeSeriesClassificationGMATThrusts.py \
-# --systems 10000 --propMin 5 --OE --norm --orbit vleo > ./gmat/data/classification/vleo/5min-10000/5min10000OENorm.log
-# 
+# --systems 10000 --propMin 5 --OE --norm --orbit vleo 
+
+# display the data by calling the displayLogData.py script from its contained folder
 
 class HybridClassifier(nn.Module):
     def __init__(self,config, input_size, hidden_size, num_layers, num_classes):
