@@ -5,6 +5,49 @@ import torch.nn.functional as F
 import torch.utils.data as data
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
+from torch import nn
+
+
+# script usage
+
+# call the script from the main folder directory, as well as pipe it the output to the location of the dataset used
+# $ python scripts/classification/mambaTimeSeriesClassificationGMATThrusts.py \
+# --systems 10000 --propMin 5 --OE --norm --orbit vleo > ./gmat/data/classification/vleo/5min-10000/5min10000OENorm.log
+# 
+
+class HybridClassifier(nn.Module):
+    def __init__(self,config, input_size, hidden_size, num_layers, num_classes):
+        super(HybridClassifier, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        
+        self.lstm = nn.LSTM(
+            input_size=input_size,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            batch_first=True,
+            bidirectional=True  # Bidirectional LSTM
+        )
+        self.mamba = Mamba(config)
+        self.fc = nn.Linear(hidden_size * 2, num_classes)
+        
+    def forward(self, x):
+        """
+        x: [batch_size, seq_length, input_size]
+        """
+        # h0, c0 default to zero if not provided
+        out, (h_n, c_n) = self.lstm(x)
+        h_n = self.mamba(out) # [batch_size, seq_length, hidden_size]
+
+        # h_n is shape [num_layers, batch_size, hidden_size].
+        # We typically take the last layer's hidden state: h_n[-1]
+        last_hidden = h_n[:,-1,:]  # [batch_size, hidden_size]
+        
+        # Pass the last hidden state through a linear layer for classification
+        logits = self.fc(last_hidden)  # [batch_size, num_classes]
+        
+        return logits
+
 
 from qutils.tictoc import timer
 from qutils.ml import getDevice, trainClassifier, LSTMClassifier, MambaClassifier, printModelParmSize, validateMultiClassClassifier
@@ -23,11 +66,15 @@ parser.add_argument("--orbit", type=str, default="vleo", help="Orbit type: vleo,
 parser.add_argument("--OE", action='store_true', help="Use OE elements instead of ECI states")
 parser.add_argument("--noise", action='store_true', help="Add noise to the data")
 parser.add_argument("--norm", action='store_true', help="Normalize the semi-major axis by Earth's radius")
-parser.add_argument("--one-shot",type=str, default=None, help="Use one shot transfer learning")
+parser.add_argument("--one-shot",type=str, default=None, help="Use one shot transfer learning. Takes in a path to a saved pt model")
+parser.add_argument("--one-pass",dest="one_pass",action='store_true', help="Use one pass learning.")
+parser.add_argument("--save",dest="save_to_log",action="store_true",help="output console printout to log file in the same location as datasets")
 parser.set_defaults(use_lstm=True)
 parser.set_defaults(OE=False)
 parser.set_defaults(noise=False)
 parser.set_defaults(norm=False)
+parser.set_defaults(one_pass=False)
+parser.set_defaults(save_to_log=False)
 
 args = parser.parse_args()
 use_lstm = args.use_lstm
@@ -38,10 +85,23 @@ useOE = args.OE
 useNoise = args.noise
 useNorm = args.norm
 useOneShot = args.one_shot
+useOnePass = args.one_pass
+save_to_log = args.save_to_log
+
+dataLoc = "gmat/data/classification/"+ orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
+
+if save_to_log:
+    import sys
+    strAdd = ""
+    if useOE:
+        strAdd = strAdd + "OE"
+    if useNorm:
+        strAdd = strAdd + "Norm"
+    f = open(dataLoc+"/"+str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log', 'w')
+    sys.stdout = f
 
 R = 6378.1363 # km
 
-dataLoc = "gmat/data/classification/"+ orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
 
 def apply_noise(data, pos_noise_std, vel_noise_std):
     mid = data.shape[1] // 2  # Split index
@@ -114,6 +174,9 @@ num_classes = 4  # e.g., multiclass classification
 learning_rate = 1e-3
 num_epochs = 100
 
+if useOnePass:
+    num_epochs = 1
+
 config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
 
 noThrustLabel = 0
@@ -142,12 +205,12 @@ test_ratio = 0.15
 model_mamba = MambaClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device).double()
 
 if useOneShot is not None:
-    train_ratio = 0.0001
+    train_ratio = 0.1
     # split the rest into validation and test sets evenly 
     val_ratio = 0.5 * (1 - train_ratio)
     test_ratio = 0.5 * (1 - train_ratio)
     model_mamba.load_state_dict(torch.load(useOneShot, weights_only=True))
-    
+    print("Number of training samples in one-shot transfer learning:", int(train_ratio * dataset.shape[0]))
 total_samples = len(dataset)
 train_end = int(train_ratio * total_samples)
 val_end = int((train_ratio + val_ratio) * total_samples)
@@ -187,6 +250,23 @@ scheduler_mamba = torch.optim.lr_scheduler.ReduceLROnPlateau(
 
 classlabels = ['No Thrust','Chemical','Electric','Impulsive']
 
+# config_hybrid = MambaConfig(d_model=hidden_size * 2,n_layers = 1,expand_factor=1,d_state=32,d_conv=16,classifer=True)
+
+# model_hybrid = HybridClassifier(config_hybrid,input_size,hidden_size,num_layers,num_classes).to(device).double()
+# optimizer_hybrid = torch.optim.Adam(model_hybrid.parameters(), lr=learning_rate)
+# scheduler_hybrid = torch.optim.lr_scheduler.ReduceLROnPlateau(
+#     optimizer_hybrid,
+#     mode='min',             # or 'max' for accuracy
+#     factor=0.5,             # shrink LR by 50%
+#     patience=schedulerPatience
+# )
+
+# print('\nEntering Hybrid Training Loop')
+# trainClassifier(model_hybrid,optimizer_hybrid,scheduler_hybrid,[train_loader,test_loader,val_loader],criterion,num_epochs,device)
+# printModelParmSize(model_hybrid)
+# validateMultiClassClassifier(model_hybrid,val_loader,criterion,num_classes,device,classlabels)
+
+
 if use_lstm:
     model_LSTM = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device).double()
     optimizer_LSTM = torch.optim.Adam(model_LSTM.parameters(), lr=learning_rate)
@@ -206,7 +286,7 @@ print('\nEntering Mamba Training Loop')
 trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba,[train_loader,test_loader,val_loader],criterion,num_epochs,device)
 printModelParmSize(model_mamba)
 validateMultiClassClassifier(model_mamba,val_loader,criterion,num_classes,device,classlabels)
-torch.save(model_mamba.state_dict(), f"{dataLoc}/mambaTimeSeriesClassificationGMATThrusts"+ orbitType +".pt")
+# torch.save(model_mamba.state_dict(), f"{dataLoc}/mambaTimeSeriesClassificationGMATThrusts"+ orbitType +".pt")
 
 # # example onnx export
 # # # generate example inputs for ONNX export
@@ -216,3 +296,7 @@ torch.save(model_mamba.state_dict(), f"{dataLoc}/mambaTimeSeriesClassificationGM
 # onnx_path = f"{dataLoc}/mambaTimeSeriesClassificationGMATThrusts.onnx"
 # onnx_program = torch.onnx.export(model_mamba, example_inputs,onnx_path)
 # print(f"ONNX model saved to {onnx_path}")
+
+if save_to_log:
+    sys.stdout = sys.__stdout__    # or your saved original_stdout
+    f.close()
