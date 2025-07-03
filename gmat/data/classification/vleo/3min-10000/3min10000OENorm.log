@@ -1,0 +1,1549 @@
+GPU is available
+
+Entering LSTM Training Loop
+Epoch [1/100], Training Loss: 0.8761
+Validation Loss: 0.8219, Validation Accuracy: 51.28%
+
+Per-Class Validation Accuracy:
+  Class 0: 0.00% (0/1469)
+  Class 1: 85.16% (1274/1496)
+  Class 2: 21.08% (329/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [2/100], Training Loss: 0.8178
+Validation Loss: 0.8177, Validation Accuracy: 53.17%
+
+Per-Class Validation Accuracy:
+  Class 0: 0.00% (0/1469)
+  Class 1: 85.23% (1275/1496)
+  Class 2: 28.25% (441/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [3/100], Training Loss: 0.8104
+Validation Loss: 0.8260, Validation Accuracy: 51.47%
+
+Per-Class Validation Accuracy:
+  Class 0: 10.82% (159/1469)
+  Class 1: 97.26% (1455/1496)
+  Class 2: 0.00% (0/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [4/100], Training Loss: 0.8006
+Validation Loss: 0.8059, Validation Accuracy: 53.62%
+
+Per-Class Validation Accuracy:
+  Class 0: 9.19% (135/1469)
+  Class 1: 94.92% (1420/1496)
+  Class 2: 12.04% (188/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [5/100], Training Loss: 0.7797
+Validation Loss: 0.7879, Validation Accuracy: 54.72%
+
+Per-Class Validation Accuracy:
+  Class 0: 7.35% (108/1469)
+  Class 1: 95.52% (1429/1496)
+  Class 2: 17.42% (272/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [6/100], Training Loss: 0.7550
+Validation Loss: 0.7471, Validation Accuracy: 58.27%
+
+Per-Class Validation Accuracy:
+  Class 0: 28.32% (416/1469)
+  Class 1: 91.78% (1373/1496)
+  Class 2: 14.93% (233/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [7/100], Training Loss: 0.7225
+Validation Loss: 0.6962, Validation Accuracy: 60.57%
+
+Per-Class Validation Accuracy:
+  Class 0: 28.39% (417/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 15.82% (247/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [8/100], Training Loss: 0.6711
+Validation Loss: 0.6196, Validation Accuracy: 68.75%
+
+Per-Class Validation Accuracy:
+  Class 0: 55.34% (813/1469)
+  Class 1: 98.66% (1476/1496)
+  Class 2: 23.19% (362/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [9/100], Training Loss: 0.6183
+Validation Loss: 0.5721, Validation Accuracy: 69.28%
+
+Per-Class Validation Accuracy:
+  Class 0: 73.45% (1079/1469)
+  Class 1: 99.67% (1491/1496)
+  Class 2: 7.24% (113/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [10/100], Training Loss: 0.5808
+Validation Loss: 0.5473, Validation Accuracy: 69.98%
+
+Per-Class Validation Accuracy:
+  Class 0: 73.04% (1073/1469)
+  Class 1: 84.16% (1259/1496)
+  Class 2: 25.18% (393/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [11/100], Training Loss: 0.5370
+Validation Loss: 0.5271, Validation Accuracy: 70.22%
+
+Per-Class Validation Accuracy:
+  Class 0: 19.54% (287/1469)
+  Class 1: 82.35% (1232/1496)
+  Class 2: 78.16% (1220/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [12/100], Training Loss: 0.5033
+Validation Loss: 0.4957, Validation Accuracy: 70.92%
+
+Per-Class Validation Accuracy:
+  Class 0: 64.87% (953/1469)
+  Class 1: 88.03% (1317/1496)
+  Class 2: 32.74% (511/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [13/100], Training Loss: 0.4683
+Validation Loss: 0.4323, Validation Accuracy: 73.05%
+
+Per-Class Validation Accuracy:
+  Class 0: 76.79% (1128/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 18.32% (286/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [14/100], Training Loss: 0.4530
+Validation Loss: 0.4293, Validation Accuracy: 73.05%
+
+Per-Class Validation Accuracy:
+  Class 0: 97.00% (1425/1469)
+  Class 1: 96.86% (1449/1496)
+  Class 2: 2.24% (35/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [15/100], Training Loss: 0.4366
+Validation Loss: 0.4194, Validation Accuracy: 73.97%
+
+Per-Class Validation Accuracy:
+  Class 0: 66.98% (984/1469)
+  Class 1: 99.06% (1482/1496)
+  Class 2: 31.90% (498/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [16/100], Training Loss: 0.4362
+Validation Loss: 0.4169, Validation Accuracy: 72.82%
+
+Per-Class Validation Accuracy:
+  Class 0: 87.47% (1285/1469)
+  Class 1: 95.12% (1423/1496)
+  Class 2: 11.98% (187/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [17/100], Training Loss: 0.4174
+Validation Loss: 0.3900, Validation Accuracy: 74.60%
+
+Per-Class Validation Accuracy:
+  Class 0: 42.55% (625/1469)
+  Class 1: 99.87% (1494/1496)
+  Class 2: 56.57% (883/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [18/100], Training Loss: 0.4191
+Validation Loss: 0.3909, Validation Accuracy: 73.73%
+
+Per-Class Validation Accuracy:
+  Class 0: 92.65% (1361/1469)
+  Class 1: 98.33% (1471/1496)
+  Class 2: 7.56% (118/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [19/100], Training Loss: 0.4068
+Validation Loss: 0.3917, Validation Accuracy: 74.40%
+
+Per-Class Validation Accuracy:
+  Class 0: 20.83% (306/1469)
+  Class 1: 99.80% (1493/1496)
+  Class 2: 76.30% (1191/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [20/100], Training Loss: 0.4084
+Validation Loss: 0.3956, Validation Accuracy: 73.40%
+
+Per-Class Validation Accuracy:
+  Class 0: 78.22% (1149/1469)
+  Class 1: 96.52% (1444/1496)
+  Class 2: 21.59% (337/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [21/100], Training Loss: 0.4065
+Validation Loss: 0.3778, Validation Accuracy: 75.17%
+
+Per-Class Validation Accuracy:
+  Class 0: 40.37% (593/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 60.67% (947/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [22/100], Training Loss: 0.3932
+Validation Loss: 0.3710, Validation Accuracy: 75.58%
+
+Per-Class Validation Accuracy:
+  Class 0: 35.53% (522/1469)
+  Class 1: 99.80% (1493/1496)
+  Class 2: 67.01% (1046/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [23/100], Training Loss: 0.4017
+Validation Loss: 0.3706, Validation Accuracy: 75.30%
+
+Per-Class Validation Accuracy:
+  Class 0: 19.47% (286/1469)
+  Class 1: 99.67% (1491/1496)
+  Class 2: 81.17% (1267/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [24/100], Training Loss: 0.3948
+Validation Loss: 0.3839, Validation Accuracy: 73.98%
+
+Per-Class Validation Accuracy:
+  Class 0: 59.22% (870/1469)
+  Class 1: 97.86% (1464/1496)
+  Class 2: 40.42% (631/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [25/100], Training Loss: 0.3880
+Validation Loss: 0.3667, Validation Accuracy: 75.47%
+
+Per-Class Validation Accuracy:
+  Class 0: 76.72% (1127/1469)
+  Class 1: 99.87% (1494/1496)
+  Class 2: 27.74% (433/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [26/100], Training Loss: 0.3950
+Validation Loss: 0.3762, Validation Accuracy: 74.60%
+
+Per-Class Validation Accuracy:
+  Class 0: 6.81% (100/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 90.07% (1406/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [27/100], Training Loss: 0.3873
+Validation Loss: 0.3705, Validation Accuracy: 76.10%
+
+Per-Class Validation Accuracy:
+  Class 0: 29.68% (436/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 74.31% (1160/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [28/100], Training Loss: 0.3903
+Validation Loss: 0.3998, Validation Accuracy: 74.18%
+
+Per-Class Validation Accuracy:
+  Class 0: 17.77% (261/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 78.16% (1220/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [29/100], Training Loss: 0.3937
+Validation Loss: 0.4260, Validation Accuracy: 72.17%
+
+Per-Class Validation Accuracy:
+  Class 0: 6.60% (97/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 80.91% (1263/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [30/100], Training Loss: 0.3791
+Validation Loss: 0.3625, Validation Accuracy: 76.27%
+
+Per-Class Validation Accuracy:
+  Class 0: 50.85% (747/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 55.09% (860/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [31/100], Training Loss: 0.3900
+Validation Loss: 0.4372, Validation Accuracy: 71.70%
+
+Per-Class Validation Accuracy:
+  Class 0: 84.34% (1239/1469)
+  Class 1: 90.24% (1350/1496)
+  Class 2: 15.31% (239/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [32/100], Training Loss: 0.3779
+Validation Loss: 0.4057, Validation Accuracy: 73.60%
+
+Per-Class Validation Accuracy:
+  Class 0: 38.26% (562/1469)
+  Class 1: 93.05% (1392/1496)
+  Class 2: 63.29% (988/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [33/100], Training Loss: 0.3847
+Validation Loss: 0.3670, Validation Accuracy: 74.10%
+
+Per-Class Validation Accuracy:
+  Class 0: 76.17% (1119/1469)
+  Class 1: 99.73% (1492/1496)
+  Class 2: 23.13% (361/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [34/100], Training Loss: 0.3882
+Validation Loss: 0.4489, Validation Accuracy: 71.97%
+
+Per-Class Validation Accuracy:
+  Class 0: 30.57% (449/1469)
+  Class 1: 85.23% (1275/1496)
+  Class 2: 71.75% (1120/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [35/100], Training Loss: 0.3732
+Validation Loss: 0.3652, Validation Accuracy: 73.92%
+
+Per-Class Validation Accuracy:
+  Class 0: 86.25% (1267/1469)
+  Class 1: 99.73% (1492/1496)
+  Class 2: 12.94% (202/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [36/100], Training Loss: 0.3700
+Validation Loss: 0.3765, Validation Accuracy: 73.70%
+
+Per-Class Validation Accuracy:
+  Class 0: 82.10% (1206/1469)
+  Class 1: 98.20% (1469/1496)
+  Class 2: 17.49% (273/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [37/100], Training Loss: 0.3623
+Validation Loss: 0.3604, Validation Accuracy: 74.53%
+
+Per-Class Validation Accuracy:
+  Class 0: 81.62% (1199/1469)
+  Class 1: 99.80% (1493/1496)
+  Class 2: 19.60% (306/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [38/100], Training Loss: 0.3651
+Validation Loss: 0.3573, Validation Accuracy: 74.40%
+
+Per-Class Validation Accuracy:
+  Class 0: 74.27% (1091/1469)
+  Class 1: 99.87% (1494/1496)
+  Class 2: 25.94% (405/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [39/100], Training Loss: 0.3628
+Validation Loss: 0.3577, Validation Accuracy: 74.70%
+
+Per-Class Validation Accuracy:
+  Class 0: 77.06% (1132/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 24.34% (380/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [40/100], Training Loss: 0.3614
+Validation Loss: 0.3578, Validation Accuracy: 76.25%
+
+Per-Class Validation Accuracy:
+  Class 0: 17.49% (257/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 86.35% (1348/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [41/100], Training Loss: 0.3610
+Validation Loss: 0.3556, Validation Accuracy: 75.57%
+
+Per-Class Validation Accuracy:
+  Class 0: 21.38% (314/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 80.14% (1251/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [42/100], Training Loss: 0.3601
+Validation Loss: 0.3589, Validation Accuracy: 76.02%
+
+Per-Class Validation Accuracy:
+  Class 0: 37.78% (555/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 66.37% (1036/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [43/100], Training Loss: 0.3610
+Validation Loss: 0.3586, Validation Accuracy: 74.95%
+
+Per-Class Validation Accuracy:
+  Class 0: 14.50% (213/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 84.18% (1314/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [44/100], Training Loss: 0.3610
+Validation Loss: 0.3555, Validation Accuracy: 75.90%
+
+Per-Class Validation Accuracy:
+  Class 0: 58.13% (854/1469)
+  Class 1: 99.87% (1494/1496)
+  Class 2: 46.89% (732/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [45/100], Training Loss: 0.3609
+Validation Loss: 0.3555, Validation Accuracy: 76.00%
+
+Per-Class Validation Accuracy:
+  Class 0: 43.29% (636/1469)
+  Class 1: 99.87% (1494/1496)
+  Class 2: 61.24% (956/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [46/100], Training Loss: 0.3611
+Validation Loss: 0.3560, Validation Accuracy: 75.63%
+
+Per-Class Validation Accuracy:
+  Class 0: 41.18% (605/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 61.76% (964/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [47/100], Training Loss: 0.3590
+Validation Loss: 0.4734, Validation Accuracy: 72.00%
+
+Per-Class Validation Accuracy:
+  Class 0: 60.79% (893/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 29.28% (457/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [48/100], Training Loss: 0.3622
+Validation Loss: 0.3563, Validation Accuracy: 76.55%
+
+Per-Class Validation Accuracy:
+  Class 0: 64.33% (945/1469)
+  Class 1: 99.87% (1494/1496)
+  Class 2: 43.56% (680/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [49/100], Training Loss: 0.3589
+Validation Loss: 0.3779, Validation Accuracy: 73.93%
+
+Per-Class Validation Accuracy:
+  Class 0: 88.09% (1294/1469)
+  Class 1: 96.52% (1444/1496)
+  Class 2: 14.35% (224/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [50/100], Training Loss: 0.3599
+Validation Loss: 0.3560, Validation Accuracy: 76.08%
+
+Per-Class Validation Accuracy:
+  Class 0: 57.39% (843/1469)
+  Class 1: 99.87% (1494/1496)
+  Class 2: 48.30% (754/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [51/100], Training Loss: 0.3526
+Validation Loss: 0.3532, Validation Accuracy: 75.97%
+
+Per-Class Validation Accuracy:
+  Class 0: 26.55% (390/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 76.81% (1199/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [52/100], Training Loss: 0.3544
+Validation Loss: 0.3564, Validation Accuracy: 75.92%
+
+Per-Class Validation Accuracy:
+  Class 0: 31.04% (456/1469)
+  Class 1: 99.73% (1492/1496)
+  Class 2: 72.58% (1133/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [53/100], Training Loss: 0.3545
+Validation Loss: 0.3578, Validation Accuracy: 74.28%
+
+Per-Class Validation Accuracy:
+  Class 0: 80.39% (1181/1469)
+  Class 1: 99.73% (1492/1496)
+  Class 2: 19.86% (310/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [54/100], Training Loss: 0.3520
+Validation Loss: 0.3531, Validation Accuracy: 75.17%
+
+Per-Class Validation Accuracy:
+  Class 0: 74.27% (1091/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 28.76% (449/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [55/100], Training Loss: 0.3534
+Validation Loss: 0.3528, Validation Accuracy: 76.03%
+
+Per-Class Validation Accuracy:
+  Class 0: 27.37% (402/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 76.23% (1190/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [56/100], Training Loss: 0.3528
+Validation Loss: 0.3550, Validation Accuracy: 75.35%
+
+Per-Class Validation Accuracy:
+  Class 0: 30.43% (447/1469)
+  Class 1: 99.80% (1493/1496)
+  Class 2: 70.92% (1107/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [57/100], Training Loss: 0.3523
+Validation Loss: 0.3610, Validation Accuracy: 74.07%
+
+Per-Class Validation Accuracy:
+  Class 0: 92.72% (1362/1469)
+  Class 1: 99.00% (1481/1496)
+  Class 2: 8.14% (127/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [58/100], Training Loss: 0.3532
+Validation Loss: 0.3542, Validation Accuracy: 75.40%
+
+Per-Class Validation Accuracy:
+  Class 0: 78.69% (1156/1469)
+  Class 1: 99.87% (1494/1496)
+  Class 2: 25.62% (400/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [59/100], Training Loss: 0.3518
+Validation Loss: 0.3546, Validation Accuracy: 75.65%
+
+Per-Class Validation Accuracy:
+  Class 0: 43.64% (641/1469)
+  Class 1: 99.87% (1494/1496)
+  Class 2: 59.58% (930/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [60/100], Training Loss: 0.3539
+Validation Loss: 0.3534, Validation Accuracy: 75.27%
+
+Per-Class Validation Accuracy:
+  Class 0: 65.76% (966/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 37.22% (581/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [61/100], Training Loss: 0.3545
+Validation Loss: 0.3550, Validation Accuracy: 75.88%
+
+Per-Class Validation Accuracy:
+  Class 0: 58.61% (861/1469)
+  Class 1: 99.80% (1493/1496)
+  Class 2: 46.44% (725/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [62/100], Training Loss: 0.3496
+Validation Loss: 0.3529, Validation Accuracy: 76.23%
+
+Per-Class Validation Accuracy:
+  Class 0: 47.65% (700/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 57.91% (904/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [63/100], Training Loss: 0.3498
+Validation Loss: 0.3525, Validation Accuracy: 76.32%
+
+Per-Class Validation Accuracy:
+  Class 0: 51.53% (757/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 54.64% (853/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [64/100], Training Loss: 0.3499
+Validation Loss: 0.3573, Validation Accuracy: 75.93%
+
+Per-Class Validation Accuracy:
+  Class 0: 38.12% (560/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 65.73% (1026/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [65/100], Training Loss: 0.3500
+Validation Loss: 0.3524, Validation Accuracy: 76.25%
+
+Per-Class Validation Accuracy:
+  Class 0: 60.18% (884/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 46.25% (722/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [66/100], Training Loss: 0.3497
+Validation Loss: 0.3700, Validation Accuracy: 73.90%
+
+Per-Class Validation Accuracy:
+  Class 0: 99.05% (1455/1469)
+  Class 1: 98.20% (1469/1496)
+  Class 2: 2.31% (36/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [67/100], Training Loss: 0.3499
+Validation Loss: 0.3542, Validation Accuracy: 75.98%
+
+Per-Class Validation Accuracy:
+  Class 0: 69.16% (1016/1469)
+  Class 1: 99.80% (1493/1496)
+  Class 2: 36.90% (576/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [68/100], Training Loss: 0.3498
+Validation Loss: 0.3623, Validation Accuracy: 74.62%
+
+Per-Class Validation Accuracy:
+  Class 0: 76.86% (1129/1469)
+  Class 1: 98.66% (1476/1496)
+  Class 2: 25.50% (398/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [69/100], Training Loss: 0.3500
+Validation Loss: 0.3550, Validation Accuracy: 75.88%
+
+Per-Class Validation Accuracy:
+  Class 0: 37.30% (548/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 66.30% (1035/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [70/100], Training Loss: 0.3499
+Validation Loss: 0.3523, Validation Accuracy: 76.28%
+
+Per-Class Validation Accuracy:
+  Class 0: 46.36% (681/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 59.39% (927/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [71/100], Training Loss: 0.3493
+Validation Loss: 0.3536, Validation Accuracy: 75.82%
+
+Per-Class Validation Accuracy:
+  Class 0: 58.27% (856/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 46.32% (723/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [72/100], Training Loss: 0.3499
+Validation Loss: 0.3545, Validation Accuracy: 74.47%
+
+Per-Class Validation Accuracy:
+  Class 0: 83.87% (1232/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 17.10% (267/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [73/100], Training Loss: 0.3495
+Validation Loss: 0.3519, Validation Accuracy: 76.33%
+
+Per-Class Validation Accuracy:
+  Class 0: 31.45% (462/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 73.61% (1149/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [74/100], Training Loss: 0.3489
+Validation Loss: 0.3516, Validation Accuracy: 75.92%
+
+Per-Class Validation Accuracy:
+  Class 0: 33.02% (485/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 70.53% (1101/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [75/100], Training Loss: 0.3494
+Validation Loss: 0.3519, Validation Accuracy: 75.78%
+
+Per-Class Validation Accuracy:
+  Class 0: 19.54% (287/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 82.64% (1290/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [76/100], Training Loss: 0.3499
+Validation Loss: 0.3536, Validation Accuracy: 74.68%
+
+Per-Class Validation Accuracy:
+  Class 0: 83.05% (1220/1469)
+  Class 1: 99.87% (1494/1496)
+  Class 2: 18.77% (293/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [77/100], Training Loss: 0.3494
+Validation Loss: 0.3537, Validation Accuracy: 74.63%
+
+Per-Class Validation Accuracy:
+  Class 0: 73.25% (1076/1469)
+  Class 1: 99.87% (1494/1496)
+  Class 2: 27.80% (434/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [78/100], Training Loss: 0.3492
+Validation Loss: 0.3518, Validation Accuracy: 76.05%
+
+Per-Class Validation Accuracy:
+  Class 0: 67.80% (996/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 38.31% (598/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [79/100], Training Loss: 0.3491
+Validation Loss: 0.3549, Validation Accuracy: 75.85%
+
+Per-Class Validation Accuracy:
+  Class 0: 40.16% (590/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 63.48% (991/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [80/100], Training Loss: 0.3491
+Validation Loss: 0.3521, Validation Accuracy: 76.20%
+
+Per-Class Validation Accuracy:
+  Class 0: 49.97% (734/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 55.61% (868/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [81/100], Training Loss: 0.3479
+Validation Loss: 0.3516, Validation Accuracy: 75.58%
+
+Per-Class Validation Accuracy:
+  Class 0: 64.60% (949/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 39.53% (617/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [82/100], Training Loss: 0.3479
+Validation Loss: 0.3539, Validation Accuracy: 74.58%
+
+Per-Class Validation Accuracy:
+  Class 0: 79.78% (1172/1469)
+  Class 1: 99.87% (1494/1496)
+  Class 2: 21.46% (335/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [83/100], Training Loss: 0.3479
+Validation Loss: 0.3512, Validation Accuracy: 76.27%
+
+Per-Class Validation Accuracy:
+  Class 0: 29.88% (439/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 74.82% (1168/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [84/100], Training Loss: 0.3480
+Validation Loss: 0.3522, Validation Accuracy: 76.35%
+
+Per-Class Validation Accuracy:
+  Class 0: 55.68% (818/1469)
+  Class 1: 99.87% (1494/1496)
+  Class 2: 50.93% (795/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [85/100], Training Loss: 0.3479
+Validation Loss: 0.3510, Validation Accuracy: 76.55%
+
+Per-Class Validation Accuracy:
+  Class 0: 51.53% (757/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 55.48% (866/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [86/100], Training Loss: 0.3479
+Validation Loss: 0.3516, Validation Accuracy: 75.50%
+
+Per-Class Validation Accuracy:
+  Class 0: 67.53% (992/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 36.45% (569/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [87/100], Training Loss: 0.3475
+Validation Loss: 0.3516, Validation Accuracy: 75.97%
+
+Per-Class Validation Accuracy:
+  Class 0: 49.97% (734/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 54.71% (854/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [88/100], Training Loss: 0.3478
+Validation Loss: 0.3512, Validation Accuracy: 76.45%
+
+Per-Class Validation Accuracy:
+  Class 0: 34.58% (508/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 71.11% (1110/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [89/100], Training Loss: 0.3476
+Validation Loss: 0.3510, Validation Accuracy: 76.25%
+
+Per-Class Validation Accuracy:
+  Class 0: 30.84% (453/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 73.80% (1152/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [90/100], Training Loss: 0.3477
+Validation Loss: 0.3541, Validation Accuracy: 76.13%
+
+Per-Class Validation Accuracy:
+  Class 0: 59.16% (869/1469)
+  Class 1: 99.73% (1492/1496)
+  Class 2: 46.96% (733/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [91/100], Training Loss: 0.3479
+Validation Loss: 0.3516, Validation Accuracy: 75.85%
+
+Per-Class Validation Accuracy:
+  Class 0: 65.08% (956/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 40.10% (626/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [92/100], Training Loss: 0.3470
+Validation Loss: 0.3526, Validation Accuracy: 76.27%
+
+Per-Class Validation Accuracy:
+  Class 0: 60.04% (882/1469)
+  Class 1: 99.87% (1494/1496)
+  Class 2: 46.51% (726/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [93/100], Training Loss: 0.3471
+Validation Loss: 0.3513, Validation Accuracy: 76.23%
+
+Per-Class Validation Accuracy:
+  Class 0: 58.07% (853/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 48.17% (752/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [94/100], Training Loss: 0.3472
+Validation Loss: 0.3515, Validation Accuracy: 75.95%
+
+Per-Class Validation Accuracy:
+  Class 0: 58.68% (862/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 46.51% (726/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [95/100], Training Loss: 0.3471
+Validation Loss: 0.3513, Validation Accuracy: 76.37%
+
+Per-Class Validation Accuracy:
+  Class 0: 50.37% (740/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 55.93% (873/1561)
+  Class 3: 100.00% (1474/1474)
+Early stopping triggered.
+
+	Elapsed time is 570.3312 seconds.
+
+==========================================================================================
+Total parameters: 10948
+Total memory (bytes): 87584
+Total memory (MB): 0.083526611328125
+==========================================================================================
+Validation Loss: 0.3513, Validation Accuracy: 76.37%
+
+Per-Class Validation Accuracy:
+  No Thrust: 50.37% (740/1469)
+  Chemical: 99.93% (1495/1496)
+  Electric: 55.93% (873/1561)
+  Impulsive: 100.00% (1474/1474)
+
+Entering Mamba Training Loop
+Epoch [1/100], Training Loss: 0.8463
+Validation Loss: 0.7776, Validation Accuracy: 55.55%
+
+Per-Class Validation Accuracy:
+  Class 0: 76.45% (1123/1469)
+  Class 1: 48.33% (723/1496)
+  Class 2: 0.83% (13/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [2/100], Training Loss: 0.4695
+Validation Loss: 0.3695, Validation Accuracy: 75.12%
+
+Per-Class Validation Accuracy:
+  Class 0: 25.32% (372/1469)
+  Class 1: 99.93% (1495/1496)
+  Class 2: 74.70% (1166/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [3/100], Training Loss: 0.3637
+Validation Loss: 0.3794, Validation Accuracy: 74.32%
+
+Per-Class Validation Accuracy:
+  Class 0: 66.92% (983/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 32.42% (506/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [4/100], Training Loss: 0.3588
+Validation Loss: 0.3696, Validation Accuracy: 74.50%
+
+Per-Class Validation Accuracy:
+  Class 0: 75.29% (1106/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 25.24% (394/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [5/100], Training Loss: 0.3568
+Validation Loss: 0.3518, Validation Accuracy: 74.88%
+
+Per-Class Validation Accuracy:
+  Class 0: 59.90% (880/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 41.19% (643/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [6/100], Training Loss: 0.3529
+Validation Loss: 0.3534, Validation Accuracy: 74.30%
+
+Per-Class Validation Accuracy:
+  Class 0: 54.53% (801/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 44.01% (687/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [7/100], Training Loss: 0.3528
+Validation Loss: 0.3519, Validation Accuracy: 75.97%
+
+Per-Class Validation Accuracy:
+  Class 0: 60.72% (892/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 44.59% (696/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [8/100], Training Loss: 0.3515
+Validation Loss: 0.3548, Validation Accuracy: 75.12%
+
+Per-Class Validation Accuracy:
+  Class 0: 66.85% (982/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 35.55% (555/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [9/100], Training Loss: 0.3516
+Validation Loss: 0.3656, Validation Accuracy: 75.43%
+
+Per-Class Validation Accuracy:
+  Class 0: 37.71% (554/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 64.25% (1003/1561)
+  Class 3: 99.93% (1473/1474)
+Epoch [10/100], Training Loss: 0.3557
+Validation Loss: 0.3542, Validation Accuracy: 74.62%
+
+Per-Class Validation Accuracy:
+  Class 0: 71.20% (1046/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 29.53% (461/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [11/100], Training Loss: 0.3493
+Validation Loss: 0.3534, Validation Accuracy: 75.08%
+
+Per-Class Validation Accuracy:
+  Class 0: 57.79% (849/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 43.95% (686/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [12/100], Training Loss: 0.3478
+Validation Loss: 0.3544, Validation Accuracy: 74.77%
+
+Per-Class Validation Accuracy:
+  Class 0: 71.75% (1054/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 29.60% (462/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [13/100], Training Loss: 0.3476
+Validation Loss: 0.3497, Validation Accuracy: 75.17%
+
+Per-Class Validation Accuracy:
+  Class 0: 47.11% (692/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 54.32% (848/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [14/100], Training Loss: 0.3481
+Validation Loss: 0.3492, Validation Accuracy: 76.12%
+
+Per-Class Validation Accuracy:
+  Class 0: 34.65% (509/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 69.70% (1088/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [15/100], Training Loss: 0.3495
+Validation Loss: 0.3499, Validation Accuracy: 75.27%
+
+Per-Class Validation Accuracy:
+  Class 0: 67.32% (989/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 35.68% (557/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [16/100], Training Loss: 0.3474
+Validation Loss: 0.3491, Validation Accuracy: 75.45%
+
+Per-Class Validation Accuracy:
+  Class 0: 50.78% (746/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 51.95% (811/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [17/100], Training Loss: 0.3475
+Validation Loss: 0.3490, Validation Accuracy: 75.77%
+
+Per-Class Validation Accuracy:
+  Class 0: 48.20% (708/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 55.61% (868/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [18/100], Training Loss: 0.3476
+Validation Loss: 0.3494, Validation Accuracy: 76.45%
+
+Per-Class Validation Accuracy:
+  Class 0: 23.62% (347/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 81.36% (1270/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [19/100], Training Loss: 0.3477
+Validation Loss: 0.3536, Validation Accuracy: 74.70%
+
+Per-Class Validation Accuracy:
+  Class 0: 62.70% (921/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 37.86% (591/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [20/100], Training Loss: 0.3476
+Validation Loss: 0.3496, Validation Accuracy: 75.67%
+
+Per-Class Validation Accuracy:
+  Class 0: 2.65% (39/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 98.08% (1531/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [21/100], Training Loss: 0.3479
+Validation Loss: 0.3814, Validation Accuracy: 73.92%
+
+Per-Class Validation Accuracy:
+  Class 0: 88.36% (1298/1469)
+  Class 1: 96.79% (1448/1496)
+  Class 2: 13.77% (215/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [22/100], Training Loss: 0.3471
+Validation Loss: 0.3502, Validation Accuracy: 75.15%
+
+Per-Class Validation Accuracy:
+  Class 0: 78.01% (1146/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 25.18% (393/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [23/100], Training Loss: 0.3472
+Validation Loss: 0.3501, Validation Accuracy: 75.17%
+
+Per-Class Validation Accuracy:
+  Class 0: 67.26% (988/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 35.36% (552/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [24/100], Training Loss: 0.3465
+Validation Loss: 0.3487, Validation Accuracy: 75.87%
+
+Per-Class Validation Accuracy:
+  Class 0: 9.73% (143/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 92.18% (1439/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [25/100], Training Loss: 0.3462
+Validation Loss: 0.3498, Validation Accuracy: 75.22%
+
+Per-Class Validation Accuracy:
+  Class 0: 77.67% (1141/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 25.75% (402/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [26/100], Training Loss: 0.3463
+Validation Loss: 0.3487, Validation Accuracy: 75.35%
+
+Per-Class Validation Accuracy:
+  Class 0: 68.35% (1004/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 35.04% (547/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [27/100], Training Loss: 0.3460
+Validation Loss: 0.3480, Validation Accuracy: 76.57%
+
+Per-Class Validation Accuracy:
+  Class 0: 40.30% (592/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 66.11% (1032/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [28/100], Training Loss: 0.3460
+Validation Loss: 0.3505, Validation Accuracy: 75.53%
+
+Per-Class Validation Accuracy:
+  Class 0: 73.93% (1086/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 30.49% (476/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [29/100], Training Loss: 0.3458
+Validation Loss: 0.3481, Validation Accuracy: 76.23%
+
+Per-Class Validation Accuracy:
+  Class 0: 27.77% (408/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 76.62% (1196/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [30/100], Training Loss: 0.3459
+Validation Loss: 0.3495, Validation Accuracy: 75.90%
+
+Per-Class Validation Accuracy:
+  Class 0: 45.41% (667/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 58.74% (917/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [31/100], Training Loss: 0.3457
+Validation Loss: 0.3494, Validation Accuracy: 75.23%
+
+Per-Class Validation Accuracy:
+  Class 0: 44.25% (650/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 57.27% (894/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [32/100], Training Loss: 0.3456
+Validation Loss: 0.3494, Validation Accuracy: 75.62%
+
+Per-Class Validation Accuracy:
+  Class 0: 73.93% (1086/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 30.81% (481/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [33/100], Training Loss: 0.3455
+Validation Loss: 0.3533, Validation Accuracy: 74.30%
+
+Per-Class Validation Accuracy:
+  Class 0: 87.88% (1291/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 12.62% (197/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [34/100], Training Loss: 0.3448
+Validation Loss: 0.3478, Validation Accuracy: 76.63%
+
+Per-Class Validation Accuracy:
+  Class 0: 57.66% (847/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 50.03% (781/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [35/100], Training Loss: 0.3442
+Validation Loss: 0.3469, Validation Accuracy: 77.00%
+
+Per-Class Validation Accuracy:
+  Class 0: 45.06% (662/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 63.29% (988/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [36/100], Training Loss: 0.3438
+Validation Loss: 0.3468, Validation Accuracy: 76.58%
+
+Per-Class Validation Accuracy:
+  Class 0: 30.97% (455/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 74.95% (1170/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [37/100], Training Loss: 0.3440
+Validation Loss: 0.3465, Validation Accuracy: 76.88%
+
+Per-Class Validation Accuracy:
+  Class 0: 53.17% (781/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 55.22% (862/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [38/100], Training Loss: 0.3434
+Validation Loss: 0.3473, Validation Accuracy: 76.25%
+
+Per-Class Validation Accuracy:
+  Class 0: 68.96% (1013/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 37.92% (592/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [39/100], Training Loss: 0.3434
+Validation Loss: 0.3491, Validation Accuracy: 75.97%
+
+Per-Class Validation Accuracy:
+  Class 0: 29.95% (440/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 73.54% (1148/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [40/100], Training Loss: 0.3436
+Validation Loss: 0.3471, Validation Accuracy: 76.62%
+
+Per-Class Validation Accuracy:
+  Class 0: 61.95% (910/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 45.93% (717/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [41/100], Training Loss: 0.3428
+Validation Loss: 0.3489, Validation Accuracy: 75.62%
+
+Per-Class Validation Accuracy:
+  Class 0: 76.24% (1120/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 28.64% (447/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [42/100], Training Loss: 0.3434
+Validation Loss: 0.3458, Validation Accuracy: 77.00%
+
+Per-Class Validation Accuracy:
+  Class 0: 50.03% (735/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 58.62% (915/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [43/100], Training Loss: 0.3428
+Validation Loss: 0.3478, Validation Accuracy: 76.32%
+
+Per-Class Validation Accuracy:
+  Class 0: 23.42% (344/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 81.04% (1265/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [44/100], Training Loss: 0.3442
+Validation Loss: 0.3484, Validation Accuracy: 76.12%
+
+Per-Class Validation Accuracy:
+  Class 0: 73.04% (1073/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 33.57% (524/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [45/100], Training Loss: 0.3423
+Validation Loss: 0.3466, Validation Accuracy: 76.87%
+
+Per-Class Validation Accuracy:
+  Class 0: 56.30% (827/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 52.21% (815/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [46/100], Training Loss: 0.3425
+Validation Loss: 0.3476, Validation Accuracy: 76.32%
+
+Per-Class Validation Accuracy:
+  Class 0: 21.24% (312/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 83.09% (1297/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [47/100], Training Loss: 0.3426
+Validation Loss: 0.3455, Validation Accuracy: 77.32%
+
+Per-Class Validation Accuracy:
+  Class 0: 41.52% (610/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 67.84% (1059/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [48/100], Training Loss: 0.3429
+Validation Loss: 0.3460, Validation Accuracy: 76.90%
+
+Per-Class Validation Accuracy:
+  Class 0: 56.16% (825/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 52.47% (819/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [49/100], Training Loss: 0.3427
+Validation Loss: 0.3508, Validation Accuracy: 75.62%
+
+Per-Class Validation Accuracy:
+  Class 0: 8.10% (119/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 92.76% (1448/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [50/100], Training Loss: 0.3429
+Validation Loss: 0.3452, Validation Accuracy: 77.62%
+
+Per-Class Validation Accuracy:
+  Class 0: 34.31% (504/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 75.78% (1183/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [51/100], Training Loss: 0.3429
+Validation Loss: 0.3459, Validation Accuracy: 76.98%
+
+Per-Class Validation Accuracy:
+  Class 0: 56.09% (824/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 52.85% (825/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [52/100], Training Loss: 0.3429
+Validation Loss: 0.3460, Validation Accuracy: 76.85%
+
+Per-Class Validation Accuracy:
+  Class 0: 42.27% (621/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 65.34% (1020/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [53/100], Training Loss: 0.3424
+Validation Loss: 0.3465, Validation Accuracy: 76.15%
+
+Per-Class Validation Accuracy:
+  Class 0: 27.57% (405/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 76.49% (1194/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [54/100], Training Loss: 0.3433
+Validation Loss: 0.3505, Validation Accuracy: 75.57%
+
+Per-Class Validation Accuracy:
+  Class 0: 77.88% (1144/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 26.91% (420/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [55/100], Training Loss: 0.3420
+Validation Loss: 0.3457, Validation Accuracy: 76.77%
+
+Per-Class Validation Accuracy:
+  Class 0: 60.11% (883/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 48.24% (753/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [56/100], Training Loss: 0.3422
+Validation Loss: 0.3452, Validation Accuracy: 77.10%
+
+Per-Class Validation Accuracy:
+  Class 0: 60.45% (888/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 49.20% (768/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [57/100], Training Loss: 0.3423
+Validation Loss: 0.3486, Validation Accuracy: 76.03%
+
+Per-Class Validation Accuracy:
+  Class 0: 67.80% (996/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 38.18% (596/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [58/100], Training Loss: 0.3422
+Validation Loss: 0.3449, Validation Accuracy: 77.40%
+
+Per-Class Validation Accuracy:
+  Class 0: 31.86% (468/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 77.26% (1206/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [59/100], Training Loss: 0.3423
+Validation Loss: 0.3458, Validation Accuracy: 76.60%
+
+Per-Class Validation Accuracy:
+  Class 0: 21.10% (310/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 84.30% (1316/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [60/100], Training Loss: 0.3422
+Validation Loss: 0.3463, Validation Accuracy: 76.57%
+
+Per-Class Validation Accuracy:
+  Class 0: 45.20% (664/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 61.50% (960/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [61/100], Training Loss: 0.3420
+Validation Loss: 0.4155, Validation Accuracy: 77.15%
+
+Per-Class Validation Accuracy:
+  Class 0: 56.50% (830/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 53.24% (831/1561)
+  Class 3: 99.86% (1472/1474)
+Epoch [62/100], Training Loss: 0.3523
+Validation Loss: 0.3473, Validation Accuracy: 76.03%
+
+Per-Class Validation Accuracy:
+  Class 0: 72.29% (1062/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 33.95% (530/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [63/100], Training Loss: 0.3413
+Validation Loss: 0.3492, Validation Accuracy: 75.45%
+
+Per-Class Validation Accuracy:
+  Class 0: 79.71% (1171/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 24.73% (386/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [64/100], Training Loss: 0.3415
+Validation Loss: 0.3457, Validation Accuracy: 76.58%
+
+Per-Class Validation Accuracy:
+  Class 0: 44.93% (660/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 61.82% (965/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [65/100], Training Loss: 0.3407
+Validation Loss: 0.3444, Validation Accuracy: 77.45%
+
+Per-Class Validation Accuracy:
+  Class 0: 35.19% (517/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 74.31% (1160/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [66/100], Training Loss: 0.3407
+Validation Loss: 0.3469, Validation Accuracy: 76.07%
+
+Per-Class Validation Accuracy:
+  Class 0: 72.57% (1066/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 33.82% (528/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [67/100], Training Loss: 0.3407
+Validation Loss: 0.3447, Validation Accuracy: 77.02%
+
+Per-Class Validation Accuracy:
+  Class 0: 59.22% (870/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 50.03% (781/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [68/100], Training Loss: 0.3405
+Validation Loss: 0.3445, Validation Accuracy: 77.07%
+
+Per-Class Validation Accuracy:
+  Class 0: 60.79% (893/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 48.75% (761/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [69/100], Training Loss: 0.3407
+Validation Loss: 0.3440, Validation Accuracy: 77.08%
+
+Per-Class Validation Accuracy:
+  Class 0: 42.27% (621/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 66.24% (1034/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [70/100], Training Loss: 0.3405
+Validation Loss: 0.3456, Validation Accuracy: 76.60%
+
+Per-Class Validation Accuracy:
+  Class 0: 68.62% (1008/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 39.59% (618/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [71/100], Training Loss: 0.3405
+Validation Loss: 0.3445, Validation Accuracy: 76.85%
+
+Per-Class Validation Accuracy:
+  Class 0: 59.77% (878/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 48.88% (763/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [72/100], Training Loss: 0.3406
+Validation Loss: 0.3437, Validation Accuracy: 77.58%
+
+Per-Class Validation Accuracy:
+  Class 0: 53.10% (780/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 57.98% (905/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [73/100], Training Loss: 0.3405
+Validation Loss: 0.3435, Validation Accuracy: 77.40%
+
+Per-Class Validation Accuracy:
+  Class 0: 42.61% (626/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 67.14% (1048/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [74/100], Training Loss: 0.3405
+Validation Loss: 0.3436, Validation Accuracy: 77.23%
+
+Per-Class Validation Accuracy:
+  Class 0: 52.89% (777/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 56.82% (887/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [75/100], Training Loss: 0.3402
+Validation Loss: 0.3436, Validation Accuracy: 77.28%
+
+Per-Class Validation Accuracy:
+  Class 0: 47.92% (704/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 61.69% (963/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [76/100], Training Loss: 0.3402
+Validation Loss: 0.3462, Validation Accuracy: 76.53%
+
+Per-Class Validation Accuracy:
+  Class 0: 68.55% (1007/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 39.40% (615/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [77/100], Training Loss: 0.3401
+Validation Loss: 0.3434, Validation Accuracy: 77.35%
+
+Per-Class Validation Accuracy:
+  Class 0: 47.17% (693/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 62.65% (978/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [78/100], Training Loss: 0.3447
+Validation Loss: 0.3467, Validation Accuracy: 76.47%
+
+Per-Class Validation Accuracy:
+  Class 0: 27.71% (407/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 77.58% (1211/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [79/100], Training Loss: 0.3397
+Validation Loss: 0.3459, Validation Accuracy: 76.03%
+
+Per-Class Validation Accuracy:
+  Class 0: 69.84% (1026/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 36.26% (566/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [80/100], Training Loss: 0.3396
+Validation Loss: 0.3450, Validation Accuracy: 76.88%
+
+Per-Class Validation Accuracy:
+  Class 0: 67.94% (998/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 41.32% (645/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [81/100], Training Loss: 0.3398
+Validation Loss: 0.3437, Validation Accuracy: 77.00%
+
+Per-Class Validation Accuracy:
+  Class 0: 50.85% (747/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 57.85% (903/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [82/100], Training Loss: 0.3398
+Validation Loss: 0.3482, Validation Accuracy: 76.07%
+
+Per-Class Validation Accuracy:
+  Class 0: 22.19% (326/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 81.23% (1268/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [83/100], Training Loss: 0.3400
+Validation Loss: 0.3428, Validation Accuracy: 77.65%
+
+Per-Class Validation Accuracy:
+  Class 0: 45.06% (662/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 65.79% (1027/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [84/100], Training Loss: 0.3401
+Validation Loss: 0.3428, Validation Accuracy: 77.78%
+
+Per-Class Validation Accuracy:
+  Class 0: 48.20% (708/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 63.36% (989/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [85/100], Training Loss: 0.3401
+Validation Loss: 0.3442, Validation Accuracy: 76.90%
+
+Per-Class Validation Accuracy:
+  Class 0: 57.32% (842/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 51.38% (802/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [86/100], Training Loss: 0.3400
+Validation Loss: 0.3455, Validation Accuracy: 76.50%
+
+Per-Class Validation Accuracy:
+  Class 0: 21.92% (322/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 83.15% (1298/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [87/100], Training Loss: 0.3399
+Validation Loss: 0.3431, Validation Accuracy: 77.37%
+
+Per-Class Validation Accuracy:
+  Class 0: 53.03% (779/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 57.21% (893/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [88/100], Training Loss: 0.3398
+Validation Loss: 0.3430, Validation Accuracy: 77.28%
+
+Per-Class Validation Accuracy:
+  Class 0: 42.82% (629/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 66.50% (1038/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [89/100], Training Loss: 0.3397
+Validation Loss: 0.3445, Validation Accuracy: 76.98%
+
+Per-Class Validation Accuracy:
+  Class 0: 65.96% (969/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 43.56% (680/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [90/100], Training Loss: 0.3392
+Validation Loss: 0.3432, Validation Accuracy: 77.50%
+
+Per-Class Validation Accuracy:
+  Class 0: 61.33% (901/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 49.90% (779/1561)
+  Class 3: 100.00% (1474/1474)
+Epoch [91/100], Training Loss: 0.3390
+Validation Loss: 0.3462, Validation Accuracy: 77.63%
+
+Per-Class Validation Accuracy:
+  Class 0: 46.77% (687/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 64.19% (1002/1561)
+  Class 3: 99.93% (1473/1474)
+Epoch [92/100], Training Loss: 0.3388
+Validation Loss: 0.3483, Validation Accuracy: 77.60%
+
+Per-Class Validation Accuracy:
+  Class 0: 41.73% (613/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 68.80% (1074/1561)
+  Class 3: 99.93% (1473/1474)
+Epoch [93/100], Training Loss: 0.3387
+Validation Loss: 0.3705, Validation Accuracy: 77.58%
+
+Per-Class Validation Accuracy:
+  Class 0: 52.83% (776/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 58.30% (910/1561)
+  Class 3: 99.93% (1473/1474)
+Epoch [94/100], Training Loss: 0.3386
+Validation Loss: 0.4118, Validation Accuracy: 77.28%
+
+Per-Class Validation Accuracy:
+  Class 0: 45.20% (664/1469)
+  Class 1: 100.00% (1496/1496)
+  Class 2: 64.32% (1004/1561)
+  Class 3: 99.93% (1473/1474)
+Early stopping triggered.
+
+	Elapsed time is 1243.4517 seconds.
+
+==========================================================================================
+Total parameters: 6682
+Total memory (bytes): 53456
+Total memory (MB): 0.0509796142578125
+==========================================================================================
+Validation Loss: 0.4118, Validation Accuracy: 77.28%
+
+Per-Class Validation Accuracy:
+  No Thrust: 45.20% (664/1469)
+  Chemical: 100.00% (1496/1496)
+  Electric: 64.32% (1004/1561)
+  Impulsive: 99.93% (1473/1474)
