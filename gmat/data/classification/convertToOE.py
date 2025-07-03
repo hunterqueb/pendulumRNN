@@ -4,11 +4,25 @@ import matplotlib.pyplot as plt
 from qutils.orbital import ECI2OE
 dt = 60
 
-numMinProp = 100
-numRandSys = 10000
-orbitType = "leo"
+import argparse
+
+parser = argparse.ArgumentParser(description='GMAT Dataset Generation for Different Thruster Types (convert to orbital elements)')
+parser.add_argument("--orbit",type=str,default='vleo',help="orbit regime (vleo,leo)")
+parser.add_argument("--numRandSys",type = int, default='10000',help = "Number of random systems in dataset")
+parser.add_argument("--propTime",type=int,default=30,help="Number of seconds dataset was prop'd for")
+parser.add_argument('--no-plot', dest="plotOn", action='store_false', help='Plot the results')
+parser.set_defaults(plotOn=True)
+
+args = parser.parse_args()
+
+
+numMinProp = args.propTime
+numRandSys = args.numRandSys
+orbitType = args.orbit
+plotOn = args.plotOn
 
 dataLoc = "gmat/data/classification/" + orbitType + "/" + str(numMinProp) + "min-" + str(numRandSys)
+
 # get npz files in folder and load them into script
 a = np.load(f"{dataLoc}/statesArrayChemical.npz")
 statesArrayChemical = a['statesArrayChemical']
@@ -47,4 +61,5 @@ plt.ylabel('SMA (km)')
 plt.grid()
 plt.legend()
 plt.title('Semi-Major Axis Time Series')
-plt.show()
+if plotOn:
+    plt.show()
