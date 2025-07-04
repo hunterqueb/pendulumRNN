@@ -70,12 +70,14 @@ parser.add_argument("--norm", action='store_true', help="Normalize the semi-majo
 parser.add_argument("--one-shot",type=str, default=None, help="Use one shot transfer learning. Takes in a path to a saved pt model")
 parser.add_argument("--one-pass",dest="one_pass",action='store_true', help="Use one pass learning.")
 parser.add_argument("--save",dest="save_to_log",action="store_true",help="output console printout to log file in the same location as datasets")
+parser.add_argument("--energy",dest="use_energy",action="store_true",help="Use energy as a feature.")
 parser.set_defaults(use_lstm=True)
 parser.set_defaults(OE=False)
 parser.set_defaults(noise=False)
 parser.set_defaults(norm=False)
 parser.set_defaults(one_pass=False)
 parser.set_defaults(save_to_log=False)
+parser.set_defaults(use_energy=False)
 
 args = parser.parse_args()
 use_lstm = args.use_lstm
@@ -88,6 +90,7 @@ useNorm = args.norm
 useOneShot = args.one_shot
 useOnePass = args.one_pass
 save_to_log = args.save_to_log
+useEnergy=args.use_energy
 
 dataLoc = "gmat/data/classification/"+ orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
 
@@ -97,6 +100,8 @@ if save_to_log:
     strAdd = ""
     if useOE:
         strAdd = strAdd + "OE"
+    if useEnergy:
+        strAdd = "Energy"
     if useNorm:
         strAdd = strAdd + "Norm"
     if useNoise:
@@ -105,7 +110,6 @@ if save_to_log:
         strAdd = strAdd + "OneShot"
     if useOnePass:
         strAdd = strAdd + "OnePass"
-    
     # file to open
     f = open(dataLoc+"/"+str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log', 'w')
     # change stdout to write to file -- this allows for printing from functions to a file
@@ -186,6 +190,22 @@ num_epochs = 100
 if useOnePass:
     num_epochs = 1
 
+if useEnergy:
+    from qutils.orbital import orbitalEnergy
+    problemDim = 1
+    input_size = 1
+    print(statesArrayChemical.shape)
+    energyChemical = np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
+    energyElectric= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
+    energyImpBurn= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
+    energyNoThrust= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
+    for i in range(statesArrayChemical.shape[0]):
+        energyChemical[i,:,0] = orbitalEnergy(statesArrayChemical[i,:,:])
+        energyElectric[i,:,0] = orbitalEnergy(statesArrayElectric[i,:,:])
+        energyImpBurn[i,:,0] = orbitalEnergy(statesArrayImpBurn[i,:,:])
+        energyNoThrust[i,:,0] = orbitalEnergy(statesArrayNoThrust[i,:,:])
+
+
 config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
 
 noThrustLabel = 0
@@ -201,6 +221,10 @@ labelsImpBurn = np.full((statesArrayImpBurn.shape[0],1),impBurnLabel)
 labelsNoThrust = np.full((statesArrayNoThrust.shape[0],1),noThrustLabel)
 # Combine datasets and labels
 dataset = np.concatenate((statesArrayChemical, statesArrayElectric, statesArrayImpBurn, statesArrayNoThrust), axis=0)
+if useEnergy:
+    dataset = np.concatenate((energyChemical, energyElectric, energyImpBurn, energyNoThrust), axis=0)
+
+
 dataset_label = np.concatenate((labelsChemical, labelsElectric, labelsImpBurn, labelsNoThrust), axis=0)
 
 indices = np.random.permutation(dataset.shape[0])
