@@ -71,6 +71,8 @@ parser.add_argument("--one-shot",type=str, default=None, help="Use one shot tran
 parser.add_argument("--one-pass",dest="one_pass",action='store_true', help="Use one pass learning.")
 parser.add_argument("--save",dest="save_to_log",action="store_true",help="output console printout to log file in the same location as datasets")
 parser.add_argument("--energy",dest="use_energy",action="store_true",help="Use energy as a feature.")
+parser.add_argument("--hybrid",dest="use_hybrid",action="store_true",help="Use a hybrid network.")
+
 parser.set_defaults(use_lstm=True)
 parser.set_defaults(OE=False)
 parser.set_defaults(noise=False)
@@ -78,6 +80,7 @@ parser.set_defaults(norm=False)
 parser.set_defaults(one_pass=False)
 parser.set_defaults(save_to_log=False)
 parser.set_defaults(use_energy=False)
+parser.set_defaults(use_hybrid=False)
 
 args = parser.parse_args()
 use_lstm = args.use_lstm
@@ -91,6 +94,7 @@ useOneShot = args.one_shot
 useOnePass = args.one_pass
 save_to_log = args.save_to_log
 useEnergy=args.use_energy
+useHybrid=args.use_hybrid
 
 dataLoc = "gmat/data/classification/"+ orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
 
@@ -98,10 +102,10 @@ if save_to_log:
     import sys
 
     strAdd = ""
-    if useOE:
-        strAdd = strAdd + "OE"
     if useEnergy:
         strAdd = "Energy"
+    if useOE:
+        strAdd = strAdd + "OE"
     if useNorm:
         strAdd = strAdd + "Norm"
     if useNoise:
@@ -110,8 +114,14 @@ if save_to_log:
         strAdd = strAdd + "OneShot"
     if useOnePass:
         strAdd = strAdd + "OnePass"
+    if useHybrid:
+        strAdd = strAdd + "Hybrid"
+
+    logFileLoc = dataLoc+"/"+str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log'
+    print("saving log output to {}".format(logFileLoc))
+
     # file to open
-    f = open(dataLoc+"/"+str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log', 'w')
+    f = open(logFileLoc, 'a')
     # change stdout to write to file -- this allows for printing from functions to a file
     sys.stdout = f
 
@@ -194,7 +204,7 @@ if useEnergy:
     from qutils.orbital import orbitalEnergy
     problemDim = 1
     input_size = 1
-    print(statesArrayChemical.shape)
+
     energyChemical = np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
     energyElectric= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
     energyImpBurn= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
@@ -204,6 +214,21 @@ if useEnergy:
         energyElectric[i,:,0] = orbitalEnergy(statesArrayElectric[i,:,:])
         energyImpBurn[i,:,0] = orbitalEnergy(statesArrayImpBurn[i,:,:])
         energyNoThrust[i,:,0] = orbitalEnergy(statesArrayNoThrust[i,:,:])
+    if useNorm:
+        normingEnergy = energyNoThrust[0,0,0]
+        energyChemical[:,:,0] = energyChemical[:,:,0] / normingEnergy
+        energyElectric[:,:,0] = energyElectric[:,:,0] / normingEnergy
+        energyImpBurn[:,:,0] = energyImpBurn[:,:,0] / normingEnergy
+        energyNoThrust[:,:,0] = energyNoThrust[:,:,0] / normingEnergy
+    # plt.figure()
+    # plt.plot(energyChemical[0,:,:],label="Chemical")
+    # plt.plot(energyElectric[0,:,:],label="Electric")
+    # plt.plot(energyImpBurn[0,:,:],label="Impulsive")
+    # plt.plot(energyNoThrust[0,:,:],label="No Thrust")
+    # plt.grid()
+    # plt.title("Normalized Energy By {:4f}".format(normingEnergy))
+    # plt.legend()
+    # plt.show()
 
 
 config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
@@ -221,9 +246,18 @@ labelsImpBurn = np.full((statesArrayImpBurn.shape[0],1),impBurnLabel)
 labelsNoThrust = np.full((statesArrayNoThrust.shape[0],1),noThrustLabel)
 # Combine datasets and labels
 dataset = np.concatenate((statesArrayChemical, statesArrayElectric, statesArrayImpBurn, statesArrayNoThrust), axis=0)
+
 if useEnergy:
     dataset = np.concatenate((energyChemical, energyElectric, energyImpBurn, energyNoThrust), axis=0)
-
+if useEnergy and useOE:
+    combinedChemical = np.concatenate((statesArrayChemical,energyChemical),axis=2) 
+    combinedElectric = np.concatenate((statesArrayElectric,energyElectric),axis=2) 
+    combinedImpBurn = np.concatenate((statesArrayImpBurn,energyImpBurn),axis=2) 
+    combinedNoThrust = np.concatenate((statesArrayNoThrust,energyNoThrust),axis=2) 
+    dataset = np.concatenate((combinedChemical, combinedElectric, combinedImpBurn, combinedNoThrust), axis=0)
+    input_size = 6 + 1
+    hidden_size = int(input_size * 8) 
+    config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
 
 dataset_label = np.concatenate((labelsChemical, labelsElectric, labelsImpBurn, labelsNoThrust), axis=0)
 
@@ -283,21 +317,22 @@ scheduler_mamba = torch.optim.lr_scheduler.ReduceLROnPlateau(
 
 classlabels = ['No Thrust','Chemical','Electric','Impulsive']
 
-# config_hybrid = MambaConfig(d_model=hidden_size * 2,n_layers = 1,expand_factor=1,d_state=32,d_conv=16,classifer=True)
+if useHybrid:
+    config_hybrid = MambaConfig(d_model=hidden_size * 2,n_layers = 1,expand_factor=1,d_state=32,d_conv=16,classifer=True)
 
-# model_hybrid = HybridClassifier(config_hybrid,input_size,hidden_size,num_layers,num_classes).to(device).double()
-# optimizer_hybrid = torch.optim.Adam(model_hybrid.parameters(), lr=learning_rate)
-# scheduler_hybrid = torch.optim.lr_scheduler.ReduceLROnPlateau(
-#     optimizer_hybrid,
-#     mode='min',             # or 'max' for accuracy
-#     factor=0.5,             # shrink LR by 50%
-#     patience=schedulerPatience
-# )
+    model_hybrid = HybridClassifier(config_hybrid,input_size,hidden_size,num_layers,num_classes).to(device).double()
+    optimizer_hybrid = torch.optim.Adam(model_hybrid.parameters(), lr=learning_rate)
+    scheduler_hybrid = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer_hybrid,
+        mode='min',             # or 'max' for accuracy
+        factor=0.5,             # shrink LR by 50%
+        patience=schedulerPatience
+    )
 
-# print('\nEntering Hybrid Training Loop')
-# trainClassifier(model_hybrid,optimizer_hybrid,scheduler_hybrid,[train_loader,test_loader,val_loader],criterion,num_epochs,device)
-# printModelParmSize(model_hybrid)
-# validateMultiClassClassifier(model_hybrid,val_loader,criterion,num_classes,device,classlabels)
+    print('\nEntering Hybrid Training Loop')
+    trainClassifier(model_hybrid,optimizer_hybrid,scheduler_hybrid,[train_loader,test_loader,val_loader],criterion,num_epochs,device)
+    printModelParmSize(model_hybrid)
+    validateMultiClassClassifier(model_hybrid,val_loader,criterion,num_classes,device,classlabels)
 
 
 if use_lstm:
@@ -320,6 +355,9 @@ trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba,[train_loader,test_l
 printModelParmSize(model_mamba)
 validateMultiClassClassifier(model_mamba,val_loader,criterion,num_classes,device,classlabels)
 # torch.save(model_mamba.state_dict(), f"{dataLoc}/mambaTimeSeriesClassificationGMATThrusts"+ orbitType +".pt")
+
+
+
 
 # # example onnx export
 # # # generate example inputs for ONNX export
