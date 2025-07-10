@@ -7,9 +7,6 @@ import matplotlib.pyplot as plt
 OUTPUT_FOLDER = "parsed_data"
 
 def parse_training_log_summary(file_path):
-    """
-    Parses a single log file for summary metrics.
-    """
     with open(file_path, "r") as file:
         log_data = file.read()
 
@@ -56,9 +53,6 @@ def parse_training_log_summary(file_path):
 
 
 def parse_training_log_all_epochs(file_path):
-    """
-    Parses a single log file for epoch-level metrics.
-    """
     with open(file_path, "r") as file:
         log_data = file.read()
 
@@ -73,13 +67,11 @@ def parse_training_log_all_epochs(file_path):
         current_epoch = None
 
         for line in model_log.splitlines():
-            # Check for epoch line
             epoch_match = re.match(r"Epoch\s*\[(\d+)/\d+\]", line.strip())
             if epoch_match:
                 current_epoch = int(epoch_match.group(1))
                 continue
 
-            # Check for validation accuracy line
             valacc_match = re.search(r"Validation Accuracy:\s*([\d.]+)%", line)
             if valacc_match and current_epoch is not None:
                 val_acc = float(valacc_match.group(1))
@@ -95,9 +87,6 @@ def parse_training_log_all_epochs(file_path):
 
 
 def plot_validation_accuracy_over_epochs(df, output_file):
-    """
-    Plots validation accuracy over epochs for each model.
-    """
     if df.empty:
         print(f"No epoch-level data to plot for {output_file}")
         return
@@ -132,40 +121,54 @@ def find_all_log_files(root_folder):
     return log_files
 
 
-def process_log_file(file_path, root_folder):
+def output_files_exist(output_dir, log_basename):
+    """
+    Check if all three output files exist for a given log file.
+    """
+    summary_csv = os.path.join(output_dir, f"summary_{log_basename}.csv")
+    epochs_csv = os.path.join(output_dir, f"val_acc_epochs_{log_basename}.csv")
+    plot_png = os.path.join(output_dir, f"val_acc_plot_{log_basename}.png")
+
+    return all([
+        os.path.isfile(summary_csv),
+        os.path.isfile(epochs_csv),
+        os.path.isfile(plot_png)
+    ])
+
+
+def process_log_file(file_path, root_folder, force=False):
     """
     Process one log file and save outputs under parsed_data/ with matching subfolders.
     """
-    print(f"\nProcessing: {file_path}")
-
-    summary_df = parse_training_log_summary(file_path)
-    epochs_df = parse_training_log_all_epochs(file_path)
-
-    # Compute relative path from root_folder
     relative_path = os.path.relpath(file_path, start=root_folder)
     relative_dir = os.path.dirname(relative_path)
-
-    # Compute output folder under parsed_data
     output_dir = os.path.join(OUTPUT_FOLDER, relative_dir)
     os.makedirs(output_dir, exist_ok=True)
 
     log_basename = os.path.splitext(os.path.basename(file_path))[0]
 
+    if not force and output_files_exist(output_dir, log_basename):
+        print(f"Skipping {file_path} (outputs already exist)")
+        return
+
+    print(f"\nProcessing: {file_path}")
+
+    summary_df = parse_training_log_summary(file_path)
+    epochs_df = parse_training_log_all_epochs(file_path)
+
     summary_csv = os.path.join(output_dir, f"summary_{log_basename}.csv")
     epochs_csv = os.path.join(output_dir, f"val_acc_epochs_{log_basename}.csv")
     plot_png = os.path.join(output_dir, f"val_acc_plot_{log_basename}.png")
 
-    # Save summary
     summary_df.drop(columns="Numeric Accuracy").to_csv(summary_csv, index=False)
     print(summary_df.drop(columns="Numeric Accuracy").to_string(index=False))
     print(f"Saved summary CSV: {summary_csv}")
 
-    # Save epoch-level CSV
     epochs_df.to_csv(epochs_csv, index=False)
     print(f"Saved epoch-level CSV: {epochs_csv}")
 
-    # Plot
     plot_validation_accuracy_over_epochs(epochs_df, plot_png)
+
 
 
 if __name__ == "__main__":
@@ -177,6 +180,11 @@ if __name__ == "__main__":
         type=str,
         help="Path to the root folder to search for log files."
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-run processing even if output files already exist."
+    )
     args = parser.parse_args()
 
     os.makedirs(OUTPUT_FOLDER, exist_ok=True)
@@ -185,4 +193,4 @@ if __name__ == "__main__":
     print(f"Found {len(all_logs)} log files.")
 
     for log_file in all_logs:
-        process_log_file(log_file, args.root_folder)
+        process_log_file(log_file, args.root_folder, force=args.force)
