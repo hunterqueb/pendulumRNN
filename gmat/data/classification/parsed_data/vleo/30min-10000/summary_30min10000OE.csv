@@ -1,3 +1,0 @@
-Model,Max Validation Accuracy,Epochs Trained,Final Validation Loss,Total Parameters,Memory (MB),Training Time (s),Early Stopping,LR Reduction Events
-LSTM,25.80%,14,1.3867,10948,0.0835,143.32,Yes,0
-Mamba,76.75%,37,0.3433,6682,0.051,569.97,Yes,0

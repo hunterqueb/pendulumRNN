@@ -1,196 +1,295 @@
-import re
-import os
-import pandas as pd
+from __future__ import annotations
+
+"""Smart training-log parser (v3.5)
+• **Fixes confusion-matrix extraction** – works with headers like  
+  ‘Confusion Matrix (rows = true, cols = predicted):’ and with row/column labels
+  (`P_0 …`, `T_0 …`). The last confusion matrix in the block is plotted.
+• No other functionality changed.
+"""
+
+from pathlib import Path
 import argparse
+import re
+from dataclasses import dataclass, asdict
+from typing import Any, Dict, Iterator, List
+
 import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
 
-OUTPUT_FOLDER = "parsed_data"
+# ───── Regexes ─────
+RE_MODEL_SPLIT = re.compile(r"Entering\s+(.+?)\s+Training Loop", re.S)
+RE_EPOCH_LINE  = re.compile(r"^Epoch\s*\[(\d+)/(\d+)\]")
+RE_VAL_ACC     = re.compile(r"Validation Accuracy:\s*([\d.]+)%")
+RE_VAL_LOSS    = re.compile(r"Validation Loss:\s*([\d.]+)")
+RE_PARAMS      = re.compile(r"Total parameters:\s*(\d+)")
+RE_MEMORY      = re.compile(r"Total memory \(MB\):\s*([\d.]+)")
+RE_TIME        = re.compile(r"Elapsed time is\s*([\d.]+)\s*seconds")
 
-def parse_training_log_summary(file_path):
-    with open(file_path, "r") as file:
-        log_data = file.read()
+RE_CLASS_REPORT = re.compile(
+    r"Classification Report:\s*[\r\n]+(.*?)(?=\n(?:Epoch|Per-Class|Entering|Early stopping|=|$))",
+    re.S,
+)
+RE_CONF_MATRIX = re.compile(
+    r"Confusion Matrix.*?:\s*[\r\n]+(.*?)(?=\n(?:Classification Report:|Epoch|Per-Class|Entering|Early stopping|=|$))",
+    re.S | re.I,
+)
 
-    model_sections = re.split(r"Entering (.+?) Training Loop", log_data)[1:]
-    parsed_data = []
+@dataclass
+class Summary:
+    model: str
+    max_val_accuracy: float
+    best_epoch: int
+    epochs_trained: int
+    final_val_loss: float
+    params: int
+    memory_mb: float
+    training_time_s: float
+    early_stopping: bool
+    lr_reductions: int
+    class_metrics: Dict[str, float]
 
-    for i in range(0, len(model_sections), 2):
-        model_name = model_sections[i].strip()
-        model_log = model_sections[i + 1]
+    def to_flat(self) -> Dict[str, Any]:
+        d = asdict(self)
+        d.update(d.pop("class_metrics"))
+        return d
 
-        val_accs = re.findall(r"Validation Accuracy:\s*([\d.]+)%", model_log)
-        max_val_acc = max(map(float, val_accs)) if val_accs else 0.0
+# ───── Helpers ─────
+def parse_confusion_matrix(block: str) -> np.ndarray | None:
+    """Return the last confusion-matrix in `block` as a 2-D int array."""
+    matches = RE_CONF_MATRIX.findall(block)
+    if not matches:
+        return None
+    raw_lines = matches[-1].strip().splitlines()
 
-        final_loss_matches = re.findall(r"Validation Loss:\s*([\d.]+)", model_log)
-        final_loss = float(final_loss_matches[-1]) if final_loss_matches else 0.0
+    rows: List[List[int]] = []
+    for ln in raw_lines:
+        ln = ln.strip()
+        if not ln:
+            continue
+        if ln.lower().startswith("p_"):          # header row
+            continue
+        tokens = re.split(r"\s+", ln)
+        if tokens and re.match(r"^[tT]_\d+", tokens[0]):  # leading row label
+            tokens = tokens[1:]
+        nums = [int(tok) for tok in tokens if re.fullmatch(r"-?\d+", tok)]
+        if nums:
+            rows.append(nums)
 
-        params_match = re.search(r"Total parameters:\s*(\d+)", model_log)
-        params = int(params_match.group(1)) if params_match else 0
-
-        memory_match = re.search(r"Total memory \(MB\):\s*([\d.]+)", model_log)
-        memory_mb = float(memory_match.group(1)) if memory_match else 0.0
-
-        time_matches = re.findall(r"Elapsed time is\s*([\d.]+)\s*seconds", model_log)
-        training_time = float(time_matches[-1]) if time_matches else 0.0
-
-        early_stopping = "Yes" if "Early stopping" in model_log else "No"
-        lr_events = len(re.findall(r"reducing learning rate", model_log))
-
-        parsed_data.append({
-            "Model": model_name,
-            "Max Validation Accuracy": f"{max_val_acc:.2f}%",
-            "Epochs Trained": len(val_accs),
-            "Final Validation Loss": round(final_loss, 4),
-            "Total Parameters": params,
-            "Memory (MB)": round(memory_mb, 4),
-            "Training Time (s)": round(training_time, 2),
-            "Early Stopping": early_stopping,
-            "LR Reduction Events": lr_events,
-            "Numeric Accuracy": max_val_acc
-        })
-
-    df = pd.DataFrame(parsed_data)
-    return df
-
-
-def parse_training_log_all_epochs(file_path):
-    with open(file_path, "r") as file:
-        log_data = file.read()
-
-    model_sections = re.split(r"Entering (.+?) Training Loop", log_data)[1:]
-
-    rows = []
-
-    for i in range(0, len(model_sections), 2):
-        model_name = model_sections[i].strip()
-        model_log = model_sections[i + 1]
-
-        current_epoch = None
-
-        for line in model_log.splitlines():
-            epoch_match = re.match(r"Epoch\s*\[(\d+)/\d+\]", line.strip())
-            if epoch_match:
-                current_epoch = int(epoch_match.group(1))
-                continue
-
-            valacc_match = re.search(r"Validation Accuracy:\s*([\d.]+)%", line)
-            if valacc_match and current_epoch is not None:
-                val_acc = float(valacc_match.group(1))
-                rows.append({
-                    "Model": model_name,
-                    "Epoch": current_epoch,
-                    "Validation Accuracy": val_acc
-                })
-                current_epoch = None
-
-    df = pd.DataFrame(rows)
-    return df
+    return np.array(rows, dtype=int) if rows else None
 
 
-def plot_validation_accuracy_over_epochs(df, output_file):
-    if df.empty:
-        print(f"No epoch-level data to plot for {output_file}")
-        return
+def save_confusion_matrix(cm: np.ndarray, png: Path, title: str) -> None:
+    """Plot row-normalised confusion matrix (each row sums to 1)."""
+    with np.errstate(divide="ignore", invalid="ignore"):
+        cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
+        cm_norm[np.isnan(cm_norm)] = 0.0           # rows with zero support
 
-    plt.figure(figsize=(10, 6))
-    for model_name, group in df.groupby("Model"):
-        plt.plot(
-            group["Epoch"],
-            group["Validation Accuracy"],
-            marker='o',
-            label=model_name
+    plt.figure(figsize=(6, 5))
+    im = plt.imshow(cm_norm, interpolation="nearest", cmap="Blues", vmin=0, vmax=1)
+    plt.colorbar(im, fraction=0.046, pad=0.04)
+
+    n = cm.shape[0]
+    ticks = range(n)
+    plt.xticks(ticks, ticks)
+    plt.yticks(ticks, ticks)
+
+    for i in range(n):
+        for j in range(n):
+            plt.text(j, i, f"{cm_norm[i, j]:.2f}", ha="center",
+                     va="center", fontsize=9, color="white" if cm_norm[i, j] > 0.5 else "black")
+
+    plt.xlabel("Predicted")
+    plt.ylabel("True")
+    plt.title(title)
+    plt.tight_layout()
+    plt.savefig(png)
+    plt.close()
+
+def parse_classification_block(block: str) -> pd.DataFrame:
+    rows: List[Dict[str, Any]] = []
+    for raw_line in block.strip().splitlines():
+        ln = raw_line.strip()
+        if not ln or ln.lower().startswith("accuracy") or "precision" in ln.lower():
+            continue
+        parts = re.split(r"\s+", ln)
+        if len(parts) < 5:
+            continue
+        try:
+            support  = int(float(parts[-1]))
+            f1       = float(parts[-2])
+            recall   = float(parts[-3])
+            precision= float(parts[-4])
+        except ValueError:
+            continue
+        label = "_".join(parts[:-4]).lower()
+        rows.append(
+            {"label": label, "precision": precision, "recall": recall, "f1": f1, "support": support}
         )
+    return pd.DataFrame(rows, columns=["label", "precision", "recall", "f1", "support"])
 
+
+def iter_models(text: str) -> Iterator[tuple[str, str]]:
+    parts = RE_MODEL_SPLIT.split(text)
+    for i in range(1, len(parts), 2):
+        yield parts[i].strip(), parts[i + 1]
+
+
+def epoch_trace(block: str) -> pd.DataFrame:
+    rows: List[Dict[str, Any]] = []
+    current: int | None = None
+    for ln in block.splitlines():
+        m_ep = RE_EPOCH_LINE.match(ln.strip())
+        if m_ep:
+            current = int(m_ep.group(1))
+            continue
+        if current is None:
+            continue
+        m_acc = RE_VAL_ACC.search(ln)
+        if m_acc:
+            rows.append({"Epoch": current, "Validation Accuracy": float(m_acc.group(1))})
+            current = None
+    return pd.DataFrame(rows)
+
+
+def summarize(model: str, block: str) -> tuple[Summary, pd.DataFrame]:
+    accs = [float(x) for x in RE_VAL_ACC.findall(block)]
+    if not accs:
+        raise ValueError(f"No validation accuracy for {model}")
+    max_acc    = max(accs)
+    best_epoch = accs.index(max_acc) + 1
+
+    losses     = [float(x) for x in RE_VAL_LOSS.findall(block)]
+    final_loss = losses[-1] if losses else float("nan")
+
+    params = int(RE_PARAMS.search(block).group(1)) if RE_PARAMS.search(block) else 0
+    mem    = float(RE_MEMORY.search(block).group(1)) if RE_MEMORY.search(block) else float("nan")
+    time_s = float(RE_TIME.search(block).group(1)) if RE_TIME.search(block) else float("nan")
+
+    class_df      = pd.DataFrame(columns=["label", "precision", "recall", "f1", "support"])
+    class_metrics: Dict[str, float] = {}
+    reports = RE_CLASS_REPORT.findall(block)
+    if reports:
+        class_df = parse_classification_block(reports[-1])
+        if not class_df.empty:
+            class_df.insert(0, "Model", model)
+            for _, r in class_df.iterrows():
+                for m in ("precision", "recall", "f1"):
+                    class_metrics[f"{r['label']}_{m}"] = r[m]
+
+    summary = Summary(
+        model, max_acc, best_epoch, len(accs), final_loss,
+        params, mem, time_s, "Early stopping" in block,
+        block.lower().count("reducing learning rate"), class_metrics,
+    )
+    return summary, class_df
+
+# ───── Plot helpers ─────
+def save_acc_plot(df: pd.DataFrame, png: Path) -> None:
+    plt.figure(figsize=(8, 5))
+    for model, grp in df.groupby("Model"):
+        plt.plot(grp["Epoch"], grp["Validation Accuracy"], marker="o", label=model)
     plt.xlabel("Epoch")
     plt.ylabel("Validation Accuracy (%)")
-    plt.title("Validation Accuracy Over Epochs")
+    plt.title("Validation Accuracy vs. Epoch")
     plt.legend()
-    plt.grid(True, linestyle="--", alpha=0.5)
+    plt.grid(alpha=0.4)
     plt.tight_layout()
-    plt.savefig(output_file)
+    plt.savefig(png)
     plt.close()
-    print(f"Saved plot to {output_file}")
 
+# ───── I/O ─────
+# ─── helper ─────────────────────────────────────────────────────────────────
+_SUFFIX_RE = re.compile(r"([A-Za-z]+)$")        # trailing alpha token in log-stem
+def _suffix(stem: str) -> str:
+    m = _SUFFIX_RE.search(stem)
+    return m.group(1) if m else "unsuffixed"
 
-def find_all_log_files(root_folder):
-    log_files = []
-    for dirpath, dirnames, filenames in os.walk(root_folder):
-        for file in filenames:
-            if file.endswith(".log"):
-                full_path = os.path.join(dirpath, file)
-                log_files.append(full_path)
-    return log_files
-
-
-def output_files_exist(output_dir, log_basename):
+# ─── main per-log routine ───────────────────────────────────────────────────
+def process_log(path: Path, root: Path, force: bool = False) -> None:
     """
-    Check if all three output files exist for a given log file.
+    parsed_data/
+        <orbit-dir>/          # e.g. vleo
+            <run-dir>/        # e.g. 3min-10000
+                <suffix>/     # e.g. EnergyOENorm
+                    csv/
+                        summary_<stem>.csv
+                        epochs_<stem>.csv
+                        class_report_<stem>.csv
+                    plots/
+                        acc_plot_<stem>.png
+                        confmats/
+                            confmat_<stem>_<model>.png
     """
-    summary_csv = os.path.join(output_dir, f"summary_{log_basename}.csv")
-    epochs_csv = os.path.join(output_dir, f"val_acc_epochs_{log_basename}.csv")
-    plot_png = os.path.join(output_dir, f"val_acc_plot_{log_basename}.png")
+    stem      = path.stem
+    suffix    = _suffix(stem)                       # ← new level
+    rel_dir   = path.parent.relative_to(root)       # e.g. vleo/3min-10000
+    base_dir  = Path("parsed_data") / rel_dir / suffix
+    csv_dir   = base_dir / "csv"
+    plot_dir  = base_dir / "plots"
+    cm_dir    = plot_dir / "confmats"
+    for d in (csv_dir, cm_dir):
+        d.mkdir(parents=True, exist_ok=True)
 
-    return all([
-        os.path.isfile(summary_csv),
-        os.path.isfile(epochs_csv),
-        os.path.isfile(plot_png)
-    ])
+    summary_csv = csv_dir / f"summary_{stem}.csv"
+    epochs_csv  = csv_dir / f"epochs_{stem}.csv"
+    class_csv   = csv_dir / f"class_report_{stem}.csv"
+    acc_png     = plot_dir / f"acc_plot_{stem}.png"
 
-
-def process_log_file(file_path, root_folder, force=False):
-    """
-    Process one log file and save outputs under parsed_data/ with matching subfolders.
-    """
-    relative_path = os.path.relpath(file_path, start=root_folder)
-    relative_dir = os.path.dirname(relative_path)
-    output_dir = os.path.join(OUTPUT_FOLDER, relative_dir)
-    os.makedirs(output_dir, exist_ok=True)
-
-    log_basename = os.path.splitext(os.path.basename(file_path))[0]
-
-    if not force and output_files_exist(output_dir, log_basename):
-        print(f"Skipping {file_path} (outputs already exist)")
+    if (not force and summary_csv.exists() and epochs_csv.exists()
+            and class_csv.exists() and acc_png.exists()):
+        print(f"skip {path}")
         return
 
-    print(f"\nProcessing: {file_path}")
+    text = path.read_text(errors="ignore")
+    summaries, epochs_dfs, class_dfs = [], [], []
 
-    summary_df = parse_training_log_summary(file_path)
-    epochs_df = parse_training_log_all_epochs(file_path)
+    for model, blk in iter_models(text):
+        summ, cls_df = summarize(model, blk)
+        summaries.append(summ)
 
-    summary_csv = os.path.join(output_dir, f"summary_{log_basename}.csv")
-    epochs_csv = os.path.join(output_dir, f"val_acc_epochs_{log_basename}.csv")
-    plot_png = os.path.join(output_dir, f"val_acc_plot_{log_basename}.png")
+        if not cls_df.empty:
+            class_dfs.append(cls_df)
 
-    summary_df.drop(columns="Numeric Accuracy").to_csv(summary_csv, index=False)
-    print(summary_df.drop(columns="Numeric Accuracy").to_string(index=False))
-    print(f"Saved summary CSV: {summary_csv}")
+        ep_df = epoch_trace(blk)
+        ep_df.insert(0, "Model", model)
+        epochs_dfs.append(ep_df)
 
-    epochs_df.to_csv(epochs_csv, index=False)
-    print(f"Saved epoch-level CSV: {epochs_csv}")
+        cm = parse_confusion_matrix(blk)
+        if cm is not None:
+            cm_png = cm_dir / f"confmat_{stem}_{model.replace(' ', '_')}.png"
+            save_confusion_matrix(cm, cm_png, f"{model} – Confusion Matrix")
 
-    plot_validation_accuracy_over_epochs(epochs_df, plot_png)
+    pd.DataFrame([s.to_flat() for s in summaries]).to_csv(summary_csv, index=False)
+    if epochs_dfs:
+        pd.concat(epochs_dfs, ignore_index=True).to_csv(epochs_csv, index=False)
+    else:
+        # write an empty CSV so downstream code keeps working
+        pd.DataFrame(columns=["Model", "Epoch", "Validation Accuracy"])\
+        .to_csv(epochs_csv, index=False)
+        print(f"{path} → no epoch data; wrote empty epochs.csv")
+        return          # optional: skip the rest of this log
+    if class_dfs:
+        pd.concat(class_dfs, ignore_index=True).to_csv(class_csv, index=False)
+    else:
+        pd.DataFrame(columns=["Model","label","precision","recall","f1","support"]).to_csv(
+            class_csv, index=False
+        )
 
+    save_acc_plot(pd.concat(epochs_dfs, ignore_index=True), acc_png)
+    print(f"processed → {summary_csv}")
 
+# ───── CLI ─────
+def main() -> None:
+    ap = argparse.ArgumentParser(description="Parse training logs → CSV + plots")
+    ap.add_argument("root", type=Path)
+    ap.add_argument("--force", action="store_true")
+    args = ap.parse_args()
+
+    logs = list(args.root.rglob("*.log"))
+    print(f"found {len(logs)} logs under {args.root}")
+    for lg in logs:
+        process_log(lg, args.root, force=args.force)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Batch process all .log files under a root folder."
-    )
-    parser.add_argument(
-        "root_folder",
-        type=str,
-        help="Path to the root folder to search for log files."
-    )
-    parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Re-run processing even if output files already exist."
-    )
-    args = parser.parse_args()
-
-    os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-
-    all_logs = find_all_log_files(args.root_folder)
-    print(f"Found {len(all_logs)} log files.")
-
-    for log_file in all_logs:
-        process_log_file(log_file, args.root_folder, force=args.force)
+    main()

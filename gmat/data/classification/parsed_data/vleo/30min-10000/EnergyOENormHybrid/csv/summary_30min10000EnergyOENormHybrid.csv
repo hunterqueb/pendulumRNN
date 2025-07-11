@@ -1,0 +1,4 @@
+model,max_val_accuracy,best_epoch,epochs_trained,final_val_loss,params,memory_mb,training_time_s,early_stopping,lr_reductions
+Hybrid,87.62,97,101,0.2409,81764,0.623809814453125,2534.1111,False,0
+LSTM,75.73,9,16,0.358,14788,0.112823486328125,161.102,True,0
+Mamba,97.82,98,101,0.0936,7963,0.06075286865234375,1435.7774,False,0

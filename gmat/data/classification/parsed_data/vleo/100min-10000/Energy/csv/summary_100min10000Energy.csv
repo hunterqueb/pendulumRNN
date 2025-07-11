@@ -1,0 +1,3 @@
+model,max_val_accuracy,best_epoch,epochs_trained,final_val_loss,params,memory_mb,training_time_s,early_stopping,lr_reductions
+LSTM,77.23,15,26,0.3468,9988,0.076202392578125,672.9163,True,0
+Mamba,25.8,4,15,1.3864,5957,0.04544830322265625,273.345,True,0
