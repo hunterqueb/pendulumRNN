@@ -121,7 +121,7 @@ if save_to_log:
     print("saving log output to {}".format(logFileLoc))
 
     # file to open
-    f = open(logFileLoc, 'a')
+    f = open(logFileLoc, 'w')
     # change stdout to write to file -- this allows for printing from functions to a file
     sys.stdout = f
 
@@ -332,7 +332,7 @@ if useHybrid:
     print('\nEntering Hybrid Training Loop')
     trainClassifier(model_hybrid,optimizer_hybrid,scheduler_hybrid,[train_loader,test_loader,val_loader],criterion,num_epochs,device)
     printModelParmSize(model_hybrid)
-    validateMultiClassClassifier(model_hybrid,val_loader,criterion,num_classes,device,classlabels)
+    validateMultiClassClassifier(model_hybrid,val_loader,criterion,num_classes,device,classlabels,printReport=True)
 
 
 if use_lstm:
@@ -348,12 +348,12 @@ if use_lstm:
     print('\nEntering LSTM Training Loop')
     trainClassifier(model_LSTM,optimizer_LSTM,scheduler_LSTM,[train_loader,test_loader,val_loader],criterion,num_epochs,device)
     printModelParmSize(model_LSTM)
-    validateMultiClassClassifier(model_LSTM,val_loader,criterion,num_classes,device,classlabels)
+    validateMultiClassClassifier(model_LSTM,val_loader,criterion,num_classes,device,classlabels,printReport=True)
 
 print('\nEntering Mamba Training Loop')
 trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba,[train_loader,test_loader,val_loader],criterion,num_epochs,device)
 printModelParmSize(model_mamba)
-validateMultiClassClassifier(model_mamba,val_loader,criterion,num_classes,device,classlabels)
+validateMultiClassClassifier(model_mamba,val_loader,criterion,num_classes,device,classlabels,printReport=True)
 # torch.save(model_mamba.state_dict(), f"{dataLoc}/mambaTimeSeriesClassificationGMATThrusts"+ orbitType +".pt")
 
 
