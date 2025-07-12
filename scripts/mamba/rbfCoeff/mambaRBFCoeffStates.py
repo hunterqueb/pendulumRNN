@@ -6,14 +6,10 @@ import torch.utils.data as data
 import torchinfo
 from scipy.io import loadmat,savemat
 
-from qutils.integrators import ode45
-from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
-from qutils.mlExtras import findDecAcc
-from qutils.orbital import nonDim2Dim4
 from qutils.tictoc import timer
 
-from nets import create_dataset, LSTMSelfAttentionNetwork
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.regression import create_dataset, LSTMSelfAttentionNetwork
+from qutils.ml.mamba import Mamba, MambaConfig
 
 DEBUG = True
 plotOn = True

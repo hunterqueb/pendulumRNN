@@ -7,13 +7,14 @@ import torchinfo
 
 from qutils.integrators import ode87, ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions,plotStatePredictions,newPlotSolutionErrors,plotPercentSolutionErrors
-from qutils.mlExtras import findDecAcc
-from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import trainModel, printModelParmSize, getDevice, Adam_mini, genPlotPrediction, create_datasets, LSTMSelfAttentionNetwork, LSTM
+from qutils.ml.utils import findDecAcc
+from qutils.ml.mamba import Mamba, MambaConfig
+from qutils.ml.regression import trainModel, genPlotPrediction, create_datasets, LSTMSelfAttentionNetwork, LSTM
+from qutils.ml.utils import printModelParmSize, getDevice, Adam_mini
 from qutils.tictoc import timer
 
 #import for superweight identification
-from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
+from qutils.ml.superweight import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
 
 # from nets import Adam_mini
 

@@ -7,10 +7,10 @@ import torchinfo
 
 from qutils.integrators import ode87
 from qutils.plot import plot3dOrbitPredictions,plotOrbitPhasePredictions, plotSolutionErrors, plotStatePredictions
-from qutils.mlExtras import findDecAcc
+from qutils.ml.utils import findDecAcc,printModelParmSize, getDevice, Adam_mini
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC, readGMATReport, dim2NonDim6
-from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import printModelParmSize, getDevice, Adam_mini,create_datasets, genPlotPrediction, LSTMSelfAttentionNetwork
+from qutils.ml.mamba import Mamba, MambaConfig
+from qutils.ml.regression import create_datasets, genPlotPrediction, LSTMSelfAttentionNetwork
 from qutils.tictoc import timer
 # from nets import Adam_mini
 

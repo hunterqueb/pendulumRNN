@@ -6,13 +6,13 @@ import torch.utils.data as data
 
 from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
-from qutils.ml import printModelParmSize, getDevice, create_datasets, genPlotPrediction
-from qutils.mlExtras import findDecAcc
+from qutils.ml.utils import printModelParmSize, getDevice, findDecAcc
+from qutils.ml.regression import create_datasets, genPlotPrediction
 from qutils.orbital import nonDim2Dim4
 
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.mamba import Mamba, MambaConfig
 
-from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
+from qutils.ml.superweight import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
 
 plotOn = True
 printoutSuperweight = True

@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 from qutils.integrators import ode87
 from qutils.plot import plotStatePredictions
 from qutils.orbital import dim2NonDim6, returnCR3BPIC,nonDim2Dim6
-from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import trainModel, getDevice, Adam_mini, create_datasets, LSTMSelfAttentionNetwork
-from qutils.mlExtras import rmse
+from qutils.ml.mamba import Mamba, MambaConfig
+from qutils.ml.regression import trainModel, create_datasets, LSTMSelfAttentionNetwork
+from qutils.ml.utils import rmse, getDevice, Adam_mini 
 compareLSTM = True
 plotOn = False
 printoutSuperweight = False

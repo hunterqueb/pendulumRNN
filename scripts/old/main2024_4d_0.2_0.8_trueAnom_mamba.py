@@ -14,7 +14,7 @@ from qutils.ml import create_datasets, genPlotPrediction
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM,LSTMSelfAttentionNetwork2
 
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.mamba import Mamba, MambaConfig
 
 # seed any random functions
 random.seed(123)

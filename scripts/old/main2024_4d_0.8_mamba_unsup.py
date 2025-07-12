@@ -11,9 +11,9 @@ from qutils.mlExtras import findDecAcc
 from qutils.plot import plotOrbitPhasePredictions, plotSolutionErrors
 from qutils.orbital import nonDim2Dim4
 from qutils.ml import getDevice
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.mamba import Mamba, MambaConfig
 
-from nets import create_dataset
+from qutils.ml.regression import create_datasets as create_dataset
 device = getDevice()
 
 problemDim = 4

@@ -10,9 +10,10 @@ from scipy.io import loadmat,savemat
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
-from qutils.ml import getDevice,printModelParmSize, create_datasets, transferMamba
-from qutils.mlExtras import findDecAcc,generateTrajectoryPrediction, plotSuperWeight,plotMinWeight
-from qutils.mamba import Mamba,MambaConfig
+from qutils.ml.utils import getDevice,printModelParmSize,findDecAcc,generateTrajectoryPrediction
+from qutils.ml.regression import create_datasets, transferMamba
+from qutils.ml.superweight import plotSuperWeight,plotMinWeight
+from qutils.ml.mamba import Mamba, MambaConfig
 from qutils.tictoc import timer
 
 

@@ -8,10 +8,10 @@ import torch.utils.data as data
 import torchinfo
 
 from qutils.integrators import myRK4Py, ode45
-from qutils.ml import create_datasets, LSTMSelfAttentionNetwork
-from qutils.autoregressive import trainModel,testModel, getDataLoader,genPlotPred
+from qutils.ml.regression import create_datasets, LSTMSelfAttentionNetwork
+from qutils.ml.autoregressive import trainModel,testModel, getDataLoader,genPlotPred
 
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.mamba import Mamba, MambaConfig
 
 import control as ct
 # pip install control

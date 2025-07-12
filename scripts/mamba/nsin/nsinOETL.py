@@ -9,8 +9,9 @@ import torchinfo
 
 from qutils.integrators import ode87
 from qutils.plot import plotStatePredictions,newPlotSolutionErrors
-from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import trainModel, printModelParmSize, getDevice, Adam_mini, create_datasets, genPlotPrediction, transferMamba
+from qutils.ml.mamba import Mamba, MambaConfig
+from qutils.ml.utils import printModelParmSize, getDevice, Adam_mini,rmse
+from qutils.ml.regression import trainModel, create_datasets, genPlotPrediction, transferMamba
 from qutils.tictoc import timer
 from scipy.io import loadmat,savemat
 

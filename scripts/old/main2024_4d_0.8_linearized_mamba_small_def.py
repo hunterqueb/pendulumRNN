@@ -14,9 +14,9 @@ from qutils.mlExtras import findDecAcc, generateTrajectoryPrediction
 from qutils.plot import plotOrbitPhasePredictions, plotStatePredictions, plotSolutionErrors
 from qutils.orbital import nonDim2Dim4
 
-from nets import create_dataset
+from qutils.ml.regression import create_datasets as create_dataset
 
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.mamba import Mamba, MambaConfig
 
 # seed any random functions
 random.seed(123)

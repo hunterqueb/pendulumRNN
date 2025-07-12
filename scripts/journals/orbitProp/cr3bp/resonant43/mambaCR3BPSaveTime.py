@@ -4,10 +4,12 @@ import torch.nn.functional as F
 import os
 
 from qutils.integrators import ode87
-from qutils.plot import plotStatePredictions
-from qutils.orbital import dim2NonDim6, returnCR3BPIC
-from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import trainModel, getDevice, Adam_mini, create_datasets, LSTMSelfAttentionNetwork
+from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions,plotStatePredictions, plotEnergy
+from qutils.ml.utils import findDecAcc,printModelParmSize, getDevice, Adam_mini
+from qutils.orbital import nonDim2Dim6, dim2NonDim6, returnCR3BPIC, jacobiConstant6
+from qutils.ml.mamba import Mamba, MambaConfig
+from qutils.ml.regression import trainModel, genPlotPrediction, create_datasets,LSTMSelfAttentionNetwork
+from qutils.tictoc import timer
 import numpy as np
 
 compareLSTM = True

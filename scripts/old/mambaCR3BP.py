@@ -8,10 +8,10 @@ from qutils.integrators import  ode45, ode87
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim4
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.mamba import Mamba, MambaConfig
 from qutils.ml import create_datasets, genPlotPrediction
 
-from nets import create_dataset, LSTMSelfAttentionNetwork
+from qutils.ml.regression import create_datasets as create_dataset, LSTMSelfAttentionNetwork
 
 DEBUG = True
 plotOn = True

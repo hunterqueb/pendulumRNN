@@ -17,14 +17,14 @@ import torch.utils.data as data
 import torchinfo
 
 from qutils.integrators import myRK4Py, ode45
-from qutils.mlExtras import findDecAcc
+from qutils.ml.utils import findDecAcc,printModelParmSize
 from qutils.plot import plot3dOrbitPredictions,plotOrbitPhasePredictions, plotSolutionErrors,plotPercentSolutionErrors, plotEnergy,plotStatePredictions
 from qutils.orbital import nonDim2Dim4, orbitalEnergy
-from qutils.ml import create_datasets, genPlotPrediction, printModelParmSize
-from qutils.pinn import PINN,FeedforwardSin,FeedforwardCos
+from qutils.ml.regression import create_datasets, genPlotPrediction
+from qutils.ml.pinn import PINN,FeedforwardSin,FeedforwardCos
 from qutils.tictoc import timer
 
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.mamba import Mamba, MambaConfig
 
 import argparse
 

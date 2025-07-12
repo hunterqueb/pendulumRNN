@@ -12,7 +12,7 @@ from qutils.mlExtras import findDecAcc
 from qutils.plot import plotOrbitPhasePredictions,plotSolutionErrors
 from qutils.orbital import nonDim2Dim4
 from qutils.tictoc import timer
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.mamba import Mamba, MambaConfig
 from qutils.ml import getDevice
 
 from nets import LSTMSelfAttentionNetwork, create_dataset

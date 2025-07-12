@@ -6,58 +6,52 @@ import torch.utils.data as data
 
 from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
+from qutils.ml import printModelParmSize, printModelParameters, getDevice, Adam_mini, create_datasets, genPlotPrediction
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim4
-from qutils.ml import getDevice
 
-from nets import create_dataset, LSTMSelfAttentionNetwork
-from qutils.mambaAtt import Mamba, MambaConfig
+from qutils.ml.regression import create_datasets as create_dataset, LSTMSelfAttentionNetwork, LSTM, TransformerModel
+from qutils.ml.mamba import Mamba, MambaConfig
 
-
-device = getDevice()
+torch.use_deterministic_algorithms(True)
+torch.backends.cudnn.deterministic = True
 
 plotOn = True
 
-problemDim = 4 
+problemDim = 2 
 
+device = getDevice()
 
-m1 = 1
-m2 = m1
-l1 = 1
-l2 = l1
+m = 1
+l = 1
 g = 9.81
-parameters = np.array([m1,m2,l1,l2,g])
+parameters = np.array([m,l,g])
 
-def doublePendulumODE(t,y,p=parameters):
-    # p = [m1,m2,l1,l2,g]
-    m1 = p[0]
-    m2 = p[1]
-    l1 = p[2]
-    l2 = p[3]
-    g = p[4]
+def pendulumODE(t,theta,p=parameters):
+    # m = p[0]
+    L = p[1]
+    g = p[2]
+    dtheta1 = theta[1]
+    dtheta2 = -g/L*np.sin(theta[0])
+    return np.array([dtheta1, dtheta2])
 
-    theta1 = y[0]
-    theta2 = y[2]
+def pendulumLinearODE(t,theta,p=parameters):
+    # linearized SSM
+    # [0    1;
+    #  -g/L 0]
+    
+    L = p[1]
+    g = p[2]
+    dtheta1 = theta[1]
+    dtheta2 = -g/L*theta[0]
+    return np.array([dtheta1, dtheta2])
 
-    dydt1 = y[1] #theta1dot
-
-    dydt2 = (m2*g*np.sin(theta2)*np.cos(theta1-theta2) - m2*np.sin(theta1-theta2)*(l1*y[1]**2*np.cos(theta1-theta2) + l2*y[3]**2)
-            - (m1+m2)*g*np.sin(theta1)) / l1 / (m1 + m2*np.sin(theta1-theta2)**2) #theta1ddot
-
-    dydt3 = y[3] #theta2dot
-
-    dydt4 = ((m1+m2)*(l1*y[1]**2*np.sin(theta1-theta2) - g*np.sin(theta2) + g*np.sin(theta1)*np.cos(theta1-theta2))
-            + m2*l2*y[3]**2*np.sin(theta1-theta2)*np.cos(theta1-theta2)) / l2 / (m1 + m2*np.sin(theta1-theta2)**2) #theta2ddot
-
-    return np.array((dydt1,dydt2,dydt3,dydt4))
 
 theta1_0 = np.radians(80)
-theta2_0 = np.radians(135)
-thetadot1_0 = np.radians(-1)
-thetadot2_0 = np.radians(0.7)
+thetadot1_0 = np.radians(1)
+initialConditions = np.array([theta1_0,thetadot1_0],dtype=np.float64)
 
-initialConditions = np.array([theta1_0,thetadot1_0,theta2_0,thetadot2_0],dtype=np.float64)
-initialConditions = np.radians(np.random.uniform(-180, 180, (problemDim,)))
+# initialConditions = np.radians(np.random.uniform(-180, 180, (problemDim,)))
 
 tStart = 0
 tEnd = 20
@@ -65,7 +59,7 @@ tSpan = np.array([tStart,tEnd])
 dt = 0.01
 tSpanExplicit = np.linspace(tStart,tEnd,int(tEnd / dt))
 
-t , numericResult = ode45(doublePendulumODE,[tStart,tEnd],initialConditions,tSpanExplicit)
+t , numericResult = ode45(pendulumODE,[tStart,tEnd],initialConditions,tSpanExplicit)
 
 output_seq = numericResult
 
@@ -76,39 +70,28 @@ n_epochs = 50
 lr = 0.8
 lr = 0.08
 lr = 0.004
-lr = 0.0001
+# lr = 0.0001
 input_size = problemDim
 output_size = problemDim
 num_layers = 1
 lookback = 1
-# p_motion_knowledge = 0.5
+p_motion_knowledge = 0.5
 
 
-# train_size = int(len(output_seq) * p_motion_knowledge)
-train_size = 2
+train_size = int(len(output_seq) * p_motion_knowledge)
+train_size = 20
 test_size = len(output_seq) - train_size
 
-train1, test = output_seq[:train_size], output_seq[train_size:]
-
-randomNum = int(np.random.rand() * len(output_seq))
-train2 = output_seq[randomNum:randomNum+2]
-
-train_in1,train_out1 = create_dataset(train1,device,lookback=lookback)
-train_in2,train_out2 = create_dataset(train2,device,lookback=lookback)
-
-train_in = torch.cat((train_in1, train_in2), dim=0)
-train_out = torch.cat((train_out1, train_out2), dim=0)
-
-test_in,test_out = create_dataset(test,device,lookback=lookback)
+train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
 # initilizing the model, criterion, and optimizer for the data
-config = MambaConfig(d_model=problemDim, n_layers=num_layers)
+config = MambaConfig(d_model=problemDim, n_layers=num_layers,expand_factor=1,d_state=problemDim)
 model = Mamba(config).to(device).double()
-# model = LSTMSelfAttentionNetwork(input_size,50,output_size,num_layers,0).double().to(device)
+# model = LSTM(input_size,10,output_size,num_layers,0).double().to(device)
 
-optimizer = torch.optim.Adam(model.parameters(),lr=lr)
+optimizer = Adam_mini(model,lr=lr)
 criterion = F.smooth_l1_loss
 
 for epoch in range(n_epochs):
@@ -122,6 +105,7 @@ for epoch in range(n_epochs):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        print(model.layers[0].mixer.A_SSM)
     # Validation
     model.eval()
     with torch.no_grad():
@@ -161,19 +145,6 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         axes[0,1].set_xlabel('time (sec)')
         axes[0,1].set_ylabel('theta1dot (rad/s)')
 
-        axes[1,0].plot(t,output_seq[:,2], c='b',label = 'True Motion')
-        axes[1,0].plot(t,train_plot[:,2], c='r',label = 'Training Region')
-        axes[1,0].plot(t,test_plot[:,2], c='g',label = 'Predition')
-        axes[1,0].set_xlabel('time (sec)')
-        axes[1,0].set_ylabel('theta2 (rad)')
-
-        axes[1,1].plot(t,output_seq[:,3], c='b',label = 'True Motion')
-        axes[1,1].plot(t,train_plot[:,3], c='r',label = 'Training Region')
-        axes[1,1].plot(t,test_plot[:,3], c='g',label = 'Predition')
-        axes[1,1].set_xlabel('time (sec)')
-        axes[1,1].set_ylabel('theta2dot (rad/s)')
-
-
         plt.legend(loc='upper left', bbox_to_anchor=(1,0.5))
         plt.tight_layout()
 
@@ -212,7 +183,7 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
 
 networkPrediction = plotPredition(epoch+1,model,output_seq)
 
-plotSolutionErrors(output_seq,networkPrediction,t)
+plotSolutionErrors(output_seq,networkPrediction,t,units='rad',states=('\\theta_1','\\theta_2'))
 # plotDecAccs(decAcc,t,problemDim)
 errorAvg = np.nanmean(abs(networkPrediction-output_seq) * 90 / np.pi, axis=0)
 print("Average error of each dimension:")
@@ -220,24 +191,23 @@ unitLabels = ['deg','deg/s','deg','deg/s']
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg} {unitLabels[i-1]}")
 
+# printModelParmSize(model)
+# printModelParameters(model)
+
+# print(model.layers[0].mixer.A_SSM.shape)
+# print(model.layers[0].mixer.A_SSM)
+# # print(pendulumLinearODE(0,initialConditions))
+# print(model.layers[0].mixer.B_SSM.shape)
+# print(model.layers[0].mixer.C_SSM.shape)
 
 if plotOn is True:
     plt.figure()
-    plt.subplot(2, 1, 1)
-    plt.plot(output_seq[:,0],output_seq[:,2],'r',label = "Truth")
-    plt.plot(networkPrediction[:,0],networkPrediction[:,2],'b',label = "NN")
+    plt.plot(output_seq[:,0],output_seq[:,1],'r',label = "Truth")
+    plt.plot(networkPrediction[:,0],networkPrediction[:,1],'b',label = "NN")
     plt.xlabel('Theta 1')
     plt.ylabel('Theta 1 Dot')
     plt.axis('equal')
-
-
-    plt.subplot(2, 1, 2)
-    plt.plot(output_seq[:,1],output_seq[:,3],'r',label = "Truth")
-    plt.plot(networkPrediction[:,1],networkPrediction[:,3],'b',label = "NN")
-    plt.xlabel('Theta 2')
-    plt.ylabel('Theta 2 Dot')
-    plt.axis('equal')
-    plt.legend()
+    plt.grid()
 
     plt.show()
 

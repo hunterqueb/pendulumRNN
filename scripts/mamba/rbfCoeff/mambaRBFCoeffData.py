@@ -8,13 +8,12 @@ from scipy.io import loadmat,savemat
 
 from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
-from qutils.ml import getDevice
-from qutils.mlExtras import findDecAcc,generateTrajectoryPrediction
+from qutils.ml.utils import findDecAcc,generateTrajectoryPrediction,getDevice,printModelParmSize
 from qutils.orbital import nonDim2Dim4
 from qutils.tictoc import timer
 from qutils.mambaAtt import Mamba,MambaConfig
 
-from nets import create_dataset, LSTMSelfAttentionNetwork
+from qutils.ml.regression import create_datasets as create_dataset, LSTMSelfAttentionNetwork
 
 DEBUG = True
 plotOn = True

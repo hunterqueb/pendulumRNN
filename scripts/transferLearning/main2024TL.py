@@ -21,8 +21,9 @@ import torch.nn.functional as F
 import torch.utils.data as data
 
 from qutils.integrators import myRK4Py
-from qutils.mlExtras import findDecAcc, plotSuperWeight
-from qutils.ml import create_datasets, genPlotPrediction,LSTMSelfAttentionNetwork, transferLSTM
+from qutils.ml.utils import findDecAcc
+from qutils.ml.superweight import plotSuperWeight
+from qutils.ml.regression import create_datasets, genPlotPrediction,LSTMSelfAttentionNetwork, transferLSTM
 
 # seed any random functions
 random.seed(123)

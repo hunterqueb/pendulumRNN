@@ -3,11 +3,9 @@ import matplotlib.pyplot as plt
 import torch
 import sys
 
-from qutils.ml import getDevice
-import qutils.trialSolution as TS 
-from qutils.mlExtras import findDecAcc as findDecimalAccuracy
+from qutils.ml.utils import findDecAcc as findDecimalAccuracy,getDevice
 from qutils.tictoc import timer
-from qutils.pinn import PINN,FeedforwardSin,FeedforwardCos
+from qutils.ml.pinn import PINN,FeedforwardSin,FeedforwardCos
 from qutils.integrators import ode87
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors, plotEnergy, plot3dCR3BPPredictions
 from qutils.orbital import  returnCR3BPIC,nonDim2Dim6

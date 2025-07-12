@@ -8,16 +8,16 @@ import sys
 
 from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions,plotStatePredictions, plotEnergy
-from qutils.mlExtras import findDecAcc,printoutMaxLayerWeight
-from qutils.orbital import nonDim2Dim6, dim2NonDim6, returnCR3BPIC, jacobiConstant6, OE2ECI
-from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import trainModel, printModelParmSize, getDevice, Adam_mini, genPlotPrediction, create_datasets,LSTMSelfAttentionNetwork
+from qutils.ml.utils import findDecAcc
+from qutils.orbital import nonDim2Dim6, dim2NonDim6, returnCR3BPIC, jacobiConstant6,OE2ECI
+from qutils.ml.mamba import Mamba, MambaConfig
+from qutils.ml.regression import trainModel, genPlotPrediction, create_datasets,LSTMSelfAttentionNetwork
+from qutils.ml.utils import printModelParmSize, getDevice, Adam_mini
 from qutils.tictoc import timer
 # from nets import Adam_mini
 
 # from memory_profiler import profile
-from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
-from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
+from qutils.ml.superweight import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight, findMambaSuperActivation, plotSuperActivation
 
 
 plotOn = True

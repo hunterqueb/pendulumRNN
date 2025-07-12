@@ -6,10 +6,10 @@ from torch.utils.data import Dataset, DataLoader, random_split, TensorDataset
 # use webagg for plotting
 plt.switch_backend('WebAgg')
 
-from qutils.ml import getDevice, printModelParmSize
+from qutils.ml.utils import printModelParmSize, getDevice
 from qutils.integrators import ode45
 from qutils.orbital import OE2ECI
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.mamba import Mamba, MambaConfig
 from qutils.tictoc import timer
 
 

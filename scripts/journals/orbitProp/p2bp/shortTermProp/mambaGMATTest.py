@@ -9,17 +9,15 @@ import torchinfo
 
 from qutils.integrators import ode87
 from qutils.plot import plot3dOrbitPredictions,plotOrbitPhasePredictions, plotSolutionErrors,plotPercentSolutionErrors, plotEnergy,plotStatePredictions,newPlotSolutionErrors
-from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC, readGMATReport, dim2NonDim6, orbitalEnergy
-from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import trainModel, printModelParmSize, getDevice, Adam_mini, create_datasets, genPlotPrediction, LSTMSelfAttentionNetwork
+from qutils.ml.mamba import Mamba, MambaConfig
+from qutils.ml.utils import printModelParmSize, getDevice, Adam_mini
+from qutils.ml.regression import trainModel, create_datasets, genPlotPrediction, LSTMSelfAttentionNetwork
 from qutils.tictoc import timer
 # from nets import Adam_mini
 
 # from memory_profiler import profile
-from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
-
-from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
+from qutils.ml.superweight import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight, findMambaSuperActivation, plotSuperActivation
 
 plotOn = False
 printoutSuperweight = True

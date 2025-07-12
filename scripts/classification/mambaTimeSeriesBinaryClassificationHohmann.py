@@ -5,8 +5,8 @@ from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from qutils.tictoc import timer
 
-from qutils.ml import printModelParmSize, getDevice
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.utils import printModelParmSize, getDevice
+from qutils.ml.mamba import Mamba, MambaConfig
 from qutils.integrators import ode45 as ode87
 
 #set webagg backend for matplotlib - i've been liking it 

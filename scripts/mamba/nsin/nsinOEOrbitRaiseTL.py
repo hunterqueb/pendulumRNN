@@ -9,13 +9,13 @@ import torchinfo
 
 from qutils.integrators import ode87
 from qutils.plot import plotStatePredictions,newPlotSolutionErrors
-from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import trainModel, printModelParmSize, getDevice, Adam_mini, create_datasets, genPlotPrediction, transferMamba
-from qutils.mlExtras import rmse
+from qutils.ml.mamba import Mamba, MambaConfig
+from qutils.ml.utils import printModelParmSize, getDevice, Adam_mini,rmse
+from qutils.ml.regression import trainModel, create_datasets, genPlotPrediction, transferMamba
 from qutils.tictoc import timer
 from scipy.io import loadmat,savemat
 
-from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
+from qutils.ml.superweight import findMambaSuperActivation, plotSuperActivation
 # from nets import Adam_mini
 
 # from memory_profiler import profile

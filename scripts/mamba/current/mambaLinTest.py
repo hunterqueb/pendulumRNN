@@ -8,14 +8,13 @@ import torch.utils.data as data
 import torchinfo
 
 from qutils.integrators import myRK4Py, ode45
-from qutils.mlExtras import findDecAcc
 from qutils.plot import plotOrbitPhasePredictions,newPlotSolutionErrors,plotStatePredictions
 from qutils.orbital import nonDim2Dim4
-from qutils.ml import create_datasets, LSTMSelfAttentionNetwork, trainModel
+from qutils.ml.regression import create_datasets, LSTMSelfAttentionNetwork, trainModel
 
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.mamba import Mamba, MambaConfig
 
-from qutils.mlSuperweight import findMambaSuperActivation,plotSuperActivation
+from qutils.ml.superweight import findMambaSuperActivation,plotSuperActivation
 
 import control as ct
 # pip install control

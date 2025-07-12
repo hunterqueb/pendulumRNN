@@ -8,17 +8,16 @@ from scipy.io import loadmat
 
 from qutils.integrators import ode87
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions,plotStatePredictions, plotEnergy
-from qutils.mlExtras import findDecAcc,printoutMaxLayerWeight
+from qutils.ml.utils import findDecAcc,printModelParmSize, getDevice, Adam_mini
 from qutils.orbital import nonDim2Dim6, dim2NonDim6, returnCR3BPIC, jacobiConstant6
-from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import trainModel, printModelParmSize, getDevice, Adam_mini, genPlotPrediction, create_datasets,LSTMSelfAttentionNetwork
+from qutils.ml.mamba import Mamba, MambaConfig
+from qutils.ml.regression import trainModel, genPlotPrediction, create_datasets,LSTMSelfAttentionNetwork
 from qutils.tictoc import timer
 # from nets import Adam_mini
 
 # from memory_profiler import profile
-from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
+from qutils.ml.superweight import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight,findMambaSuperActivation, plotSuperActivation
 
-from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
 DEBUG = True
 plotOn = False
 printoutSuperweight = True
@@ -175,8 +174,7 @@ plt.tight_layout()
 from qutils.plot import newPlotSolutionErrors
 newPlotSolutionErrors(output_seq,networkPrediction,t,timeLabel="Orbit Periods")
 
-from qutils.mlExtras import rmse
-
+from qutils.ml.utils import rmse
 rmseMamba = rmse(output_seq,networkPrediction,percentRMSE=True)
 
 errorAvg = np.nanmean(abs(networkPrediction-output_seq), axis=0)

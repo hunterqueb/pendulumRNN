@@ -10,13 +10,12 @@ from scipy.io import loadmat,savemat
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
-from qutils.ml import getDevice,printModelParmSize, create_datasets
-from qutils.mlExtras import findDecAcc,generateTrajectoryPrediction
-from qutils.mamba import Mamba,MambaConfig
+from qutils.ml.utils import getDevice,printModelParmSize,generateTrajectoryPrediction
+from qutils.ml.regression import findDecAcc, create_datasets
+from qutils.ml.mamba import Mamba, MambaConfig
 from qutils.tictoc import timer
 
-from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
-from qutils.mlSuperweight import findMambaSuperActivation, plotSuperActivation
+from qutils.ml.superweight import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight, findMambaSuperActivation, plotSuperActivation
 
 plotOn = True
 printoutSuperweight = True

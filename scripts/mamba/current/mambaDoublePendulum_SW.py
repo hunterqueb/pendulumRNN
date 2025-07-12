@@ -6,13 +6,12 @@ import torch.utils.data as data
 import latex
 
 from qutils.integrators import ode45
-from qutils.ml import printModelParmSize, getDevice, create_datasets, genPlotPrediction, trainModel
+from qutils.ml.utils import printModelParmSize, getDevice
+from qutils.ml.regression import create_datasets, genPlotPrediction, trainModel
 
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.mamba import Mamba, MambaConfig
 
-from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
-
-from qutils.mlSuperweight import findMambaSuperActivation,plotSuperActivation,zeroModelWeight
+from qutils.ml.superweight import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight, findMambaSuperActivation,plotSuperActivation,zeroModelWeight
 
 activationArea = 'output'
 layer_path = "layers"

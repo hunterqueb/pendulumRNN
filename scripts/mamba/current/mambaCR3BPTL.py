@@ -7,11 +7,12 @@ import torchinfo
 
 from qutils.integrators import ode87
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plotStatePredictions, plot3dCR3BPPredictions,newPlotSolutionErrors
-from qutils.ml import getDevice, create_datasets, genPlotPrediction,transferMamba,LSTMSelfAttentionNetwork,transferLSTM, transferModelAll,LSTM
-from qutils.mlExtras import findDecAcc, plotSuperWeight, plotMinWeight, printoutMaxLayerWeight
+from qutils.ml.utils import getDevice,findDecAcc
+from qutils.ml.regression import create_datasets, genPlotPrediction,transferMamba,LSTMSelfAttentionNetwork,transferLSTM, transferModelAll,LSTM
+from qutils.ml.superweight import plotSuperWeight, plotMinWeight, printoutMaxLayerWeight
 from qutils.orbital import returnCR3BPIC, nonDim2Dim6
 from qutils.tictoc import timer
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.mamba import Mamba, MambaConfig
 
 modelString = 'mamba'
 

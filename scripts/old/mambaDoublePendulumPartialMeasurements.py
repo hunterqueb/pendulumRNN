@@ -6,18 +6,19 @@ import torch.utils.data as data
 
 from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
-from qutils.ml import printModelParmSize, getDevice, create_datasets
-from qutils.mlExtras import findDecAcc
+from qutils.ml.utils import findDecAcc,getDevice
 from qutils.orbital import nonDim2Dim4
 
-from nets import create_dataset, LSTMSelfAttentionNetwork, LSTM, TransformerModel
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.regression import create_datasets as create_dataset, LSTMSelfAttentionNetwork,genPlotPrediction
+from qutils.mambaAtt import Mamba, MambaConfig
+
+
+device = getDevice()
 
 plotOn = True
 
 problemDim = 4 
 
-device = getDevice()
 
 m1 = 1
 m2 = m1
@@ -53,12 +54,12 @@ theta1_0 = np.radians(80)
 theta2_0 = np.radians(135)
 thetadot1_0 = np.radians(-1)
 thetadot2_0 = np.radians(0.7)
-initialConditions = np.array([theta1_0,thetadot1_0,theta2_0,thetadot2_0],dtype=np.float64)
 
-# initialConditions = np.radians(np.random.uniform(-180, 180, (problemDim,)))
+initialConditions = np.array([theta1_0,thetadot1_0,theta2_0,thetadot2_0],dtype=np.float64)
+initialConditions = np.radians(np.random.uniform(-180, 180, (problemDim,)))
 
 tStart = 0
-tEnd = 5
+tEnd = 20
 tSpan = np.array([tStart,tEnd])
 dt = 0.01
 tSpanExplicit = np.linspace(tStart,tEnd,int(tEnd / dt))
@@ -79,23 +80,32 @@ input_size = problemDim
 output_size = problemDim
 num_layers = 1
 lookback = 1
-seq_length = 10
 # p_motion_knowledge = 0.5
 
 
 # train_size = int(len(output_seq) * p_motion_knowledge)
-train_size = 10
+train_size = 2
 test_size = len(output_seq) - train_size
 
-train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
-train_in,train_out,test_in,test_out = create_datasets(output_seq,seq_length,train_size,device)
+train1, test = output_seq[:train_size], output_seq[train_size:]
+
+randomNum = int(np.random.rand() * len(output_seq))
+train2 = output_seq[randomNum:randomNum+2]
+
+train_in1,train_out1 = create_dataset(train1,device,lookback=lookback)
+train_in2,train_out2 = create_dataset(train2,device,lookback=lookback)
+
+train_in = torch.cat((train_in1, train_in2), dim=0)
+train_out = torch.cat((train_out1, train_out2), dim=0)
+
+test_in,test_out = create_dataset(test,device,lookback=lookback)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
 # initilizing the model, criterion, and optimizer for the data
 config = MambaConfig(d_model=problemDim, n_layers=num_layers)
 model = Mamba(config).to(device).double()
-# model = LSTM(input_size,10,output_size,num_layers,0).double().to(device)
+# model = LSTMSelfAttentionNetwork(input_size,50,output_size,num_layers,0).double().to(device)
 
 optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
@@ -130,15 +140,7 @@ for epoch in range(n_epochs):
 
 def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         output_seq = trueMotion
-        with torch.no_grad():
-            # shift train predictions for plotting
-            train_plot = np.ones_like(output_seq) * np.nan
-            y_pred = model(train_in)
-            y_pred = y_pred[:, -1, :]
-            train_plot[:train_size] = model(train_in)[:, -1, :].cpu()
-            # shift test predictions for plotting
-            test_plot = np.ones_like(output_seq) * np.nan
-            test_plot[train_size+seq_length:] = model(test_in)[:, -1, :].cpu()
+        train_plot, test_plot = genPlotPrediction(model,output_seq,train_in,test_in,train_size,1)
 
         # output_seq = nonDim2Dim4(output_seq)
         # train_plot = nonDim2Dim4(train_plot)
@@ -209,7 +211,7 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
 
 networkPrediction = plotPredition(epoch+1,model,output_seq)
 
-plotSolutionErrors(output_seq,networkPrediction,t,units='rad',states=('\\theta_1','\\theta_2'))
+plotSolutionErrors(output_seq,networkPrediction,t)
 # plotDecAccs(decAcc,t,problemDim)
 errorAvg = np.nanmean(abs(networkPrediction-output_seq) * 90 / np.pi, axis=0)
 print("Average error of each dimension:")
@@ -217,26 +219,24 @@ unitLabels = ['deg','deg/s','deg','deg/s']
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg} {unitLabels[i-1]}")
 
-printModelParmSize(model)
 
 if plotOn is True:
     plt.figure()
     plt.subplot(2, 1, 1)
-    plt.plot(output_seq[:,0],output_seq[:,1],'r',label = "Truth")
-    plt.plot(networkPrediction[:,0],networkPrediction[:,1],'b',label = "NN")
+    plt.plot(output_seq[:,0],output_seq[:,2],'r',label = "Truth")
+    plt.plot(networkPrediction[:,0],networkPrediction[:,2],'b',label = "NN")
     plt.xlabel('Theta 1')
     plt.ylabel('Theta 1 Dot')
     plt.axis('equal')
-    plt.grid()
+
 
     plt.subplot(2, 1, 2)
-    plt.plot(output_seq[:,2],output_seq[:,3],'r',label = "Truth")
-    plt.plot(networkPrediction[:,2],networkPrediction[:,3],'b',label = "NN")
+    plt.plot(output_seq[:,1],output_seq[:,3],'r',label = "Truth")
+    plt.plot(networkPrediction[:,1],networkPrediction[:,3],'b',label = "NN")
     plt.xlabel('Theta 2')
     plt.ylabel('Theta 2 Dot')
     plt.axis('equal')
     plt.legend()
-    plt.grid()
 
     plt.show()
 

@@ -3,10 +3,13 @@ import torch
 import torch.nn.functional as F
 import os
 
+
 from qutils.plot import plotStatePredictions
-from qutils.orbital import readGMATReport, dim2NonDim6
-from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import trainModel, getDevice, Adam_mini, create_datasets, LSTMSelfAttentionNetwork
+from qutils.orbital import readGMATReport, dim2NonDim6, nonDim2Dim6
+from qutils.ml.mamba import Mamba, MambaConfig
+from qutils.ml.utils import getDevice, Adam_mini, rmse
+from qutils.ml.regression import trainModel, create_datasets, LSTMSelfAttentionNetwork
+from matplotlib import pyplot as plt
 
 compareLSTM = True
 plotOn = False

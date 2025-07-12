@@ -17,13 +17,13 @@ import torch.utils.data as data
 import torchinfo
 
 from qutils.integrators import myRK4Py, ode87
-from qutils.mlExtras import findDecAcc
+from qutils.ml.utils import findDecAcc,printModelParmSize
 from qutils.plot import plotOrbitPhasePredictions,plotSolutionErrors, plotStatePredictions,newPlotSolutionErrors
 
 from qutils.orbital import nonDim2Dim4
-from qutils.ml import printModelParmSize, create_datasets, genPlotPrediction, LSTMSelfAttentionNetwork
+from qutils.ml.regression import create_datasets, genPlotPrediction, LSTMSelfAttentionNetwork
 
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.mamba import Mamba, MambaConfig
 
 
 LSTM = True

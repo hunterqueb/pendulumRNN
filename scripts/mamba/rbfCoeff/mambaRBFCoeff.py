@@ -12,8 +12,8 @@ from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim4
 from qutils.tictoc import timer
 
-from nets import create_dataset, LSTMSelfAttentionNetwork
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.regression import create_datasets as create_dataset, LSTMSelfAttentionNetwork
+from qutils.ml.mamba import Mamba, MambaConfig
 
 DEBUG = True
 plotOn = True

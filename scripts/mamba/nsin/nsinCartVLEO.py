@@ -8,9 +8,9 @@ import torch.utils.data as data
 import torchinfo
 
 from qutils.plot import plotStatePredictions,newPlotSolutionErrors
-from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import trainModel, getDevice, Adam_mini, create_datasets, transferMamba
-from qutils.mlExtras import rmse
+from qutils.ml.mamba import Mamba, MambaConfig
+from qutils.ml.regression import trainModel, create_datasets, transferMamba
+from qutils.ml.utils import rmse, getDevice, Adam_mini
 from scipy.io import loadmat
 from qutils.orbital import nonDim2Dim4, dim2NonDim4
 # from nets import Adam_mini

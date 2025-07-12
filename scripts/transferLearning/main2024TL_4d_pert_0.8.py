@@ -16,10 +16,10 @@ import torch.nn.functional as F
 import torch.utils.data as data
 
 from qutils.integrators import myRK4Py, ode45
-from qutils.mlExtras import findDecAcc
+from qutils.ml.utils import findDecAcc
 from qutils.plot import plotOrbitPhasePredictions
 from qutils.orbital import nonDim2Dim4
-from qutils.ml import create_datasets, genPlotPrediction
+from qutils.ml.regression import create_datasets, genPlotPrediction
 
 from nets import LSTMSelfAttentionNetwork, create_dataset, LSTM, transferLSTM,LSTMSelfAttentionNetwork2
 

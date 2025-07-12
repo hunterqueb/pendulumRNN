@@ -9,7 +9,7 @@ from qutils.integrators import ode87
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors,plot3dCR3BPPredictions,plotStatePredictions
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim6, returnCR3BPIC
-from qutils.mamba import Mamba, MambaConfig
+from qutils.ml.mamba import Mamba, MambaConfig
 from qutils.ml import printModelParmSize, getDevice, Adam_mini, create_datasets
 from qutils.tictoc import timer
 # from nets import Adam_mini
@@ -82,7 +82,7 @@ class QLSTM(torch.nn.Module):
         return torch.cat(out,0)
 # from memory_profiler import profile
 
-from nets import create_dataset, LSTMSelfAttentionNetwork
+from qutils.ml.regression import create_datasets as create_dataset, LSTMSelfAttentionNetwork
 
 DEBUG = True
 plotOn = True

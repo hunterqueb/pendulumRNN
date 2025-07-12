@@ -6,60 +6,64 @@ import torch.utils.data as data
 
 from qutils.integrators import ode45
 from qutils.plot import plotCR3BPPhasePredictions,plotOrbitPredictions, plotSolutionErrors
-from qutils.ml import printModelParmSize, printModelParameters, getDevice, Adam_mini, create_datasets, genPlotPrediction
+from qutils.ml import printModelParmSize, getDevice, create_datasets
 from qutils.mlExtras import findDecAcc
 from qutils.orbital import nonDim2Dim4
 
-from nets import create_dataset, LSTMSelfAttentionNetwork, LSTM, TransformerModel
-from qutils.mamba import Mamba, MambaConfig
-
-torch.use_deterministic_algorithms(True)
-torch.backends.cudnn.deterministic = True
+from qutils.ml.regression import create_datasets as create_dataset, LSTMSelfAttentionNetwork, LSTM, TransformerModel
+from qutils.ml.mamba import Mamba, MambaConfig
 
 plotOn = True
 
-problemDim = 2 
+problemDim = 4 
 
 device = getDevice()
 
-m = 1
-l = 1
+m1 = 1
+m2 = m1
+l1 = 1
+l2 = l1
 g = 9.81
-parameters = np.array([m,l,g])
+parameters = np.array([m1,m2,l1,l2,g])
 
-def pendulumODE(t,theta,p=parameters):
-    # m = p[0]
-    L = p[1]
-    g = p[2]
-    dtheta1 = theta[1]
-    dtheta2 = -g/L*np.sin(theta[0])
-    return np.array([dtheta1, dtheta2])
+def doublePendulumODE(t,y,p=parameters):
+    # p = [m1,m2,l1,l2,g]
+    m1 = p[0]
+    m2 = p[1]
+    l1 = p[2]
+    l2 = p[3]
+    g = p[4]
 
-def pendulumLinearODE(t,theta,p=parameters):
-    # linearized SSM
-    # [0    1;
-    #  -g/L 0]
-    
-    L = p[1]
-    g = p[2]
-    dtheta1 = theta[1]
-    dtheta2 = -g/L*theta[0]
-    return np.array([dtheta1, dtheta2])
+    theta1 = y[0]
+    theta2 = y[2]
 
+    dydt1 = y[1] #theta1dot
+
+    dydt2 = (m2*g*np.sin(theta2)*np.cos(theta1-theta2) - m2*np.sin(theta1-theta2)*(l1*y[1]**2*np.cos(theta1-theta2) + l2*y[3]**2)
+            - (m1+m2)*g*np.sin(theta1)) / l1 / (m1 + m2*np.sin(theta1-theta2)**2) #theta1ddot
+
+    dydt3 = y[3] #theta2dot
+
+    dydt4 = ((m1+m2)*(l1*y[1]**2*np.sin(theta1-theta2) - g*np.sin(theta2) + g*np.sin(theta1)*np.cos(theta1-theta2))
+            + m2*l2*y[3]**2*np.sin(theta1-theta2)*np.cos(theta1-theta2)) / l2 / (m1 + m2*np.sin(theta1-theta2)**2) #theta2ddot
+
+    return np.array((dydt1,dydt2,dydt3,dydt4))
 
 theta1_0 = np.radians(80)
-thetadot1_0 = np.radians(1)
-initialConditions = np.array([theta1_0,thetadot1_0],dtype=np.float64)
+theta2_0 = np.radians(135)
+thetadot1_0 = np.radians(-1)
+thetadot2_0 = np.radians(0.7)
+initialConditions = np.array([theta1_0,thetadot1_0,theta2_0,thetadot2_0],dtype=np.float64)
 
 # initialConditions = np.radians(np.random.uniform(-180, 180, (problemDim,)))
 
 tStart = 0
-tEnd = 20
+tEnd = 5
 tSpan = np.array([tStart,tEnd])
 dt = 0.01
 tSpanExplicit = np.linspace(tStart,tEnd,int(tEnd / dt))
 
-t , numericResult = ode45(pendulumODE,[tStart,tEnd],initialConditions,tSpanExplicit)
+t , numericResult = ode45(doublePendulumODE,[tStart,tEnd],initialConditions,tSpanExplicit)
 
 output_seq = numericResult
 
@@ -70,28 +74,30 @@ n_epochs = 50
 lr = 0.8
 lr = 0.08
 lr = 0.004
-# lr = 0.0001
+lr = 0.0001
 input_size = problemDim
 output_size = problemDim
 num_layers = 1
 lookback = 1
-p_motion_knowledge = 0.5
+seq_length = 10
+# p_motion_knowledge = 0.5
 
 
-train_size = int(len(output_seq) * p_motion_knowledge)
-train_size = 20
+# train_size = int(len(output_seq) * p_motion_knowledge)
+train_size = 10
 test_size = len(output_seq) - train_size
 
 train_in,train_out,test_in,test_out = create_datasets(output_seq,1,train_size,device)
+train_in,train_out,test_in,test_out = create_datasets(output_seq,seq_length,train_size,device)
 
 loader = data.DataLoader(data.TensorDataset(train_in, train_out), shuffle=True, batch_size=8)
 
 # initilizing the model, criterion, and optimizer for the data
-config = MambaConfig(d_model=problemDim, n_layers=num_layers,expand_factor=1,d_state=problemDim)
+config = MambaConfig(d_model=problemDim, n_layers=num_layers)
 model = Mamba(config).to(device).double()
 # model = LSTM(input_size,10,output_size,num_layers,0).double().to(device)
 
-optimizer = Adam_mini(model,lr=lr)
+optimizer = torch.optim.Adam(model.parameters(),lr=lr)
 criterion = F.smooth_l1_loss
 
 for epoch in range(n_epochs):
@@ -105,7 +111,6 @@ for epoch in range(n_epochs):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        print(model.layers[0].mixer.A_SSM)
     # Validation
     model.eval()
     with torch.no_grad():
@@ -125,7 +130,15 @@ for epoch in range(n_epochs):
 
 def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         output_seq = trueMotion
-        train_plot, test_plot = genPlotPrediction(model,output_seq,train_in,test_in,train_size,1)
+        with torch.no_grad():
+            # shift train predictions for plotting
+            train_plot = np.ones_like(output_seq) * np.nan
+            y_pred = model(train_in)
+            y_pred = y_pred[:, -1, :]
+            train_plot[:train_size] = model(train_in)[:, -1, :].cpu()
+            # shift test predictions for plotting
+            test_plot = np.ones_like(output_seq) * np.nan
+            test_plot[train_size+seq_length:] = model(test_in)[:, -1, :].cpu()
 
         # output_seq = nonDim2Dim4(output_seq)
         # train_plot = nonDim2Dim4(train_plot)
@@ -144,6 +157,19 @@ def plotPredition(epoch,model,trueMotion,prediction='source',err=None):
         axes[0,1].plot(t,test_plot[:,1], c='g',label = 'Predition')
         axes[0,1].set_xlabel('time (sec)')
         axes[0,1].set_ylabel('theta1dot (rad/s)')
+
+        axes[1,0].plot(t,output_seq[:,2], c='b',label = 'True Motion')
+        axes[1,0].plot(t,train_plot[:,2], c='r',label = 'Training Region')
+        axes[1,0].plot(t,test_plot[:,2], c='g',label = 'Predition')
+        axes[1,0].set_xlabel('time (sec)')
+        axes[1,0].set_ylabel('theta2 (rad)')
+
+        axes[1,1].plot(t,output_seq[:,3], c='b',label = 'True Motion')
+        axes[1,1].plot(t,train_plot[:,3], c='r',label = 'Training Region')
+        axes[1,1].plot(t,test_plot[:,3], c='g',label = 'Predition')
+        axes[1,1].set_xlabel('time (sec)')
+        axes[1,1].set_ylabel('theta2dot (rad/s)')
+
 
         plt.legend(loc='upper left', bbox_to_anchor=(1,0.5))
         plt.tight_layout()
@@ -191,22 +217,25 @@ unitLabels = ['deg','deg/s','deg','deg/s']
 for i, avg in enumerate(errorAvg, 1):
     print(f"Dimension {i}: {avg} {unitLabels[i-1]}")
 
-# printModelParmSize(model)
-# printModelParameters(model)
-
-# print(model.layers[0].mixer.A_SSM.shape)
-# print(model.layers[0].mixer.A_SSM)
-# # print(pendulumLinearODE(0,initialConditions))
-# print(model.layers[0].mixer.B_SSM.shape)
-# print(model.layers[0].mixer.C_SSM.shape)
+printModelParmSize(model)
 
 if plotOn is True:
     plt.figure()
+    plt.subplot(2, 1, 1)
     plt.plot(output_seq[:,0],output_seq[:,1],'r',label = "Truth")
     plt.plot(networkPrediction[:,0],networkPrediction[:,1],'b',label = "NN")
     plt.xlabel('Theta 1')
     plt.ylabel('Theta 1 Dot')
     plt.axis('equal')
+    plt.grid()
+
+    plt.subplot(2, 1, 2)
+    plt.plot(output_seq[:,2],output_seq[:,3],'r',label = "Truth")
+    plt.plot(networkPrediction[:,2],networkPrediction[:,3],'b',label = "NN")
+    plt.xlabel('Theta 2')
+    plt.ylabel('Theta 2 Dot')
+    plt.axis('equal')
+    plt.legend()
     plt.grid()
 
     plt.show()

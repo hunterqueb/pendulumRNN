@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 from torch.utils.data import TensorDataset, DataLoader
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
 
-from qutils.mamba import Mamba, MambaConfig
-from qutils.ml import getDevice,printModelParmSize
+from qutils.ml.mamba import Mamba, MambaConfig
+from qutils.ml.utils import printModelParmSize, getDevice
 from qutils.tictoc import timer
 
 plt.switch_backend('WebAgg')
