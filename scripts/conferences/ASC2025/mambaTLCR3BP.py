@@ -17,7 +17,7 @@ from qutils.ml.mamba import Mamba, MambaConfig
 
 # from mpldock import persist_layout
 # plt.switch_backend('module://mpldock')
-plt.switch_backend('WebAgg')
+# plt.switch_backend('WebAgg')
 # persist_layout('test')
 
 
@@ -342,6 +342,8 @@ for i in range(numRuns):
     modelString = "LSTM"
 
 if plotGen is True:
+    import matplotlib
+
     # source domain plots
 
     plot3dCR3BPPredictions(output_seq_source,mamba_networkPrediction,L=None,earth=False,moon=False,networkLabel="Mamba")
@@ -349,7 +351,19 @@ if plotGen is True:
     plt.title("Source Domain Prediction")
     plt.legend(loc='upper left')
     fig.set_size_inches(8, 8)
+    plt.rcParams['font.size'] = 10
+    ax = plt.gca() # Gets the current Axes
+    if orbitPair == 3:
+        plt.yticks([])
+        ax.set_ylabel('')
+
+    else:
+        ax.zaxis.line.set_visible(False)
+        ax.set_zticks([])
+        ax.set_zlabel('')
     plt.savefig("figures/"+problemString+"-SourceDomainPrediction.pdf", format='pdf', bbox_inches=None)
+
+    matplotlib.rcParams['lines.linewidth'] = 2.5
 
     plotEnergy(output_seq_source,mamba_networkPrediction,t_source,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',networkLabel= "Mamba",nonDim=True)
     plt.plot(t_source,jacobiConstant6(lstm_networkPrediction), label="LSTM",linestyle='dashdot')
@@ -358,6 +372,7 @@ if plotGen is True:
     fig.set_size_inches(8, 8)
     plt.savefig("figures/"+problemString+"-SourceDomainConservedQuantity.pdf", format='pdf', bbox_inches=None)
 
+    matplotlib.rcParams['lines.linewidth'] = 1.5
 
     newPlotSolutionErrors(output_seq_source,mamba_networkPrediction,t_source,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
     fig = plt.gcf()
@@ -376,7 +391,14 @@ if plotGen is True:
     plt.title("Target Domain Prediction")
     plt.legend(loc='upper left')
     fig.set_size_inches(8, 8)
+    plt.rcParams['font.size'] = 10
+    ax = plt.gca() # Gets the current Axes
+    ax.zaxis.line.set_visible(False)
+    ax.set_zticks([])
+    ax.set_zlabel('')
     plt.savefig("figures/"+problemString+"-TargetDomainPrediction.pdf", format='pdf', bbox_inches=None)
+
+    matplotlib.rcParams['lines.linewidth'] = 2.5
 
     plotEnergy(output_seq_target,mamba_networkPrediction_target,t_target,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',networkLabel= "Mamba",nonDim=True)
     plt.plot(t_target,jacobiConstant6(lstm_networkPrediction_target), label="LSTM",linestyle='dashdot')
@@ -384,6 +406,9 @@ if plotGen is True:
     plt.legend(loc='upper left')
     fig.set_size_inches(8, 8)
     plt.savefig("figures/"+problemString+"-TargetDomainConservedQuantity.pdf", format='pdf', bbox_inches=None)
+
+    matplotlib.rcParams['lines.linewidth'] = 1.5
+
 
     newPlotSolutionErrors(output_seq_target,mamba_networkPrediction_target,t_target,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
     fig = plt.gcf()
