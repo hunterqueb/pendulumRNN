@@ -1,21 +1,31 @@
 Model,label,precision,recall,f1,support
-LSTM,no_thrust,0.9993,0.9525,0.9753,1474
-LSTM,chemical,1.0,1.0,1.0,1509
-LSTM,electric,0.9556,0.9993,0.977,1509
-LSTM,impulsive,1.0,1.0,1.0,1508
-LSTM,macro_avg,0.9887,0.988,0.9881,6000
-LSTM,weighted_avg,0.9887,0.9882,0.9882,6000
-LSTM,t_no_thrust,1404.0,0.0,70.0,0
-LSTM,t_chemical,0.0,1509.0,0.0,0
-LSTM,t_electric,1.0,0.0,1508.0,0
-LSTM,t_impulsive,0.0,0.0,0.0,1508
-Mamba,no_thrust,0.9823,0.9783,0.9803,1474
-Mamba,chemical,1.0,1.0,1.0,1509
-Mamba,electric,0.9789,0.9828,0.9808,1509
-Mamba,impulsive,1.0,1.0,1.0,1508
-Mamba,macro_avg,0.9903,0.9903,0.9903,6000
-Mamba,weighted_avg,0.9903,0.9903,0.9903,6000
-Mamba,t_no_thrust,1442.0,0.0,32.0,0
-Mamba,t_chemical,0.0,1509.0,0.0,0
-Mamba,t_electric,26.0,0.0,1483.0,0
-Mamba,t_impulsive,0.0,0.0,0.0,1508
+Decision Trees,no_thrust,0.998,0.9897,0.9938,1547
+Decision Trees,chemical,1.0,1.0,1.0,1485
+Decision Trees,electric,0.9893,0.998,0.9936,1482
+Decision Trees,impulsive,1.0,1.0,1.0,1486
+Decision Trees,macro_avg,0.9968,0.9969,0.9969,6000
+Decision Trees,weighted_avg,0.9969,0.9968,0.9968,6000
+Decision Trees,t_no_thrust,1531.0,0.0,16.0,0
+Decision Trees,t_chemical,0.0,1485.0,0.0,0
+Decision Trees,t_electric,3.0,0.0,1479.0,0
+Decision Trees,t_impulsive,0.0,0.0,0.0,1486
+LSTM,no_thrust,0.9987,0.9974,0.9981,1547
+LSTM,chemical,1.0,1.0,1.0,1485
+LSTM,electric,0.9973,0.9987,0.998,1482
+LSTM,impulsive,1.0,1.0,1.0,1486
+LSTM,macro_avg,0.999,0.999,0.999,6000
+LSTM,weighted_avg,0.999,0.999,0.999,6000
+LSTM,t_no_thrust,1543.0,0.0,4.0,0
+LSTM,t_chemical,0.0,1485.0,0.0,0
+LSTM,t_electric,2.0,0.0,1480.0,0
+LSTM,t_impulsive,0.0,0.0,0.0,1486
+Mamba,no_thrust,0.9936,0.9961,0.9948,1547
+Mamba,chemical,1.0,1.0,1.0,1485
+Mamba,electric,0.9959,0.9933,0.9946,1482
+Mamba,impulsive,1.0,1.0,1.0,1486
+Mamba,macro_avg,0.9974,0.9973,0.9974,6000
+Mamba,weighted_avg,0.9973,0.9973,0.9973,6000
+Mamba,t_no_thrust,1541.0,0.0,6.0,0
+Mamba,t_chemical,0.0,1485.0,0.0,0
+Mamba,t_electric,10.0,0.0,1472.0,0
+Mamba,t_impulsive,0.0,0.0,0.0,1486

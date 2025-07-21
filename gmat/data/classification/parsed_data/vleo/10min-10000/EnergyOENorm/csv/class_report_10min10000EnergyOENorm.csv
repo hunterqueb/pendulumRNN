@@ -1,21 +1,31 @@
 Model,label,precision,recall,f1,support
-LSTM,no_thrust,0.5633,0.718,0.6313,1500
-LSTM,chemical,1.0,1.0,1.0,1534
-LSTM,electric,0.6091,0.4411,0.5116,1494
-LSTM,impulsive,1.0,1.0,1.0,1472
-LSTM,macro_avg,0.7931,0.7898,0.7857,6000
-LSTM,weighted_avg,0.7935,0.7903,0.7862,6000
-LSTM,t_no_thrust,1077.0,0.0,423.0,0
-LSTM,t_chemical,0.0,1534.0,0.0,0
-LSTM,t_electric,835.0,0.0,659.0,0
-LSTM,t_impulsive,0.0,0.0,0.0,1472
-Mamba,no_thrust,0.8202,0.794,0.8069,1500
-Mamba,chemical,0.9993,1.0,0.9997,1534
-Mamba,electric,0.7995,0.8246,0.8119,1494
-Mamba,impulsive,1.0,1.0,1.0,1472
-Mamba,macro_avg,0.9048,0.9047,0.9046,6000
-Mamba,weighted_avg,0.905,0.9048,0.9048,6000
-Mamba,t_no_thrust,1191.0,0.0,309.0,0
-Mamba,t_chemical,0.0,1534.0,0.0,0
-Mamba,t_electric,261.0,1.0,1232.0,0
-Mamba,t_impulsive,0.0,0.0,0.0,1472
+Decision Trees,no_thrust,0.6154,0.7345,0.6697,1499
+Decision Trees,chemical,1.0,1.0,1.0,1476
+Decision Trees,electric,0.6851,0.5573,0.6146,1554
+Decision Trees,impulsive,1.0,1.0,1.0,1471
+Decision Trees,macro_avg,0.8251,0.8229,0.8211,6000
+Decision Trees,weighted_avg,0.8224,0.819,0.8177,6000
+Decision Trees,t_no_thrust,1101.0,0.0,398.0,0
+Decision Trees,t_chemical,0.0,1476.0,0.0,0
+Decision Trees,t_electric,688.0,0.0,866.0,0
+Decision Trees,t_impulsive,0.0,0.0,0.0,1471
+LSTM,no_thrust,0.6238,0.6891,0.6548,1499
+LSTM,chemical,1.0,1.0,1.0,1476
+LSTM,electric,0.6664,0.5991,0.631,1554
+LSTM,impulsive,1.0,1.0,1.0,1471
+LSTM,macro_avg,0.8226,0.8221,0.8215,6000
+LSTM,weighted_avg,0.8196,0.8185,0.8182,6000
+LSTM,t_no_thrust,1033.0,0.0,466.0,0
+LSTM,t_chemical,0.0,1476.0,0.0,0
+LSTM,t_electric,623.0,0.0,931.0,0
+LSTM,t_impulsive,0.0,0.0,0.0,1471
+Mamba,no_thrust,0.7162,0.6298,0.6702,1499
+Mamba,chemical,1.0,1.0,1.0,1476
+Mamba,electric,0.6801,0.7593,0.7175,1554
+Mamba,impulsive,1.0,1.0,1.0,1471
+Mamba,macro_avg,0.8491,0.8473,0.8469,6000
+Mamba,weighted_avg,0.8463,0.8452,0.8445,6000
+Mamba,t_no_thrust,944.0,0.0,555.0,0
+Mamba,t_chemical,0.0,1476.0,0.0,0
+Mamba,t_electric,374.0,0.0,1180.0,0
+Mamba,t_impulsive,0.0,0.0,0.0,1471
