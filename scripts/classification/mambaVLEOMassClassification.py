@@ -7,10 +7,10 @@ from torch.utils.data import DataLoader
 # use webagg for plotting
 plt.switch_backend('WebAgg')
 
-from qutils.ml import getDevice, printModelParmSize
+from qutils.ml.utils import printModelParmSize, getDevice
 from qutils.integrators import ode45
-from qutils.orbital import OE2ECI
-from qutils.mamba import Mamba, MambaConfig
+from qutils.orbital import OE2ECI, dim2NonDim6, ECI2OE
+from qutils.ml.mamba import Mamba, MambaConfig
 from qutils.tictoc import timer
 
 import torch.nn as nn
@@ -312,7 +312,10 @@ for i in range(numRandSys):
 
     t,y = ode45(fun=lambda t, y: twoBodyJ2Drag(t, y, mu,m_sat),tspan=(0, tf),y0=y0, t_eval=teval, rtol=1e-8, atol=1e-10)
 
-    numericalResult[i,:,:] = y
+    for j in range(timeSeriesLength):
+        eci = ECI2OE(y[j,0:3], y[j,3:6])
+        numericalResult[i,j,:] = eci[0:6]
+    # numericalResult[i,:,:] = dim2NonDim6(y)
     # check mass range and assign label in 5 bins mutually exclusive
     label = np.digitize(m_sat, bin_edges) - 1  # -1 to make it 0-indexed
     numericalResultLabel[i, 0] = label

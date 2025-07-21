@@ -6,7 +6,7 @@ import torch.utils.data as data
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from torch import nn
-
+from lightgbm import LGBMClassifier
 
 # script usage
 
@@ -51,10 +51,10 @@ class HybridClassifier(nn.Module):
 
 
 from qutils.tictoc import timer
-from qutils.ml import getDevice, trainClassifier, LSTMClassifier, MambaClassifier, printModelParmSize, validateMultiClassClassifier
-from qutils.mamba import Mamba, MambaConfig
-from qutils.mlExtras import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight
-from qutils.mlSuperweight import findMambaSuperActivation,plotSuperActivation,zeroModelWeight
+from qutils.ml.utils import getDevice, printModelParmSize
+from qutils.ml.classifer import trainClassifier, LSTMClassifier, validateMultiClassClassifier
+from qutils.ml.mamba import Mamba, MambaConfig, MambaClassifier
+from qutils.ml.superweight import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight, findMambaSuperActivation,plotSuperActivation
 from qutils.orbital import dim2NonDim6
 
 import argparse
@@ -72,6 +72,8 @@ parser.add_argument("--one-pass",dest="one_pass",action='store_true', help="Use 
 parser.add_argument("--save",dest="save_to_log",action="store_true",help="output console printout to log file in the same location as datasets")
 parser.add_argument("--energy",dest="use_energy",action="store_true",help="Use energy as a feature.")
 parser.add_argument("--hybrid",dest="use_hybrid",action="store_true",help="Use a hybrid network.")
+parser.add_argument("--superweight",dest="find_SW",action="store_true",help="Superweight analysis")
+parser.add_argument("--classic",dest="use_classic",action="store_true",help="Use classic ML classification for comparison")
 
 parser.set_defaults(use_lstm=True)
 parser.set_defaults(OE=False)
@@ -81,6 +83,8 @@ parser.set_defaults(one_pass=False)
 parser.set_defaults(save_to_log=False)
 parser.set_defaults(use_energy=False)
 parser.set_defaults(use_hybrid=False)
+parser.set_defaults(find_SW=False)
+parser.set_defaults(use_classic=False)
 
 args = parser.parse_args()
 use_lstm = args.use_lstm
@@ -95,6 +99,8 @@ useOnePass = args.one_pass
 save_to_log = args.save_to_log
 useEnergy=args.use_energy
 useHybrid=args.use_hybrid
+find_SW=args.find_SW
+use_classic = args.use_classic
 
 dataLoc = "gmat/data/classification/"+ orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
 
@@ -334,6 +340,106 @@ if useHybrid:
     printModelParmSize(model_hybrid)
     validateMultiClassClassifier(model_hybrid,val_loader,criterion,num_classes,device,classlabels,printReport=True)
 
+if use_classic:
+    print("\nEntering Decision Trees Training Loop")
+    from sklearn.metrics import log_loss, classification_report, confusion_matrix
+    import pandas as pd
+    def printClassicModelSize(model):
+        import tempfile, pathlib
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "model.bin"   # any extension is fine
+            model.booster_.save_model(str(path))     # binary dump by default
+            size_bytes = path.stat().st_size
+        print("\n==========================================================================================")
+        print(f"Total parameters: NaN")
+        print(f"Total memory (bytes): {size_bytes}")
+        print(f"Total memory (MB): {size_bytes / (1024 ** 2)}")
+        print("==========================================================================================")
+
+    def validate_lightgbm(model, val_loader, num_classes, classlabels=None, print_report=True):
+        """Evaluate a trained LightGBM multiclass classifier on a PyTorch‑style DataLoader.
+
+        * model          - fitted lightgbm.LGBMClassifier (objective='multiclass')
+        * val_loader     - yields (seq_batch, label_batch); seq_batch can be torch.Tensor or np.ndarray
+                        Shape per sample must match training: (7, L).  Flatten before predict.
+        * num_classes    - integer (4 in your case)
+        """
+        # --------------------------------------------------------------------- #
+        # Aggregate validation data                                             #
+        # --------------------------------------------------------------------- #
+        X_list, y_list = [], []
+        for seq, lab in val_loader:
+            # → ndarray, shape (batch, 7*L)
+            xb = (seq if isinstance(seq, np.ndarray) else seq.cpu().numpy()).reshape(seq.shape[0], -1)
+            yb = (lab if isinstance(lab, np.ndarray) else lab.cpu().numpy())
+            X_list.append(xb)
+            y_list.append(yb)
+
+        X_val = np.concatenate(X_list, axis=0)
+        y_true = np.concatenate(y_list, axis=0)
+
+        # --------------------------------------------------------------------- #
+        # Predict                                                               #
+        # --------------------------------------------------------------------- #
+        proba = model.predict_proba(X_val, num_iteration=model.best_iteration_)
+        y_pred = proba.argmax(axis=1)
+
+        # --------------------------------------------------------------------- #
+        # Metrics                                                               #
+        # --------------------------------------------------------------------- #
+        val_loss = log_loss(y_true, proba, labels=np.arange(num_classes))
+        accuracy = 100.0 * (y_pred == y_true).mean()
+
+        # Per‑class accuracy
+        class_tot = np.bincount(y_true, minlength=num_classes)
+        class_corr = np.bincount(y_true[y_true == y_pred], minlength=num_classes)
+        per_class_acc = 100.0 * class_corr / np.maximum(class_tot, 1)
+
+        # --------------------------------------------------------------------- #
+        # Reporting                                                             #
+        # --------------------------------------------------------------------- #
+        print(f"Validation Loss: {val_loss:.4f}, Validation Accuracy: {accuracy:.2f}%\n")
+
+        print("Per-Class Validation Accuracy:")
+        for i in range(num_classes):
+            label = classlabels[i] if classlabels else f"Class {i}"
+            if class_tot[i]:
+                print(f"  {label}: {per_class_acc[i]:.2f}% ({class_corr[i]}/{class_tot[i]})")
+            else:
+                print(f"  {label}: No samples")
+
+        if print_report:
+            print("\nClassification Report:")
+            print(
+                classification_report(
+                    y_true, y_pred,
+                    labels=list(range(num_classes)),
+                    target_names=(classlabels if classlabels else None),
+                    digits=4,
+                    zero_division=0,
+                )
+            )
+
+            cm = confusion_matrix(y_true, y_pred, labels=list(range(num_classes)))
+            print("\nConfusion Matrix (rows = true, cols = predicted):")
+            print(
+                pd.DataFrame(
+                    cm,
+                    index=[f"T_{cls}" for cls in (classlabels if classlabels else range(num_classes))],
+                    columns=[f"P_{cls}" for cls in (classlabels if classlabels else range(num_classes))]
+                )
+            )
+
+        return val_loss, accuracy
+    classicModel = LGBMClassifier(objective="multiclass",num_classes=num_classes,n_estimators=100,max_depth=-1,learning_rate=0.05,subsample=0.8,colsample_bytree=0.8,verbosity=-1)   # or 'verbose' for older builds)
+    
+    # flatten features
+    X_train = train_data.reshape(train_data.shape[0], -1).astype(np.float32)    # (number of systems to train on, network features * length of time series)    
+    y_train = train_label.reshape(-1).astype(np.int32)             # (number of systems to train on,)
+    classicModel.fit(X_train, y_train)
+    printClassicModelSize(classicModel)
+    validate_lightgbm(classicModel, val_loader, num_classes, classlabels=classlabels, print_report=True)
 
 if use_lstm:
     model_LSTM = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device).double()
@@ -356,7 +462,26 @@ printModelParmSize(model_mamba)
 validateMultiClassClassifier(model_mamba,val_loader,criterion,num_classes,device,classlabels,printReport=True)
 # torch.save(model_mamba.state_dict(), f"{dataLoc}/mambaTimeSeriesClassificationGMATThrusts"+ orbitType +".pt")
 
+if find_SW:
+    magnitude, index = findMambaSuperActivation(model_mamba,torch.tensor(test_data).to(device))
+    # super activation returns the entire mamba network parameters, but the classifier does not use the out_proj layer
+    # so we drop it
+    magnitude = magnitude[:-1]
+    index = index[:-1]
+    # also drop the x_proj layer, no longer needed as well
+    magnitude.pop(2)
+    index.pop(2)
 
+
+    normedMagsMRP = np.zeros((len(magnitude),))
+    for i in range(len(magnitude)):
+        normedMagsMRP[i] = magnitude[i].norm().detach().cpu()
+
+    printoutMaxLayerWeight(model_mamba)
+    getSuperWeight(model_mamba)
+    plotSuperWeight(model_mamba)
+    plotSuperActivation(magnitude, index,printOutValues=True,mambaLayerAttributes = ["in_proj","conv1d","dt_proj"])
+    plt.title("Mamba Classifier Super Activations")
 
 
 # # example onnx export
@@ -371,3 +496,6 @@ validateMultiClassClassifier(model_mamba,val_loader,criterion,num_classes,device
 if save_to_log:
     sys.stdout = sys.__stdout__    # or your saved original_stdout
     f.close()
+
+
+plt.show()
