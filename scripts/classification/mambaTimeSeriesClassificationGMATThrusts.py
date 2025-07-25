@@ -6,7 +6,8 @@ import torch.utils.data as data
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from torch import nn
-from lightgbm import LGBMClassifier
+import pandas as pd
+from sklearn.metrics import log_loss, classification_report, confusion_matrix
 
 # script usage
 
@@ -74,6 +75,7 @@ parser.add_argument("--energy",dest="use_energy",action="store_true",help="Use e
 parser.add_argument("--hybrid",dest="use_hybrid",action="store_true",help="Use a hybrid network.")
 parser.add_argument("--superweight",dest="find_SW",action="store_true",help="Superweight analysis")
 parser.add_argument("--classic",dest="use_classic",action="store_true",help="Use classic ML classification for comparison")
+parser.add_argument("--nearest",dest="use_nearestNeighbor",action="store_true",help="Use classic ML classification (1-nearest neighbor w/ DTW) for comparison")
 
 parser.set_defaults(use_lstm=True)
 parser.set_defaults(OE=False)
@@ -85,6 +87,7 @@ parser.set_defaults(use_energy=False)
 parser.set_defaults(use_hybrid=False)
 parser.set_defaults(find_SW=False)
 parser.set_defaults(use_classic=False)
+parser.set_defaults(use_nearestNeighbor=False)
 
 args = parser.parse_args()
 use_lstm = args.use_lstm
@@ -101,6 +104,7 @@ useEnergy=args.use_energy
 useHybrid=args.use_hybrid
 find_SW=args.find_SW
 use_classic = args.use_classic
+use_nearestNeighbor = args.use_nearestNeighbor
 
 dataLoc = "gmat/data/classification/"+ orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
 
@@ -122,7 +126,10 @@ if save_to_log:
         strAdd = strAdd + "OnePass"
     if useHybrid:
         strAdd = strAdd + "Hybrid"
-
+    if use_classic:
+        strAdd = strAdd + "DT"
+    if use_nearestNeighbor:
+        strAdd = strAdd + "1-NN"
     logFileLoc = dataLoc+"/"+str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log'
     print("saving log output to {}".format(logFileLoc))
 
@@ -341,9 +348,10 @@ if useHybrid:
     validateMultiClassClassifier(model_hybrid,val_loader,criterion,num_classes,device,classlabels,printReport=True)
 
 if use_classic:
+    from lightgbm import LGBMClassifier
+
     print("\nEntering Decision Trees Training Loop")
-    from sklearn.metrics import log_loss, classification_report, confusion_matrix
-    import pandas as pd
+    DTTimer = timer()
     def printClassicModelSize(model):
         import tempfile, pathlib
 
@@ -438,8 +446,121 @@ if use_classic:
     X_train = train_data.reshape(train_data.shape[0], -1).astype(np.float32)    # (number of systems to train on, network features * length of time series)    
     y_train = train_label.reshape(-1).astype(np.int32)             # (number of systems to train on,)
     classicModel.fit(X_train, y_train)
+    DTTimer.toc()
     printClassicModelSize(classicModel)
     validate_lightgbm(classicModel, val_loader, num_classes, classlabels=classlabels, print_report=True)
+
+if use_nearestNeighbor:
+    def z_normalize(ts, eps=1e-8):
+        # ts: [T] or [T,C]
+        mean = ts.mean(axis=0, keepdims=True)
+        std = ts.std(axis=0, keepdims=True)
+        return (ts - mean) / (std + eps)
+
+    def train_data_z_normalize(train_data):
+        """Z-normalize training data along the time axis."""
+        return np.array([z_normalize(ts) for ts in train_data])
+
+    def print1_NNModelSize(model):
+        import tempfile, pathlib
+        import pickle
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "model.pkl"
+            with open(path, "wb") as f:
+                pickle.dump(model, f)
+            size_bytes = path.stat().st_size
+
+        print("\n" + "=" * 90)
+        print(f"Total parameters: NaN (non-parametric model)")
+        print(f"Total memory (bytes): {size_bytes}")
+        print(f"Total memory (MB): {size_bytes / (1024 ** 2):.4f}")
+        print("=" * 90)
+
+    def validate_1NN(clf, val_loader, num_classes, classlabels=None):
+        """Evaluate a 1-NN classifier (e.g., sktime KNeighborsTimeSeriesClassifier) on a PyTorch DataLoader."""
+        X_val_list, y_val_list = [], []
+
+        for seq, lab in val_loader:
+            xb = seq.cpu().numpy()  # preserve time-series shape
+            yb = lab.cpu().numpy()
+            X_val_list.append(z_normalize(xb)) #z-normalize each time series
+            y_val_list.append(yb)
+
+        # Merge batches
+        X_val_np = np.concatenate(X_val_list, axis=0)
+        y_true = np.concatenate(y_val_list)
+
+        # Adapt shape for sktime: [N,C,T]
+        # [N,T,C] → [N,C,T]
+        X_val_np = np.transpose(X_val_np, (0, 2, 1))
+
+        # Predict
+        y_pred = clf.predict(X_val_np)
+
+        # Accuracy
+        correct = (y_pred == y_true).sum()
+        total = len(y_true)
+        accuracy = 100.0 * correct / total
+
+        print(f"Validation Loss: NaN, Validation Accuracy: {accuracy:.2f}%\n")
+
+        # Per-class accuracy
+        class_corr = np.zeros(num_classes, dtype=int)
+        class_tot = np.zeros(num_classes, dtype=int)
+        for yt, yp in zip(y_true, y_pred):
+            class_tot[yt] += 1
+            if yt == yp:
+                class_corr[yt] += 1
+        per_class_acc = 100.0 * class_corr / np.maximum(class_tot, 1)
+
+        print("Per-Class Validation Accuracy:")
+        for i in range(num_classes):
+            label = classlabels[i] if classlabels else f"Class {i}"
+            if class_tot[i]:
+                print(f"  {label}: {per_class_acc[i]:.2f}% ({class_corr[i]}/{class_tot[i]})")
+            else:
+                print(f"  {label}: No samples")
+
+        print("\nClassification Report:")
+        print(
+            classification_report(
+                y_true, y_pred,
+                labels=list(range(num_classes)),
+                target_names=(classlabels if classlabels else None),
+                digits=4,
+                zero_division=0,
+            )
+        )
+
+        cm = confusion_matrix(y_true, y_pred, labels=list(range(num_classes)))
+        print("\nConfusion Matrix (rows = true, cols = predicted):")
+        print(
+            pd.DataFrame(
+                cm,
+                index=[f"T_{cls}" for cls in (classlabels if classlabels else range(num_classes))],
+                columns=[f"P_{cls}" for cls in (classlabels if classlabels else range(num_classes))]
+            )
+        )
+
+    from sktime.classification.distance_based import KNeighborsTimeSeriesClassifier
+
+    print("\nEntering Nearest Neighbor Training Loop")
+    dtw = timer()
+    # [N,T,C] -> [N,C,T]
+    train_data_NN = np.transpose(train_data, (0, 2, 1))
+
+    train_data_NN = train_data_z_normalize(train_data_NN)  # Z-normalize along time axis
+
+    clf = KNeighborsTimeSeriesClassifier(
+        n_neighbors=1,
+        distance="dtw",
+        distance_params={"sakoe_chiba_radius": 10}
+ )
+    clf.fit(train_data_NN, train_label)
+    dtw.toc()
+    print1_NNModelSize(clf)
+    validate_1NN(clf, val_loader, num_classes, classlabels=classlabels)
 
 if use_lstm:
     model_LSTM = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device).double()
