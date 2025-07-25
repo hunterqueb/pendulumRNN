@@ -484,7 +484,7 @@ if use_nearestNeighbor:
         for seq, lab in val_loader:
             xb = seq.cpu().numpy()  # preserve time-series shape
             yb = lab.cpu().numpy()
-            X_val_list.append(z_normalize(xb)) #z-normalize each time series
+            X_val_list.append(xb) #z-normalize each time series
             y_val_list.append(yb)
 
         # Merge batches
@@ -550,7 +550,7 @@ if use_nearestNeighbor:
     # [N,T,C] -> [N,C,T]
     train_data_NN = np.transpose(train_data, (0, 2, 1))
 
-    train_data_NN = train_data_z_normalize(train_data_NN)  # Z-normalize along time axis
+    # train_data_NN = train_data_z_normalize(train_data_NN)  # Z-normalize along time axis
 
     clf = KNeighborsTimeSeriesClassifier(
         n_neighbors=1,
