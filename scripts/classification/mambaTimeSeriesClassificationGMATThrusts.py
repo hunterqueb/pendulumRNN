@@ -65,6 +65,7 @@ parser.add_argument('--no-lstm',dest="use_lstm", action='store_false', help='Use
 parser.add_argument("--systems", type=int, default=10000, help="Number of random systems to access")
 parser.add_argument("--propMin", type=int, default=30, help="Minimum propagation time in minutes")
 parser.add_argument("--orbit", type=str, default="vleo", help="Orbit type: vleo, leo")
+parser.add_argument("--test", type=str, default="vleo", help="Orbit type for test set: vleo, leo")
 parser.add_argument("--OE", action='store_true', help="Use OE elements instead of ECI states")
 parser.add_argument("--noise", action='store_true', help="Add noise to the data")
 parser.add_argument("--norm", action='store_true', help="Normalize the semi-major axis by Earth's radius")
@@ -94,6 +95,7 @@ use_lstm = args.use_lstm
 numMinProp = args.propMin
 numRandSys = args.systems
 orbitType = args.orbit
+testSet = args.test
 useOE = args.OE
 useNoise = args.noise
 useNorm = args.norm
@@ -130,6 +132,8 @@ if save_to_log:
         strAdd = strAdd + "DT"
     if use_nearestNeighbor:
         strAdd = strAdd + "1-NN"
+    if testSet != orbitType:
+        strAdd = strAdd + "Test" + testSet
     logFileLoc = dataLoc+"/"+str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log'
     print("saving log output to {}".format(logFileLoc))
 
@@ -299,11 +303,102 @@ val_end = int((train_ratio + val_ratio) * total_samples)
 train_data = dataset[:train_end]
 train_label = dataset_label[:train_end]
 
-val_data = dataset[train_end:val_end]
-val_label = dataset_label[train_end:val_end]
+if testSet != orbitType:
+    dataLoc = "gmat/data/classification/"+ testSet +"/" + str(numMinProp) + "min-" + str(numRandSys)
+    # load the test set from the other orbit type
+    if useOE:
+        a = np.load(f"{dataLoc}/OEArrayChemical.npz")
+        statesArrayChemical = a['OEArrayChemical'][:,:,0:6]
+        a = np.load(f"{dataLoc}/OEArrayElectric.npz")
+        statesArrayElectric = a['OEArrayElectric'][:,:,0:6]
+        a = np.load(f"{dataLoc}/OEArrayImpBurn.npz")
+        statesArrayImpBurn = a['OEArrayImpBurn'][:,:,0:6]
+        a = np.load(f"{dataLoc}/OEArrayNoThrust.npz")
+        statesArrayNoThrust = a['OEArrayNoThrust'][:,:,0:6]
 
-test_data = dataset[val_end:]
-test_label = dataset_label[val_end:]
+        if useNoise:
+            statesArrayChemical = apply_noise(statesArrayChemical, 1e-3, 1e-3)
+            statesArrayElectric = apply_noise(statesArrayElectric, 1e-3, 1e-3)
+            statesArrayImpBurn = apply_noise(statesArrayImpBurn, 1e-3, 1e-3)
+            statesArrayNoThrust = apply_noise(statesArrayNoThrust, 1e-3, 1e-3)
+        if useNorm:
+            R = 6378.1363 # km
+            statesArrayChemical[:,:,0] = statesArrayChemical[:,:,0] / R
+            statesArrayElectric[:,:,0] = statesArrayElectric[:,:,0] / R
+            statesArrayImpBurn[:,:,0] = statesArrayImpBurn[:,:,0] / R
+            statesArrayNoThrust[:,:,0] = statesArrayNoThrust[:,:,0] / R
+
+    else:
+        a = np.load(f"{dataLoc}/statesArrayChemical.npz")
+        statesArrayChemical = a['statesArrayChemical']
+
+        a = np.load(f"{dataLoc}/statesArrayElectric.npz")
+        statesArrayElectric = a['statesArrayElectric']
+
+        a = np.load(f"{dataLoc}/statesArrayImpBurn.npz")
+        statesArrayImpBurn = a['statesArrayImpBurn']
+
+        a = np.load(f"{dataLoc}/statesArrayNoThrust.npz")
+        statesArrayNoThrust = a['statesArrayNoThrust']
+
+        if useNoise:
+            statesArrayChemical = apply_noise(statesArrayChemical, 1e-3, 1e-3)
+            statesArrayElectric = apply_noise(statesArrayElectric, 1e-3, 1e-3)
+            statesArrayImpBurn = apply_noise(statesArrayImpBurn, 1e-3, 1e-3)
+            statesArrayNoThrust = apply_noise(statesArrayNoThrust, 1e-3, 1e-3)
+        if useNorm:
+            for i in range(statesArrayChemical.shape[0]):
+                statesArrayChemical[i,:,:] = dim2NonDim6(statesArrayChemical[i,:,:])
+                statesArrayElectric[i,:,:] = dim2NonDim6(statesArrayElectric[i,:,:])
+                statesArrayImpBurn[i,:,:] = dim2NonDim6(statesArrayImpBurn[i,:,:])
+                statesArrayNoThrust[i,:,:] = dim2NonDim6(statesArrayNoThrust[i,:,:])
+    if useEnergy:
+        from qutils.orbital import orbitalEnergy
+        problemDim = 1
+        input_size = 1
+
+        energyChemical = np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
+        energyElectric= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
+        energyImpBurn= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
+        energyNoThrust= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
+        for i in range(statesArrayChemical.shape[0]):
+            energyChemical[i,:,0] = orbitalEnergy(statesArrayChemical[i,:,:])
+            energyElectric[i,:,0] = orbitalEnergy(statesArrayElectric[i,:,:])
+            energyImpBurn[i,:,0] = orbitalEnergy(statesArrayImpBurn[i,:,:])
+            energyNoThrust[i,:,0] = orbitalEnergy(statesArrayNoThrust[i,:,:])
+        if useNorm:
+            normingEnergy = energyNoThrust[0,0,0]
+            energyChemical[:,:,0] = energyChemical[:,:,0] / normingEnergy
+            energyElectric[:,:,0] = energyElectric[:,:,0] / normingEnergy
+            energyImpBurn[:,:,0] = energyImpBurn[:,:,0] / normingEnergy
+            energyNoThrust[:,:,0] = energyNoThrust[:,:,0] / normingEnergy
+    if useEnergy:
+        dataset_test = np.concatenate((energyChemical, energyElectric, energyImpBurn, energyNoThrust), axis=0)
+    if useEnergy and useOE:
+        combinedChemical = np.concatenate((statesArrayChemical,energyChemical),axis=2) 
+        combinedElectric = np.concatenate((statesArrayElectric,energyElectric),axis=2) 
+        combinedImpBurn = np.concatenate((statesArrayImpBurn,energyImpBurn),axis=2) 
+        combinedNoThrust = np.concatenate((statesArrayNoThrust,energyNoThrust),axis=2) 
+        dataset_test = np.concatenate((combinedChemical, combinedElectric, combinedImpBurn, combinedNoThrust), axis=0)
+        input_size = 6 + 1
+        hidden_size = int(input_size * 8) 
+        config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
+
+    dataset_label_test = np.concatenate((labelsChemical, labelsElectric, labelsImpBurn, labelsNoThrust), axis=0)
+
+    dataset_test = dataset[indices]
+    dataset_label_test = dataset_label[indices]
+
+    val_data = dataset_test[train_end:val_end]
+    val_label = dataset_label_test[train_end:val_end]
+    test_data = dataset_test[val_end:]
+    test_label = dataset_label_test[val_end:]
+
+else:
+    val_data = dataset[train_end:val_end]
+    val_label = dataset_label[train_end:val_end]
+    test_data = dataset[val_end:]
+    test_label = dataset_label[val_end:]
 
 train_dataset = TensorDataset(torch.from_numpy(train_data), torch.from_numpy(train_label).squeeze(1).long())
 val_dataset = TensorDataset(torch.from_numpy(val_data), torch.from_numpy(val_label).squeeze(1).long())
