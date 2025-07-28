@@ -302,8 +302,11 @@ val_end = int((train_ratio + val_ratio) * total_samples)
 # Split the data
 train_data = dataset[:train_end]
 train_label = dataset_label[:train_end]
+val_data = dataset[train_end:val_end]
+val_label = dataset_label[train_end:val_end]
 
 if testSet != orbitType:
+    # if using a different orbit type for the test set, load the test set from the other orbit type
     dataLoc = "gmat/data/classification/"+ testSet +"/" + str(numMinProp) + "min-" + str(numRandSys)
     # load the test set from the other orbit type
     if useOE:
@@ -389,14 +392,10 @@ if testSet != orbitType:
     dataset_test = dataset[indices]
     dataset_label_test = dataset_label[indices]
 
-    val_data = dataset_test[train_end:val_end]
-    val_label = dataset_label_test[train_end:val_end]
     test_data = dataset_test[val_end:]
     test_label = dataset_label_test[val_end:]
 
 else:
-    val_data = dataset[train_end:val_end]
-    val_label = dataset_label[train_end:val_end]
     test_data = dataset[val_end:]
     test_label = dataset_label[val_end:]
 
@@ -440,7 +439,11 @@ if useHybrid:
     print('\nEntering Hybrid Training Loop')
     trainClassifier(model_hybrid,optimizer_hybrid,scheduler_hybrid,[train_loader,test_loader,val_loader],criterion,num_epochs,device)
     printModelParmSize(model_hybrid)
-    validateMultiClassClassifier(model_hybrid,val_loader,criterion,num_classes,device,classlabels,printReport=True)
+
+    if testSet != orbitType:
+        validateMultiClassClassifier(model_hybrid,test_loader,criterion,num_classes,device,classlabels,printReport=True)
+    else:
+        validateMultiClassClassifier(model_hybrid,val_loader,criterion,num_classes,device,classlabels,printReport=True)
 
 if use_classic:
     from lightgbm import LGBMClassifier
@@ -543,7 +546,10 @@ if use_classic:
     classicModel.fit(X_train, y_train)
     DTTimer.toc()
     printClassicModelSize(classicModel)
-    validate_lightgbm(classicModel, val_loader, num_classes, classlabels=classlabels, print_report=True)
+    if testSet != orbitType:
+        validate_lightgbm(classicModel, test_loader, num_classes, classlabels=classlabels, print_report=True)
+    else:
+        validate_lightgbm(classicModel, val_loader, num_classes, classlabels=classlabels, print_report=True)
 
 if use_nearestNeighbor:
     def z_normalize(ts, eps=1e-8):
@@ -655,7 +661,10 @@ if use_nearestNeighbor:
     clf.fit(train_data_NN, train_label)
     dtw.toc()
     print1_NNModelSize(clf)
-    validate_1NN(clf, val_loader, num_classes, classlabels=classlabels)
+    if testSet != orbitType:
+        validate_1NN(clf, test_loader, num_classes, classlabels=classlabels)
+    else:
+        validate_1NN(clf, val_loader, num_classes, classlabels=classlabels)
 
 if use_lstm:
     model_LSTM = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device).double()
@@ -671,11 +680,18 @@ if use_lstm:
     trainClassifier(model_LSTM,optimizer_LSTM,scheduler_LSTM,[train_loader,test_loader,val_loader],criterion,num_epochs,device)
     printModelParmSize(model_LSTM)
     validateMultiClassClassifier(model_LSTM,val_loader,criterion,num_classes,device,classlabels,printReport=True)
+    if testSet != orbitType:
+        validateMultiClassClassifier(model_LSTM,test_loader,criterion,num_classes,device,classlabels,printReport=True)
+    else:
+        validateMultiClassClassifier(model_LSTM,val_loader,criterion,num_classes,device,classlabels,printReport=True)
 
 print('\nEntering Mamba Training Loop')
 trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba,[train_loader,test_loader,val_loader],criterion,num_epochs,device)
 printModelParmSize(model_mamba)
-validateMultiClassClassifier(model_mamba,val_loader,criterion,num_classes,device,classlabels,printReport=True)
+if testSet != orbitType:
+    validateMultiClassClassifier(model_mamba,test_loader,criterion,num_classes,device,classlabels,printReport=True)
+else:
+    validateMultiClassClassifier(model_mamba,val_loader,criterion,num_classes,device,classlabels,printReport=True)
 # torch.save(model_mamba.state_dict(), f"{dataLoc}/mambaTimeSeriesClassificationGMATThrusts"+ orbitType +".pt")
 
 if find_SW:
