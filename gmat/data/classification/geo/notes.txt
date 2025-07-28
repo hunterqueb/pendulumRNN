@@ -1,0 +1,6 @@
+  orbit       : geo
+  deltav      : 1 km/s
+  e_max       : 0.01
+  i_max.      : 10
+  nu          : -2 to 2
+  altitude    : 35780–35790 km
