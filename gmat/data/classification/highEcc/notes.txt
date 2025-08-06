@@ -1,0 +1,6 @@
+    SMA[i] = rng.uniform(26335, 26500)  # km, typical LEO altitudes
+    ECC[i] = 0.05 * rng.random() + 0.7
+    INC[i] = 10 * rng.random() # deg
+    RAAN[i] = 0 # deg
+    AOP[i] = 0 # deg
+    TA[i] = rng.uniform(-2, 2) # deg
