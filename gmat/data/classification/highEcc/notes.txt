@@ -4,3 +4,5 @@
     RAAN[i] = 0 # deg
     AOP[i] = 0 # deg
     TA[i] = rng.uniform(-2, 2) # deg
+
+    imp deltaV = 0.25 km/s
