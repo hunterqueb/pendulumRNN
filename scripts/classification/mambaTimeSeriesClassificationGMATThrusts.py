@@ -410,7 +410,7 @@ val_loader = DataLoader(val_dataset, batch_size=batchSize, shuffle=False,pin_mem
 test_loader = DataLoader(test_dataset, batch_size=batchSize, shuffle=False,pin_memory=True)
 
 
-criterion = torch.nn.CrossEntropyLoss()
+# criterion = torch.nn.CrossEntropyLoss()
 
 
 class CostSensitiveCELoss(nn.Module):
@@ -431,6 +431,19 @@ class CostSensitiveCELoss(nn.Module):
         # Return mean cost
         return expected_cost.mean()
 
+class BlendedLoss(nn.Module):
+    def __init__(self, alpha: float, cost_matrix: torch.Tensor):
+        super().__init__()
+        assert 0.0 <= alpha <= 1.0
+        self.alpha = alpha
+        self.ce = nn.CrossEntropyLoss()
+        self.cost_ce = CostSensitiveCELoss(cost_matrix)
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        ce_loss = self.ce(logits, targets)
+        cs_loss = self.cost_ce(logits, targets)
+        return self.alpha * ce_loss + (1 - self.alpha) * cs_loss
+
 # cost[i][j] = penalty for predicting j when true class is i
 
 # cost_matrix = torch.tensor([
@@ -442,16 +455,14 @@ class CostSensitiveCELoss(nn.Module):
 
 
 cost_matrix = torch.tensor([
-    [0.0, 10.0, 1.0, 10.0],
-    [10.0, 0.0, 10.0, 10.0],
-    [10.0, 10.0, 0.0, 10.0],
-    [10.0, 1.48, 10.0, 0.0]
-], dtype=torch.float32).to(device)
+    [0.0, 0.9, 0.1, 0.9],
+    [0.9, 0.0, 0.9, 0.9],
+    [0.9, 0.9, 0.0, 0.9],
+    [0.9, 0.2, 0.9, 0.0]], dtype=torch.float32).to(device)
 
 cost_matrix = cost_matrix / cost_matrix.max()
 
-criterion = CostSensitiveCELoss(cost_matrix)
-
+criterion = BlendedLoss(alpha=0.8, cost_matrix=cost_matrix)
 
 
 config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
