@@ -65,7 +65,7 @@ parser.add_argument('--no-lstm',dest="use_lstm", action='store_false', help='Use
 parser.add_argument("--systems", type=int, default=10000, help="Number of random systems to access")
 parser.add_argument("--propMin", type=int, default=30, help="Minimum propagation time in minutes")
 parser.add_argument("--orbit", type=str, default="vleo", help="Orbit type: vleo, leo")
-parser.add_argument("--test", type=str, default="vleo", help="Orbit type for test set: vleo, leo")
+parser.add_argument("--test", type=str, default=None, help="Orbit type for test set: vleo, leo")
 parser.add_argument("--OE", action='store_true', help="Use OE elements instead of ECI states")
 parser.add_argument("--noise", action='store_true', help="Add noise to the data")
 parser.add_argument("--norm", action='store_true', help="Normalize the semi-major axis by Earth's radius")
@@ -95,6 +95,8 @@ use_lstm = args.use_lstm
 numMinProp = args.propMin
 numRandSys = args.systems
 orbitType = args.orbit
+if args.test is None:
+    args.test = args.orbit
 testSet = args.test
 useOE = args.OE
 useNoise = args.noise
