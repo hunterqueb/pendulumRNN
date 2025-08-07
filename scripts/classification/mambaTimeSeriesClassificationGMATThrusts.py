@@ -446,7 +446,7 @@ cost_matrix = torch.tensor([
     [10.0, 0.0, 10.0, 10.0],
     [10.0, 10.0, 0.0, 10.0],
     [10.0, 1.48, 10.0, 0.0]
-], dtype=torch.float32)
+], dtype=torch.float32).to(device)
 
 cost_matrix = cost_matrix / cost_matrix.max()
 
