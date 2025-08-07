@@ -411,6 +411,49 @@ test_loader = DataLoader(test_dataset, batch_size=batchSize, shuffle=False,pin_m
 
 
 criterion = torch.nn.CrossEntropyLoss()
+
+
+class CostSensitiveCELoss(nn.Module):
+    def __init__(self, cost_matrix: torch.Tensor):
+        super().__init__()
+        self.register_buffer("cost_matrix", cost_matrix)
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        # Softmax probabilities
+        probs = F.softmax(logits, dim=1)  # shape: [batch_size, num_classes]
+
+        # Gather cost vectors for each target in the batch
+        cost_vectors = self.cost_matrix[targets]  # shape: [batch_size, num_classes]
+
+        # Compute the expected cost per sample
+        expected_cost = torch.sum(probs * cost_vectors, dim=1)  # shape: [batch_size]
+
+        # Return mean cost
+        return expected_cost.mean()
+
+# cost[i][j] = penalty for predicting j when true class is i
+
+# cost_matrix = torch.tensor([
+#     [0.0, 1.0, 0.2, 1.0],  # True class 0
+#     [1.0, 0.0, 1.0, 1.0],  # True class 1
+#     [0.2, 1.0, 0.0, 1.0],  # True class 2
+#     [1.0, 1.0, 1.0, 0.0],  # True class 3
+# ], dtype=torch.float32)
+
+
+cost_matrix = torch.tensor([
+    [0.0, 10.0, 1.0, 10.0],
+    [10.0, 0.0, 10.0, 10.0],
+    [10.0, 10.0, 0.0, 10.0],
+    [10.0, 1.48, 10.0, 0.0]
+], dtype=torch.float32)
+
+cost_matrix = cost_matrix / cost_matrix.max()
+
+criterion = CostSensitiveCELoss(cost_matrix)
+
+
+
 config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
 optimizer_mamba = torch.optim.Adam(model_mamba.parameters(), lr=learning_rate)
 
