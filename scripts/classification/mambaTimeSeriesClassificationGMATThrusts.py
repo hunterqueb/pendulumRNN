@@ -210,7 +210,8 @@ problemDim = 6
 
 # Hyperparameters
 input_size = problemDim 
-hidden_size = 48 # must be multiple of train dim
+hidden_factor = 8  # hidden size is a multiple of input size
+hidden_size = int(input_size * hidden_factor) # must be multiple of train dim
 num_layers = 1
 num_classes = 4  # e.g., multiclass classification
 learning_rate = 1e-3
@@ -275,7 +276,7 @@ if useEnergy and useOE:
     combinedNoThrust = np.concatenate((statesArrayNoThrust,energyNoThrust),axis=2) 
     dataset = np.concatenate((combinedChemical, combinedElectric, combinedImpBurn, combinedNoThrust), axis=0)
     input_size = 6 + 1
-    hidden_size = int(input_size * 8) 
+    hidden_size = int(input_size * hidden_factor) 
     config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
 
 dataset_label = np.concatenate((labelsChemical, labelsElectric, labelsImpBurn, labelsNoThrust), axis=0)
@@ -386,7 +387,6 @@ if testSet != orbitType:
         combinedNoThrust = np.concatenate((statesArrayNoThrust,energyNoThrust),axis=2) 
         dataset_test = np.concatenate((combinedChemical, combinedElectric, combinedImpBurn, combinedNoThrust), axis=0)
         input_size = 6 + 1
-        hidden_size = int(input_size * 8) 
         config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
 
     dataset_label_test = np.concatenate((labelsChemical, labelsElectric, labelsImpBurn, labelsNoThrust), axis=0)
