@@ -51,9 +51,9 @@ elif len(sys.argv) == 2:
     #     targetOrbitFamily = 'quasiperiodic'
     #     problemString = "H-QP"
     elif orbitPair == 5:
-        sourceOrbitFamily = 'shortPeriod'
-        targetOrbitFamily = 'butterflyNorth'
-        problemString = "SP-BN"
+        sourceOrbitFamily = 'longPeriod'
+        targetOrbitFamily = 'halo'
+        print("here")
 
 else: # targeted orbit family pairs for transfer learning demonstration
     sourceOrbitFamily = 'longPeriod'
@@ -205,14 +205,13 @@ for i in range(numRuns):
 
     ax.set_title('Source Domain')
     ax.set_xlabel('x')
-    ax.set_ylabel('y')
+    ax.set_zlabel('z')
     ax.zaxis.line.set_visible(False)
-    ax.set_zticks([])
-    ax.set_zlabel('')
+    ax.set_yticks([])
+    ax.set_ylabel('')
     plt.rcParams['font.size'] = 10
     limits = np.array([getattr(ax, f'get_{axis}lim')() for axis in 'xyz'])
     ax.set_box_aspect(np.ptp(limits, axis=1))
-    ax.legend()
     ax.grid(True)
     
 
@@ -247,14 +246,12 @@ for i in range(numRuns):
     ax.set_title('Train Data')
     ax.set_xlabel('x')
     ax.set_ylabel('y')
+    ax.set_zlabel('z')
     ax.zaxis.line.set_visible(False)
     plt.rcParams['font.size'] = 10
     limits = np.array([getattr(ax, f'get_{axis}lim')() for axis in 'xyz'])
     ax.set_box_aspect(np.ptp(limits, axis=1))
-    ax.legend()
     ax.grid(True)
-    ax.set_yticks([])
-    ax.set_ylabel('')
 
 
 
@@ -266,6 +263,8 @@ for i in range(numRuns):
     ax.set_title('Target Domain')
     ax.set_xlabel('x')
     ax.set_ylabel('y')
+    ax.set_zlabel('z')
+
     ax.zaxis.line.set_visible(False)
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
@@ -275,8 +274,6 @@ for i in range(numRuns):
     ax.set_box_aspect(np.ptp(limits, axis=1))
     ax.legend()
     ax.grid(True)
-    ax.set_yticks([])
-    ax.set_ylabel('')
 
 
     plt.show()
