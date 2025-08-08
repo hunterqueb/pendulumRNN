@@ -127,7 +127,6 @@ for i in range(numRandSys):
     AOP[i] = 0 # deg
     TA[i] = rng.uniform(-2, 2) # deg
 
-
 # construct the burn force model
 def setThrust(s, b):
     bf = gmat.FiniteThrust("Thrust")
@@ -190,7 +189,7 @@ if propType == 'chem':
         # Finite Burn Specific Settings
         # -----------------------------
         # Turn on the thruster
-        theThruster.SetField("IsFiring", True)
+        # theThruster.SetField("IsFiring", True)
         earthorb.IsManeuvering(True)
         burn.SetSpacecraftToManeuver(earthorb)
         # # Add the thrust to the force model
@@ -210,7 +209,7 @@ if propType == 'chem':
 
         fm = pdprop.GetODEModel()
         fm.DeleteForce(burnForce)
-        theThruster.SetField("IsFiring", False)
+        # theThruster.SetField("IsFiring", False)
         earthorb.IsManeuvering(False)
         pdprop.PrepareInternals()
         gator = pdprop.GetPropagator()
@@ -237,8 +236,10 @@ elif propType == 'elec':
     ETank = gmat.Construct("ElectricTank", "EFuel") # create an electric tank with the name "Fuel"
     EThruster = gmat.Construct("ElectricThruster", "EThruster") # create an electric thruster with the name "Thruster"
     powerSystem = gmat.Construct("SolarPowerSystem", "EPS") # create a power system with the name "EPS"
+    EThruster.SetField("ThrustModel", "ThrustMassPolynomial") # set the thrust coefficient for the "EThruster" to use the elecThrust value
     EThruster.SetField("ThrustCoeff1", elecThrust) # set the thrust coefficient for the "EThruster" to use the elecThrust value
     EThruster.SetField("DecrementMass", True)
+    EThruster.SetField("ThrustScaleFactor", 0.15) # scale the thrust 
     EThruster.SetField("Tank", "EFuel") # set the tank for the "EThruster" to use the "EFuel" object
     earthorb.SetField("Tanks", "EFuel") # set possible tanks for the "EThruster" to use the "EFuel" object
     earthorb.SetField("Thrusters", "EThruster") # set possible thrusters to use the "EThruster" object
@@ -284,7 +285,7 @@ elif propType == 'elec':
         # Finite Burn Specific Settings
         # -----------------------------
         # Turn on the thruster
-        theThruster.SetField("IsFiring", True)
+        # theThruster.SetField("IsFiring", True)
         earthorb.IsManeuvering(True)
         burn.SetSpacecraftToManeuver(earthorb)
         # # Add the thrust to the force model
@@ -304,7 +305,7 @@ elif propType == 'elec':
 
         fm = pdprop.GetODEModel()
         fm.DeleteForce(burnForce)
-        theThruster.SetField("IsFiring", False)
+        # theThruster.SetField("IsFiring", False)
         earthorb.IsManeuvering(False)
         pdprop.PrepareInternals()
         gator = pdprop.GetPropagator()
