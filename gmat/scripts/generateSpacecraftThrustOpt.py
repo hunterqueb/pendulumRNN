@@ -27,6 +27,7 @@ parser.set_defaults(slurm=False)
 parser.add_argument('--propType', type=str, default='chem', help='Type of propagation to perform: chem, elec, imp, none')
 parser.add_argument("--lowerAlt", type=float, default=200, help="Lower altitude bound in km")
 parser.add_argument("--upperAlt", type=float, default=250, help="Upper altitude bound in km")
+parser.add_argument("--folder", type=str, default="", help="Folder to save the data in, if applicable")
 
 args = parser.parse_args()
 
@@ -42,6 +43,9 @@ slurm = args.slurm
 propType = args.propType
 lowerAlt = args.lowerAlt
 upperAlt = args.upperAlt
+folder = args.folder
+if len(folder) > 0 and folder[-1] == '/':
+    folder = folder[:-1]  # Remove trailing slash if present
 
 if echoLogFile:
     gmat.EchoLogFile()
@@ -223,9 +227,9 @@ if propType == 'chem':
 
     if saveOn:
         if slurm:
-            saveDest = '~/pendulumRNN/gmat/data/classification/'
+            saveDest = '~/pendulumRNN/gmat/data/classification/' + folder + "/"
         else:
-            saveDest = 'gmat/data/classification/'
+            saveDest = 'gmat/data/classification/' + folder + "/"
 
         np.savez(saveDest+'statesArrayChemical.npz', statesArrayChemical=statesArrayChemical)
 
@@ -317,9 +321,9 @@ elif propType == 'elec':
 
     if saveOn:
         if slurm:
-            saveDest = '~/pendulumRNN/gmat/data/classification/'
+            saveDest = '~/pendulumRNN/gmat/data/classification/' + folder + "/"
         else:
-            saveDest = 'gmat/data/classification/'
+            saveDest = 'gmat/data/classification/' + folder + "/"
 
         np.savez(saveDest+'statesArrayElectric.npz', statesArrayElectric=statesArrayElectric)
 
