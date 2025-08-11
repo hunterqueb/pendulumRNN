@@ -233,7 +233,7 @@ for i in range(numRuns):
     fig.set_size_inches(10, 8)
 
 
-    plotEnergy(output_seq,networkPrediction,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',networkLabel=modelString + " Source Domain",nonDim=True)
+    plotEnergy(output_seq,networkPrediction,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel="Jacobi's Constant",networkLabel=modelString + " Source Domain",nonDim=True)
     # # TRANSFER LEARN
 
     x_0,tEnd = CR3BPIC_target()
@@ -306,7 +306,7 @@ for i in range(numRuns):
     fig.set_size_inches(10, 8)
 
 
-    plotEnergy(output_seq,networkPrediction_target,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',networkLabel=modelString + " Target Domain",nonDim=True)
+    plotEnergy(output_seq,networkPrediction_target,t,jacobiConstant6,xLabel='Number of Periods (T)',yLabel="Jacobi's Constant",networkLabel=modelString + " Target Domain",nonDim=True)
 
 
     torchinfo.summary(model)
@@ -365,7 +365,7 @@ if plotGen is True:
 
     matplotlib.rcParams['lines.linewidth'] = 2.5
 
-    plotEnergy(output_seq_source,mamba_networkPrediction,t_source,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',networkLabel= "Mamba",nonDim=True)
+    plotEnergy(output_seq_source,mamba_networkPrediction,t_source,jacobiConstant6,xLabel='Number of Periods (T)',yLabel="Jacobi's Constant",networkLabel= "Mamba",nonDim=True)
     plt.plot(t_source,jacobiConstant6(lstm_networkPrediction), label="LSTM",linestyle='dashdot')
     plt.title("Source Domain Conserved Quantity")
     plt.legend(loc='upper left')
@@ -400,7 +400,7 @@ if plotGen is True:
 
     matplotlib.rcParams['lines.linewidth'] = 2.5
 
-    plotEnergy(output_seq_target,mamba_networkPrediction_target,t_target,jacobiConstant6,xLabel='Number of Periods (T)',yLabel='Jacobi Constant',networkLabel= "Mamba",nonDim=True)
+    plotEnergy(output_seq_target,mamba_networkPrediction_target,t_target,jacobiConstant6,xLabel='Number of Periods (T)',yLabel="Jacobi's Constant",networkLabel= "Mamba",nonDim=True)
     plt.plot(t_target,jacobiConstant6(lstm_networkPrediction_target), label="LSTM",linestyle='dashdot')
     plt.title("Target Domain Conserved Quantity")
     plt.legend(loc='upper left')
