@@ -409,10 +409,6 @@ train_loader = DataLoader(train_dataset, batch_size=batchSize, shuffle=True,pin_
 val_loader = DataLoader(val_dataset, batch_size=batchSize, shuffle=False,pin_memory=True)
 test_loader = DataLoader(test_dataset, batch_size=batchSize, shuffle=False,pin_memory=True)
 
-
-# criterion = torch.nn.CrossEntropyLoss()
-
-
 class CostSensitiveCELoss(nn.Module):
     def __init__(self, cost_matrix: torch.Tensor):
         super().__init__()
@@ -462,7 +458,9 @@ cost_matrix = torch.tensor([
 
 cost_matrix = cost_matrix / cost_matrix.max()
 
-criterion = BlendedLoss(alpha=0.8, cost_matrix=cost_matrix)
+alpha = 0
+criterion = BlendedLoss(alpha=alpha, cost_matrix=cost_matrix)
+# criterion = torch.nn.CrossEntropyLoss()
 
 
 config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)

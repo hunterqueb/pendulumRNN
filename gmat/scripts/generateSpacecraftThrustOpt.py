@@ -124,8 +124,10 @@ AOP = np.zeros(numRandSys)
 TA = np.zeros(numRandSys)
 
 for i in range(numRandSys):
-    SMA[i] = rng.uniform(R + lowerAlt,R + upperAlt) # km
-    ECC[i] = 0.01 * rng.random()
+    SMA[i] = rng.uniform(26335, 26500)  # km, typical HEO altitudes
+    ECC[i] = 0.05 * rng.random() + 0.7
+    # SMA[i] = rng.uniform(R + lowerAlt,R + upperAlt) # km
+    # ECC[i] = 0.01 * rng.random()
     INC[i] = 10 * rng.random() # deg
     RAAN[i] = 0 # deg
     AOP[i] = 0 # deg

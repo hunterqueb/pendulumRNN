@@ -378,7 +378,7 @@ if plotGen is True:
     fig = plt.gcf()
     fig.set_size_inches(10, 8)
     plt.savefig("figures/"+problemString+"-SourceDomainPredictionErrorMamba.png", format='png', bbox_inches=None,dpi=600)
-
+    
     newPlotSolutionErrors(output_seq_source,lstm_networkPrediction,t_source,timeLabel='Periods',percentError=True,states = ['x', 'y', 'z', '$\dot{x}$', '$\dot{y}$', '$\dot{z}$'])
     fig = plt.gcf()
     fig.set_size_inches(10, 8)
@@ -419,6 +419,19 @@ if plotGen is True:
     fig = plt.gcf()
     fig.set_size_inches(10, 8)
     plt.savefig("figures/"+problemString+"-TargetDomainPredictionErrorLSTM.png", format='png', bbox_inches=None,dpi=600)
+
+def mape(y_true, y_pred, axis=None, eps=1e-8):
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+    denom = np.where(np.abs(y_true) < eps, np.nan, np.abs(y_true))
+    pct = np.abs((y_true - y_pred) / denom) * 100.0
+    return np.nanmean(pct, axis=axis)
+
+# Per-feature MAPE across time (if shape is [T, D]):
+print("MAPE Mamba Source:", mape(output_seq_source, mamba_networkPrediction, axis=0))
+print("MAPE LSTM  Source:", mape(output_seq_source, lstm_networkPrediction, axis=0))
+print("MAPE Mamba Target:", mape(output_seq_target, mamba_networkPrediction_target, axis=0))
+print("MAPE LSTM  Target:", mape(output_seq_target, lstm_networkPrediction_target, axis=0))
 
 if plotOn is True:
     plt.show()

@@ -35,11 +35,12 @@ touch "$marker"
 
 for prop in chem elec imp none; do
     python "$script_dir/gmat/scripts/generateSpacecraftThrustOpt.py" \
+        --deltaV 0.25 \
         --numRandSys "$num_runs" \
         --numMinProp "$numMinsToProp" \
         --propType "$prop" \
         --lowerAlt "$lowerAlt" \
-        --upperAlt "$upperAlt"
+        --upperAlt "$upperAlt" 
 done
 
 # ──────────────────────────────────────────────────────────────────────────────
