@@ -1,2 +1,0 @@
-lowerAlt = 200
-upperAlt = 250

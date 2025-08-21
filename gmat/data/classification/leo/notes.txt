@@ -1,2 +1,0 @@
-lowerAlt = 300km
-upperAlt = 400km
