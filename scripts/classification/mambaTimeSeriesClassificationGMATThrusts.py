@@ -110,33 +110,37 @@ find_SW=args.find_SW
 use_classic = args.use_classic
 use_nearestNeighbor = args.use_nearestNeighbor
 
-dataLoc = "gmat/data/classification/"+ orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
+import yaml
+with open("data.yaml", 'r') as f:
+    dataConfig = yaml.safe_load(f)
+dataLoc = dataConfig['classification'] + orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
+# dataLoc = "c/Users/hu650776/GMAT-Thrust-Data/data/classification/data/classification/"+ orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
 
 if save_to_log:
     import sys
 
     strAdd = ""
     if useEnergy:
-        strAdd = "Energy"
+        strAdd = "Energy_"
     if useOE:
-        strAdd = strAdd + "OE"
+        strAdd = strAdd + "OE_"
     if useNorm:
-        strAdd = strAdd + "Norm"
+        strAdd = strAdd + "Norm_"
     if useNoise:
-        strAdd = strAdd + "Noise"
+        strAdd = strAdd + "Noise_"
     if useOneShot:
-        strAdd = strAdd + "OneShot"
+        strAdd = strAdd + "OneShot_"
     if useOnePass:
-        strAdd = strAdd + "OnePass"
+        strAdd = strAdd + "OnePass_"
     if useHybrid:
-        strAdd = strAdd + "Hybrid"
+        strAdd = strAdd + "Hybrid_"
     if use_classic:
-        strAdd = strAdd + "DT"
+        strAdd = strAdd + "DT_"
     if use_nearestNeighbor:
-        strAdd = strAdd + "1-NN"
+        strAdd = strAdd + "1-NN_"
     if testSet != orbitType:
-        strAdd = strAdd + "Test" + testSet
-    logFileLoc = dataLoc+"/"+str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log'
+        strAdd = strAdd + "Test_" + testSet
+    logFileLoc = "gmat/data/classification/"+str(orbitType)+"/"+str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log'
     print("saving log output to {}".format(logFileLoc))
 
     # file to open
@@ -310,7 +314,7 @@ val_label = dataset_label[train_end:val_end]
 
 if testSet != orbitType:
     # if using a different orbit type for the test set, load the test set from the other orbit type
-    dataLoc = "gmat/data/classification/"+ testSet +"/" + str(numMinProp) + "min-" + str(numRandSys)
+    dataLoc = dataConfig['classification']+ testSet +"/" + str(numMinProp) + "min-" + str(numRandSys)
     # load the test set from the other orbit type
     if useOE:
         a = np.load(f"{dataLoc}/OEArrayChemical.npz")
@@ -491,7 +495,7 @@ if useHybrid:
     )
 
     print('\nEntering Hybrid Training Loop')
-    trainClassifier(model_hybrid,optimizer_hybrid,scheduler_hybrid,[train_loader,test_loader,val_loader],criterion,num_epochs,device)
+    trainClassifier(model_hybrid,optimizer_hybrid,scheduler_hybrid,[train_loader,test_loader,val_loader],criterion,num_epochs,device,classLabels=classlabels)
     printModelParmSize(model_hybrid)
 
     if testSet != orbitType:
@@ -731,7 +735,7 @@ if use_lstm:
     )
 
     print('\nEntering LSTM Training Loop')
-    trainClassifier(model_LSTM,optimizer_LSTM,scheduler_LSTM,[train_loader,test_loader,val_loader],criterion,num_epochs,device)
+    trainClassifier(model_LSTM,optimizer_LSTM,scheduler_LSTM,[train_loader,test_loader,val_loader],criterion,num_epochs,device,classLabels=classlabels)
     printModelParmSize(model_LSTM)
     validateMultiClassClassifier(model_LSTM,val_loader,criterion,num_classes,device,classlabels,printReport=True)
     if testSet != orbitType:
@@ -740,7 +744,7 @@ if use_lstm:
         validateMultiClassClassifier(model_LSTM,val_loader,criterion,num_classes,device,classlabels,printReport=True)
 
 print('\nEntering Mamba Training Loop')
-trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba,[train_loader,test_loader,val_loader],criterion,num_epochs,device)
+trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba,[train_loader,test_loader,val_loader],criterion,num_epochs,device,classLabels=classlabels)
 printModelParmSize(model_mamba)
 if testSet != orbitType:
     validateMultiClassClassifier(model_mamba,test_loader,criterion,num_classes,device,classlabels,printReport=True)
