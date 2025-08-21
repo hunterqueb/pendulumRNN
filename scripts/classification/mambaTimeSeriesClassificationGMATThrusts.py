@@ -77,6 +77,7 @@ parser.add_argument("--hybrid",dest="use_hybrid",action="store_true",help="Use a
 parser.add_argument("--superweight",dest="find_SW",action="store_true",help="Superweight analysis")
 parser.add_argument("--classic",dest="use_classic",action="store_true",help="Use classic ML classification for comparison")
 parser.add_argument("--nearest",dest="use_nearestNeighbor",action="store_true",help="Use classic ML classification (1-nearest neighbor w/ DTW) for comparison")
+parser.add_argument("--SMA",dest="useSemiMajorAxis",action="store_true",help="Use semi-major axis as the only feature.")
 
 parser.set_defaults(use_lstm=True)
 parser.set_defaults(OE=False)
@@ -109,6 +110,8 @@ useHybrid=args.use_hybrid
 find_SW=args.find_SW
 use_classic = args.use_classic
 use_nearestNeighbor = args.use_nearestNeighbor
+useSemiMajorAxis = args.useSemiMajorAxis
+
 
 import yaml
 with open("data.yaml", 'r') as f:
@@ -138,6 +141,8 @@ if save_to_log:
         strAdd = strAdd + "DT_"
     if use_nearestNeighbor:
         strAdd = strAdd + "1-NN_"
+    if useSemiMajorAxis:
+        strAdd = strAdd + "SMA_"
     if testSet != orbitType:
         strAdd = strAdd + "Test_" + testSet
     logFileLoc = "gmat/data/classification/"+str(orbitType)+"/"+str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log'
@@ -218,7 +223,7 @@ hidden_factor = 8  # hidden size is a multiple of input size
 hidden_size = int(input_size * hidden_factor) # must be multiple of train dim
 num_layers = 1
 num_classes = 4  # e.g., multiclass classification
-learning_rate = 1e-3
+learning_rate = 1e-1
 num_epochs = 100
 
 if useOnePass:
@@ -254,6 +259,28 @@ if useEnergy:
     # plt.legend()
     # plt.show()
 
+if useSemiMajorAxis:
+    a = np.load(f"{dataLoc}/OEArrayChemical.npz")
+    statesArrayChemical = a['OEArrayChemical'][:,:,0:6]
+    a = np.load(f"{dataLoc}/OEArrayElectric.npz")
+    statesArrayElectric = a['OEArrayElectric'][:,:,0:6]
+    a = np.load(f"{dataLoc}/OEArrayImpBurn.npz")
+    statesArrayImpBurn = a['OEArrayImpBurn'][:,:,0:6]
+    a = np.load(f"{dataLoc}/OEArrayNoThrust.npz")
+    statesArrayNoThrust = a['OEArrayNoThrust'][:,:,0:6]
+
+    problemDim = 1
+    input_size = 1
+    SMAChemical = np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
+    SMAElectric= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
+    SMAImpBurn= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
+    SMANoThrust= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
+    for i in range(statesArrayChemical.shape[0]):
+        SMAChemical[i,:,0] = statesArrayChemical[i,:,0]
+        SMAElectric[i,:,0] = statesArrayElectric[i,:,0]
+        SMAImpBurn[i,:,0] = statesArrayImpBurn[i,:,0]
+        SMANoThrust[i,:,0] = statesArrayNoThrust[i,:,0]
+
 
 config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
 
@@ -282,6 +309,8 @@ if useEnergy and useOE:
     input_size = 6 + 1
     hidden_size = int(input_size * hidden_factor) 
     config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
+if useSemiMajorAxis:
+    dataset = np.concatenate((SMAChemical, SMAElectric, SMAImpBurn, SMANoThrust), axis=0)
 
 dataset_label = np.concatenate((labelsChemical, labelsElectric, labelsImpBurn, labelsNoThrust), axis=0)
 
@@ -604,11 +633,12 @@ if use_classic:
     classicModel.fit(X_train, y_train)
     DTTimer.toc()
     printClassicModelSize(classicModel)
+    DTTimerInference = timer()
     if testSet != orbitType:
         validate_lightgbm(classicModel, test_loader, num_classes, classlabels=classlabels, print_report=True)
     else:
         validate_lightgbm(classicModel, val_loader, num_classes, classlabels=classlabels, print_report=True)
-
+    DTTimerInference.tocStr("Decision Trees Inference Time")
 if use_nearestNeighbor:
     def z_normalize(ts, eps=1e-8):
         # ts: [T] or [T,C]
@@ -719,10 +749,12 @@ if use_nearestNeighbor:
     clf.fit(train_data_NN, train_label)
     dtw.toc()
     print1_NNModelSize(clf)
+    dtwInference = timer()
     if testSet != orbitType:
         validate_1NN(clf, test_loader, num_classes, classlabels=classlabels)
     else:
         validate_1NN(clf, val_loader, num_classes, classlabels=classlabels)
+    dtwInference.tocStr("1-NN Inference Time")
 
 if use_lstm:
     model_LSTM = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device).double()
@@ -738,18 +770,22 @@ if use_lstm:
     trainClassifier(model_LSTM,optimizer_LSTM,scheduler_LSTM,[train_loader,test_loader,val_loader],criterion,num_epochs,device,classLabels=classlabels)
     printModelParmSize(model_LSTM)
     validateMultiClassClassifier(model_LSTM,val_loader,criterion,num_classes,device,classlabels,printReport=True)
+    LSTMInference = timer()
     if testSet != orbitType:
         validateMultiClassClassifier(model_LSTM,test_loader,criterion,num_classes,device,classlabels,printReport=True)
     else:
         validateMultiClassClassifier(model_LSTM,val_loader,criterion,num_classes,device,classlabels,printReport=True)
+    LSTMInference.tocStr("LSTM Inference Time")
 
 print('\nEntering Mamba Training Loop')
 trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba,[train_loader,test_loader,val_loader],criterion,num_epochs,device,classLabels=classlabels)
 printModelParmSize(model_mamba)
+mambaInference = timer()
 if testSet != orbitType:
     validateMultiClassClassifier(model_mamba,test_loader,criterion,num_classes,device,classlabels,printReport=True)
 else:
     validateMultiClassClassifier(model_mamba,val_loader,criterion,num_classes,device,classlabels,printReport=True)
+mambaInference.tocStr("Mamba Inference Time")
 # torch.save(model_mamba.state_dict(), f"{dataLoc}/mambaTimeSeriesClassificationGMATThrusts"+ orbitType +".pt")
 
 if find_SW:
