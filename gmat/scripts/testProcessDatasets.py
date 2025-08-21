@@ -1,15 +1,27 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from qutils.orbital import dim2NonDim6
+from qutils.orbital import dim2NonDim6,orbitalEnergy
 
 dt = 60
 
-numMinProp = 100
-numRandSys = 10000
-orbitType = "leo"
-norm = True
+import argparse
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('--numMinProp', type=int, default=10, help='Number of minutes of propagation')
+parser.add_argument('--numRandSys', type=int, default=10000, help='Number of random systems')
+parser.add_argument('--orbitType', type=str, default='vleo', help='Type of orbit')
+parser.add_argument('--norm', action='store_true', help='Normalize the states')
+args = parser.parse_args()
+numMinProp = args.numMinProp
+numRandSys = args.numRandSys
+orbitType = args.orbitType
+norm = args.norm
 
-dataLoc = "gmat/data/classification/" + orbitType + "/" + str(numMinProp) + "min-" + str(numRandSys)
+print(f"Processing datasets for {orbitType} with {numMinProp} minutes and {numRandSys} random systems.")
+
+import yaml
+with open("data.yaml", 'r') as f:
+    dataConfig = yaml.safe_load(f)
+dataLoc = dataConfig["classification"] + orbitType + "/" + str(numMinProp) + "min-" + str(numRandSys)
 
 # get npz files in folder and load them into script
 
@@ -37,6 +49,16 @@ if norm:
         statesArrayImpBurn[i,:,:] = dim2NonDim6(statesArrayImpBurn[i,:,:])
         statesArrayNoThrust[i,:,:] = dim2NonDim6(statesArrayNoThrust[i,:,:])
 
+energyChemical = np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
+energyElectric= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
+energyImpBurn= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
+energyNoThrust= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
+for i in range(statesArrayChemical.shape[0]):
+    energyChemical[i,:,0] = orbitalEnergy(statesArrayChemical[i,:,:])
+    energyElectric[i,:,0] = orbitalEnergy(statesArrayElectric[i,:,:])
+    energyImpBurn[i,:,0] = orbitalEnergy(statesArrayImpBurn[i,:,:])
+    energyNoThrust[i,:,0] = orbitalEnergy(statesArrayNoThrust[i,:,:])
+
 t = np.linspace(0,100*dt,len(statesArrayChemical[0,:,0]))
 
 fig = plt.figure()
@@ -48,23 +70,38 @@ ax.plot(statesArrayNoThrust[0,:,0],statesArrayNoThrust[0,:,1],statesArrayNoThrus
 ax.set_xlabel('X (km)')
 ax.set_ylabel('Y (km)')
 ax.set_zlabel('Z (km)')
-ax.set_title('3D Trajectory of Earth Orbiter')
+ax.set_title('3D Trajectory of a Single Earth Orbiter')
 ax.legend(loc='lower left')
 ax.axis('equal')
 
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
-ax.plot(statesArrayChemical[1,:,0],statesArrayChemical[1,:,1],statesArrayChemical[1,:,2],label='Chemical')
-ax.plot(statesArrayElectric[1,:,0],statesArrayElectric[1,:,1],statesArrayElectric[1,:,2],label='Electric')
-ax.plot(statesArrayImpBurn[1,:,0],statesArrayImpBurn[1,:,1],statesArrayImpBurn[1,:,2],label='Impulsive')
-ax.plot(statesArrayNoThrust[1,:,0],statesArrayNoThrust[1,:,1],statesArrayNoThrust[1,:,2],label='No Thrust')
+for i in range(20):
+    ax.plot(statesArrayChemical[i,:,0],statesArrayChemical[i,:,1],statesArrayChemical[i,:,2],label='Chemical',color='C0')
+    ax.plot(statesArrayElectric[i,:,0],statesArrayElectric[i,:,1],statesArrayElectric[i,:,2],label='Electric',color='C1')
+    ax.plot(statesArrayImpBurn[i,:,0],statesArrayImpBurn[i,:,1],statesArrayImpBurn[i,:,2],label='Impulsive',color='C2')
+    ax.plot(statesArrayNoThrust[i,:,0],statesArrayNoThrust[i,:,1],statesArrayNoThrust[i,:,2],label='No Thrust',color='C3')
 ax.set_xlabel('X (km)')
 ax.set_ylabel('Y (km)')
 ax.set_zlabel('Z (km)')
-ax.set_title('3D Trajectory of Earth Orbiter')
-ax.legend()
+ax.set_title('3D Trajectory of 20 Earth Orbiters')
+from matplotlib.lines import Line2D
+colors = ['C0', 'C1', 'C2', 'C3']
+lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='--') for c in colors]
+labels = ['Chemical Thrust', 'Electrical Thrust', 'Impulsive Thrust', 'No Thrust']
+ax.legend(lines, labels)
 ax.axis('equal')
 
+plt.figure()
+for i in range(20):
+    plt.plot(t, statesArrayChemical[i,:,0], label='Chemical',color='C0')
+    plt.plot(t, statesArrayElectric[i,:,0], label='Electric',color='C1')
+    plt.plot(t, statesArrayImpBurn[i,:,0], label='Impulsive',color='C2')
+    plt.plot(t, statesArrayNoThrust[i,:,0], label='No Thrust',color='C3')
+plt.legend(lines, labels)
+plt.grid()
+plt.xlabel('Time (s)')
+plt.title("Energy of 20 Earth Orbiters")
 
 plt.figure()
 plt.plot(t, statesArrayChemical[0,:,0], label='Chemical X')
