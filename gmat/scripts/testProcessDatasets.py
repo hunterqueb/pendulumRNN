@@ -94,10 +94,10 @@ ax.axis('equal')
 
 plt.figure()
 for i in range(20):
-    plt.plot(t, statesArrayChemical[i,:,0], label='Chemical',color='C0')
-    plt.plot(t, statesArrayElectric[i,:,0], label='Electric',color='C1')
-    plt.plot(t, statesArrayImpBurn[i,:,0], label='Impulsive',color='C2')
-    plt.plot(t, statesArrayNoThrust[i,:,0], label='No Thrust',color='C3')
+    plt.plot(t, energyChemical[i,:,0], label='Chemical',color='C0')
+    plt.plot(t, energyElectric[i,:,0], label='Electric',color='C1')
+    plt.plot(t, energyImpBurn[i,:,0], label='Impulsive',color='C2')
+    plt.plot(t, energyNoThrust[i,:,0], label='No Thrust',color='C3')
 plt.legend(lines, labels)
 plt.grid()
 plt.xlabel('Time (s)')
@@ -144,7 +144,7 @@ def plotDiffFromNoThrust(statesArray, label):
     plt.grid()
 
 
-plotDiffFromNoThrust(statesArrayChemical, 'Chemical')
-plotDiffFromNoThrust(statesArrayElectric, 'Electric')
-plotDiffFromNoThrust(statesArrayImpBurn, 'Impulsive')
+# plotDiffFromNoThrust(statesArrayChemical, 'Chemical')
+# plotDiffFromNoThrust(statesArrayElectric, 'Electric')
+# plotDiffFromNoThrust(statesArrayImpBurn, 'Impulsive')
 plt.show()
