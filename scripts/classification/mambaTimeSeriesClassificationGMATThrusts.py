@@ -223,8 +223,8 @@ hidden_factor = 8  # hidden size is a multiple of input size
 hidden_size = int(input_size * hidden_factor) # must be multiple of train dim
 num_layers = 1
 num_classes = 4  # e.g., multiclass classification
-learning_rate = 1e-1
-num_epochs = 100
+learning_rate = 1e-3
+num_epochs = 10
 
 if useOnePass:
     num_epochs = 1
@@ -442,59 +442,7 @@ train_loader = DataLoader(train_dataset, batch_size=batchSize, shuffle=True,pin_
 val_loader = DataLoader(val_dataset, batch_size=batchSize, shuffle=False,pin_memory=True)
 test_loader = DataLoader(test_dataset, batch_size=batchSize, shuffle=False,pin_memory=True)
 
-class CostSensitiveCELoss(nn.Module):
-    def __init__(self, cost_matrix: torch.Tensor):
-        super().__init__()
-        self.register_buffer("cost_matrix", cost_matrix)
-
-    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        # Softmax probabilities
-        probs = F.softmax(logits, dim=1)  # shape: [batch_size, num_classes]
-
-        # Gather cost vectors for each target in the batch
-        cost_vectors = self.cost_matrix[targets]  # shape: [batch_size, num_classes]
-
-        # Compute the expected cost per sample
-        expected_cost = torch.sum(probs * cost_vectors, dim=1)  # shape: [batch_size]
-
-        # Return mean cost
-        return expected_cost.mean()
-
-class BlendedLoss(nn.Module):
-    def __init__(self, alpha: float, cost_matrix: torch.Tensor):
-        super().__init__()
-        assert 0.0 <= alpha <= 1.0
-        self.alpha = alpha
-        self.ce = nn.CrossEntropyLoss()
-        self.cost_ce = CostSensitiveCELoss(cost_matrix)
-
-    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        ce_loss = self.ce(logits, targets)
-        cs_loss = self.cost_ce(logits, targets)
-        return self.alpha * ce_loss + (1 - self.alpha) * cs_loss
-
-# cost[i][j] = penalty for predicting j when true class is i
-
-# cost_matrix = torch.tensor([
-#     [0.0, 1.0, 0.2, 1.0],  # True class 0
-#     [1.0, 0.0, 1.0, 1.0],  # True class 1
-#     [0.2, 1.0, 0.0, 1.0],  # True class 2
-#     [1.0, 1.0, 1.0, 0.0],  # True class 3
-# ], dtype=torch.float32)
-
-
-cost_matrix = torch.tensor([
-    [0.0, 0.9, 0.1, 0.9],
-    [0.9, 0.0, 0.9, 0.9],
-    [0.9, 0.9, 0.0, 0.9],
-    [0.9, 0.2, 0.9, 0.0]], dtype=torch.float32).to(device)
-
-cost_matrix = cost_matrix / cost_matrix.max()
-
-alpha = 0
-criterion = BlendedLoss(alpha=alpha, cost_matrix=cost_matrix)
-# criterion = torch.nn.CrossEntropyLoss()
-
+criterion = torch.nn.CrossEntropyLoss()
 
 config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
 optimizer_mamba = torch.optim.Adam(model_mamba.parameters(), lr=learning_rate)
