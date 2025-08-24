@@ -117,6 +117,7 @@ import yaml
 with open("data.yaml", 'r') as f:
     dataConfig = yaml.safe_load(f)
 dataLoc = dataConfig['classification'] + orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
+print(f"Processing datasets for {orbitType} with {numMinProp} minutes and {numRandSys} random systems.")
 # dataLoc = "c/Users/hu650776/GMAT-Thrust-Data/data/classification/data/classification/"+ orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
 
 if save_to_log:
@@ -343,7 +344,14 @@ val_label = dataset_label[train_end:val_end]
 
 if testSet != orbitType:
     # if using a different orbit type for the test set, load the test set from the other orbit type
-    dataLoc = dataConfig['classification']+ testSet +"/" + str(numMinProp) + "min-" + str(numRandSys)
+    # WARNING: this assumes the test set uses the 10000 random systems, just easier for testing single datsets
+    # if testSet string contains combined, then load the same amount of random systems as the training set,
+    # else, load the 10000 random systems
+    if "combined" in testSet:
+        dataLoc = dataConfig['classification']+ testSet +"/" + str(numMinProp) + "min-" + str(numRandSys)
+    else:
+        dataLoc = dataConfig['classification']+ testSet +"/" + str(numMinProp) + "min-" + str(10000)
+    print("Loading test set from {}".format(dataLoc))
     # load the test set from the other orbit type
     if useOE:
         a = np.load(f"{dataLoc}/OEArrayChemical.npz")
@@ -366,6 +374,7 @@ if testSet != orbitType:
             statesArrayElectric[:,:,0] = statesArrayElectric[:,:,0] / R
             statesArrayImpBurn[:,:,0] = statesArrayImpBurn[:,:,0] / R
             statesArrayNoThrust[:,:,0] = statesArrayNoThrust[:,:,0] / R
+        dataset_test = np.concatenate((statesArrayChemical, statesArrayElectric, statesArrayImpBurn, statesArrayNoThrust), axis=0)
 
     else:
         a = np.load(f"{dataLoc}/statesArrayChemical.npz")
@@ -391,6 +400,8 @@ if testSet != orbitType:
                 statesArrayElectric[i,:,:] = dim2NonDim6(statesArrayElectric[i,:,:])
                 statesArrayImpBurn[i,:,:] = dim2NonDim6(statesArrayImpBurn[i,:,:])
                 statesArrayNoThrust[i,:,:] = dim2NonDim6(statesArrayNoThrust[i,:,:])
+        dataset_test = np.concatenate((statesArrayChemical, statesArrayElectric, statesArrayImpBurn, statesArrayNoThrust), axis=0)
+
     if useEnergy:
         from qutils.orbital import orbitalEnergy
         problemDim = 1
@@ -411,7 +422,6 @@ if testSet != orbitType:
             energyElectric[:,:,0] = energyElectric[:,:,0] / normingEnergy
             energyImpBurn[:,:,0] = energyImpBurn[:,:,0] / normingEnergy
             energyNoThrust[:,:,0] = energyNoThrust[:,:,0] / normingEnergy
-    if useEnergy:
         dataset_test = np.concatenate((energyChemical, energyElectric, energyImpBurn, energyNoThrust), axis=0)
     if useEnergy and useOE:
         combinedChemical = np.concatenate((statesArrayChemical,energyChemical),axis=2) 
@@ -422,13 +432,15 @@ if testSet != orbitType:
         input_size = 6 + 1
         config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
 
+    labelsChemical = np.full((statesArrayChemical.shape[0],1),chemicalLabel)
+    labelsElectric = np.full((statesArrayElectric.shape[0],1),electricLabel)
+    labelsImpBurn = np.full((statesArrayImpBurn.shape[0],1),impBurnLabel)
+    labelsNoThrust = np.full((statesArrayNoThrust.shape[0],1),noThrustLabel)
+
     dataset_label_test = np.concatenate((labelsChemical, labelsElectric, labelsImpBurn, labelsNoThrust), axis=0)
 
-    dataset_test = dataset[indices]
-    dataset_label_test = dataset_label[indices]
-
-    test_data = dataset_test[val_end:]
-    test_label = dataset_label_test[val_end:]
+    test_data = dataset_test
+    test_label = dataset_label_test
 
 else:
     test_data = dataset[val_end:]
@@ -581,6 +593,7 @@ if use_classic:
     classicModel.fit(X_train, y_train)
     DTTimer.toc()
     printClassicModelSize(classicModel)
+    print("\nDecision Trees Validation")
     DTTimerInference = timer()
     if testSet != orbitType:
         validate_lightgbm(classicModel, test_loader, num_classes, classlabels=classlabels, print_report=True)
@@ -697,6 +710,7 @@ if use_nearestNeighbor:
     clf.fit(train_data_NN, train_label)
     dtw.toc()
     print1_NNModelSize(clf)
+    print("\n1-NN Validation")
     dtwInference = timer()
     if testSet != orbitType:
         validate_1NN(clf, test_loader, num_classes, classlabels=classlabels)
@@ -718,6 +732,7 @@ if use_lstm:
     trainClassifier(model_LSTM,optimizer_LSTM,scheduler_LSTM,[train_loader,test_loader,val_loader],criterion,num_epochs,device,classLabels=classlabels)
     printModelParmSize(model_LSTM)
     validateMultiClassClassifier(model_LSTM,val_loader,criterion,num_classes,device,classlabels,printReport=True)
+    print("\nLSTM Validation")
     LSTMInference = timer()
     if testSet != orbitType:
         validateMultiClassClassifier(model_LSTM,test_loader,criterion,num_classes,device,classlabels,printReport=True)
@@ -728,6 +743,7 @@ if use_lstm:
 print('\nEntering Mamba Training Loop')
 trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba,[train_loader,test_loader,val_loader],criterion,num_epochs,device,classLabels=classlabels)
 printModelParmSize(model_mamba)
+print("\nMamba Validation")
 mambaInference = timer()
 if testSet != orbitType:
     validateMultiClassClassifier(model_mamba,test_loader,criterion,num_classes,device,classlabels,printReport=True)

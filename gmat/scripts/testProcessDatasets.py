@@ -6,15 +6,18 @@ dt = 60
 
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
-parser.add_argument('--numMinProp', type=int, default=10, help='Number of minutes of propagation')
-parser.add_argument('--numRandSys', type=int, default=10000, help='Number of random systems')
-parser.add_argument('--orbitType', type=str, default='vleo', help='Type of orbit')
+parser.add_argument('--propMin', type=int, default=10, help='Number of minutes of propagation')
+parser.add_argument('--systems', type=int, default=10000, help='Number of random systems')
+parser.add_argument('--orbit', type=str, default='vleo', help='Type of orbit')
 parser.add_argument('--norm', action='store_true', help='Normalize the states')
+parser.add_argument('--randPlots', type=int, default=20, help='Number of random plots to generate')
+
 args = parser.parse_args()
-numMinProp = args.numMinProp
-numRandSys = args.numRandSys
-orbitType = args.orbitType
+numMinProp = args.propMin
+numRandSys = args.systems
+orbitType = args.orbit
 norm = args.norm
+randPlots = args.randPlots
 
 print(f"Processing datasets for {orbitType} with {numMinProp} minutes and {numRandSys} random systems.")
 
@@ -74,9 +77,12 @@ ax.set_title('3D Trajectory of a Single Earth Orbiter')
 ax.legend(loc='lower left')
 ax.axis('equal')
 
+
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
-for i in range(20):
+for j in range(randPlots):
+    i = np.random.randint(0, len(statesArrayChemical))
+
     ax.plot(statesArrayChemical[i,:,0],statesArrayChemical[i,:,1],statesArrayChemical[i,:,2],label='Chemical',color='C0')
     ax.plot(statesArrayElectric[i,:,0],statesArrayElectric[i,:,1],statesArrayElectric[i,:,2],label='Electric',color='C1')
     ax.plot(statesArrayImpBurn[i,:,0],statesArrayImpBurn[i,:,1],statesArrayImpBurn[i,:,2],label='Impulsive',color='C2')
@@ -84,7 +90,7 @@ for i in range(20):
 ax.set_xlabel('X (km)')
 ax.set_ylabel('Y (km)')
 ax.set_zlabel('Z (km)')
-ax.set_title('3D Trajectory of 20 Earth Orbiters')
+ax.set_title('3D Trajectory of '+str(randPlots)+' Earth Orbiters')
 from matplotlib.lines import Line2D
 colors = ['C0', 'C1', 'C2', 'C3']
 lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='--') for c in colors]
@@ -93,7 +99,9 @@ ax.legend(lines, labels)
 ax.axis('equal')
 
 plt.figure()
-for i in range(20):
+for j in range(randPlots):
+    i = np.random.randint(0, len(statesArrayChemical))
+
     plt.plot(t, energyChemical[i,:,0], label='Chemical',color='C0')
     plt.plot(t, energyElectric[i,:,0], label='Electric',color='C1')
     plt.plot(t, energyImpBurn[i,:,0], label='Impulsive',color='C2')
@@ -101,7 +109,7 @@ for i in range(20):
 plt.legend(lines, labels)
 plt.grid()
 plt.xlabel('Time (s)')
-plt.title("Energy of 20 Earth Orbiters")
+plt.title("Energy of "+str(randPlots)+" Earth Orbiters")
 
 plt.figure()
 plt.plot(t, statesArrayChemical[0,:,0], label='Chemical X')

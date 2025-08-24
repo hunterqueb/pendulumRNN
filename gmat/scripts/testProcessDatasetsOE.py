@@ -5,15 +5,17 @@ dt = 60
 
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
-parser.add_argument('--numMinProp', type=int, default=10, help='Number of minutes of propagation')
-parser.add_argument('--numRandSys', type=int, default=10000, help='Number of random systems')
-parser.add_argument('--orbitType', type=str, default='vleo', help='Type of orbit')
+parser.add_argument('--propMin', type=int, default=10, help='Number of minutes of propagation')
+parser.add_argument('--systems', type=int, default=10000, help='Number of random systems')
+parser.add_argument('--orbit', type=str, default='vleo', help='Type of orbit')
 parser.add_argument('--norm', action='store_true', help='Normalize the states')
+parser.add_argument('--randPlots', type=int, default=20, help='Number of random plots to generate')
 args = parser.parse_args()
-numMinProp = args.numMinProp
-numRandSys = args.numRandSys
-orbitType = args.orbitType
+numMinProp = args.propMin
+numRandSys = args.systems
+orbitType = args.orbit
 norm = args.norm
+randPlots = args.randPlots
 
 print(f"Processing datasets for {orbitType} with {numMinProp} minutes and {numRandSys} random systems.")
 
@@ -158,8 +160,11 @@ colors = ['C0', 'C1', 'C2', 'C3']
 lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='--') for c in colors]
 labels = ['Chemical Thrust', 'Electrical Thrust', 'Impulsive Thrust', 'No Thrust']
 
+
 plt.figure()
-for i in range(20):
+for j in range(randPlots):
+    # take a random index
+    i = np.random.randint(0, len(statesArrayChemical))
     plt.plot(t, statesArrayChemical[i,:,0], label='Chemical',color='C0')
     plt.plot(t, statesArrayElectric[i,:,0], label='Electric',color='C1')
     plt.plot(t, statesArrayImpBurn[i,:,0], label='Impulsive',color='C2')
@@ -167,10 +172,11 @@ for i in range(20):
     plt.grid()
     plt.legend(lines, labels)
     plt.xlabel('Time (s)')
-    plt.title("Semi-Major Axis of 20 Earth Orbiters")
+    plt.title("Semi-Major Axis of "+str(randPlots)+" Earth Orbiters")
 
 plt.figure()
-for i in range(20):
+for j in range(randPlots):
+    i = np.random.randint(0, len(statesArrayChemical))
 
     plt.plot(t, statesArrayChemical[i,:,1], label='Chemical',color='C0')
     plt.plot(t, statesArrayElectric[i,:,1], label='Electric',color='C1')
@@ -179,10 +185,11 @@ for i in range(20):
     plt.grid()
     plt.legend(lines, labels)
     plt.xlabel('Time (s)')
-    plt.title("Eccentricity of 20 Earth Orbiters")
+    plt.title("Eccentricity of "+str(randPlots)+" Earth Orbiters")
 
 plt.figure()
-for i in range(20):
+for j in range(randPlots):
+    i = np.random.randint(0, len(statesArrayChemical))
 
     plt.plot(t, statesArrayChemical[i,:,2], label='Chemical',color='C0')
     plt.plot(t, statesArrayElectric[i,:,2], label='Electric',color='C1')
@@ -191,10 +198,12 @@ for i in range(20):
     plt.grid()
     plt.legend(lines, labels)
     plt.xlabel('Time (s)')
-    plt.title("Inclination of 20 Earth Orbiters")
+    plt.title("Inclination of "+str(randPlots)+" Earth Orbiters")
 
 plt.figure()
-for i in range(20):
+for j in range(randPlots):
+    i = np.random.randint(0, len(statesArrayChemical))
+
     plt.plot(t, statesArrayChemical[i,:,3], label='Chemical',color='C0')
     plt.plot(t, statesArrayElectric[i,:,3], label='Electric',color='C1')
     plt.plot(t, statesArrayImpBurn[i,:,3], label='Impulsive',color='C2')
@@ -202,10 +211,11 @@ for i in range(20):
     plt.grid()
     plt.legend(lines, labels)
     plt.xlabel('Time (s)')
-    plt.title("RAAN of 20 Earth Orbiters")
+    plt.title("RAAN of " +str(randPlots)+" Earth Orbiters")
 
 plt.figure()
-for i in range(20):
+for j in range(randPlots):
+    i = np.random.randint(0, len(statesArrayChemical))
 
     plt.plot(t, statesArrayChemical[i,:,4], label='Chemical',color='C0')
     plt.plot(t, statesArrayElectric[i,:,4], label='Electric',color='C1')
@@ -214,10 +224,11 @@ for i in range(20):
     plt.grid()
     plt.legend(lines, labels)
     plt.xlabel('Time (s)')
-    plt.title("Arg of Perigee of 20 Earth Orbiters")
+    plt.title("Arg of Perigee of "+str(randPlots)+" Earth Orbiters")
 
 plt.figure()
-for i in range(20):
+for j in range(randPlots):
+    i = np.random.randint(0, len(statesArrayChemical))
 
     plt.plot(t, statesArrayChemical[i,:,5], label='Chemical',color='C0')
     plt.plot(t, statesArrayElectric[i,:,5], label='Electric',color='C1')
@@ -226,10 +237,11 @@ for i in range(20):
     plt.grid()
     plt.legend(lines, labels)
     plt.xlabel('Time (s)')
-    plt.title("Mean Anomaly of 20 Earth Orbiters")
+    plt.title("Mean Anomaly of "+str(randPlots)+" Earth Orbiters")
 
 plt.figure()
-for i in range(20):
+for j in range(randPlots):
+    i = np.random.randint(0, len(statesArrayChemical))
 
     plt.plot(t, statesArrayChemical[i,:,6], label='Chemical',color='C0')
     plt.plot(t, statesArrayElectric[i,:,6], label='Electric',color='C1')
@@ -238,7 +250,7 @@ for i in range(20):
     plt.grid()
     plt.legend(lines, labels)
     plt.xlabel('Time (s)')
-    plt.title("Period of 20 Earth Orbiters")
+    plt.title("Period of "+str(randPlots)+" Earth Orbiters")
 
 
 
