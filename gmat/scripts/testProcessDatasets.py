@@ -77,20 +77,49 @@ ax.set_title('3D Trajectory of a Single Earth Orbiter')
 ax.legend(loc='lower left')
 ax.axis('equal')
 
+def plot_earth(ax, R=6378.137, color="#4c79d8", alpha=0.5):
+    """Add a WGS-84 Earth sphere to a 3D Axes.
+    R in km (use 6378137.0 for meters)."""
+    u = np.linspace(0, 2*np.pi, 240)
+    v = np.linspace(0, np.pi, 120)
+    x = R * np.outer(np.cos(u), np.sin(v))
+    y = R * np.outer(np.sin(u), np.sin(v))
+    z = R * np.outer(np.ones_like(u), np.cos(v))
+    ax.plot_surface(x, y, z, rstride=1, cstride=1, linewidth=0,
+                    antialiased=False, color=color, alpha=alpha)
+    # Equator line (optional)
+    ax.plot(R*np.cos(u), R*np.sin(u), 0*u, lw=0.8, color="k", alpha=0.3)
+def plot_earth_fast(ax, R=6378.137, u_res=60, v_res=30):
+    u = np.linspace(0, 2*np.pi, u_res)
+    v = np.linspace(0, np.pi, v_res)
+    x = R * np.outer(np.cos(u), np.sin(v))
+    y = R * np.outer(np.sin(u), np.sin(v))
+    z = R * np.outer(np.ones_like(u), np.cos(v))
+    surf = ax.plot_surface(
+        x, y, z,
+        linewidth=0, antialiased=False, shade=False,
+        color="#4c79d8", alpha=0.3,zorder=0
+    )
+    # Helpful when saving vector PDFs/SVGs; harmless on screen:
+    surf.set_rasterized(True)
+    return surf
 
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
+plot_earth_fast(ax, R=6378.137)
 for j in range(randPlots):
     i = np.random.randint(0, len(statesArrayChemical))
 
-    ax.plot(statesArrayChemical[i,:,0],statesArrayChemical[i,:,1],statesArrayChemical[i,:,2],label='Chemical',color='C0')
-    ax.plot(statesArrayElectric[i,:,0],statesArrayElectric[i,:,1],statesArrayElectric[i,:,2],label='Electric',color='C1')
-    ax.plot(statesArrayImpBurn[i,:,0],statesArrayImpBurn[i,:,1],statesArrayImpBurn[i,:,2],label='Impulsive',color='C2')
-    ax.plot(statesArrayNoThrust[i,:,0],statesArrayNoThrust[i,:,1],statesArrayNoThrust[i,:,2],label='No Thrust',color='C3')
+    ax.plot(statesArrayChemical[i,:,0],statesArrayChemical[i,:,1],statesArrayChemical[i,:,2],label='Chemical',color='C0',zorder=5)
+    ax.plot(statesArrayElectric[i,:,0],statesArrayElectric[i,:,1],statesArrayElectric[i,:,2],label='Electric',color='C1',zorder=5)
+    ax.plot(statesArrayImpBurn[i,:,0],statesArrayImpBurn[i,:,1],statesArrayImpBurn[i,:,2],label='Impulsive',color='C2',zorder=5)
+    ax.plot(statesArrayNoThrust[i,:,0],statesArrayNoThrust[i,:,1],statesArrayNoThrust[i,:,2],label='No Thrust',color='C3',zorder=5)
 ax.set_xlabel('X (km)')
 ax.set_ylabel('Y (km)')
 ax.set_zlabel('Z (km)')
 ax.set_title('3D Trajectory of '+str(randPlots)+' Earth Orbiters')
+ax.set_box_aspect((1, 1, 1))
+plt.tight_layout()
 from matplotlib.lines import Line2D
 colors = ['C0', 'C1', 'C2', 'C3']
 lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='--') for c in colors]
