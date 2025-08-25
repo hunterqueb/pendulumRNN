@@ -65,7 +65,8 @@ parser.add_argument('--no-lstm',dest="use_lstm", action='store_false', help='Use
 parser.add_argument("--systems", type=int, default=10000, help="Number of random systems to access")
 parser.add_argument("--propMin", type=int, default=30, help="Minimum propagation time in minutes")
 parser.add_argument("--orbit", type=str, default="vleo", help="Orbit type: vleo, leo")
-parser.add_argument("--test", type=str, default=None, help="Orbit type for test set: vleo, leo")
+parser.add_argument("--test", type=str, default=None, help="Orbit type for test set: vleo, leo, OR the same as --orbit and an integer number of random systems to use for testing")
+parser.add_argument("--testSys", type=int, default=10000, help="Number of systems to use for testing if --test is a different string than --orbit")
 parser.add_argument("--OE", action='store_true', help="Use OE elements instead of ECI states")
 parser.add_argument("--noise", action='store_true', help="Add noise to the data")
 parser.add_argument("--norm", action='store_true', help="Normalize the semi-major axis by Earth's radius")
@@ -98,11 +99,15 @@ numRandSys = args.systems
 orbitType = args.orbit
 if args.test is None:
     args.test = args.orbit
+    args.testSys = numRandSys
+elif args.test.isdigit():
+    args.testSys = int(args.test)
+    args.test = args.orbit
 testSet = args.test
+testSys = args.testSys
 useOE = args.OE
 useNoise = args.noise
 useNorm = args.norm
-useOneShot = args.one_shot
 useOnePass = args.one_pass
 save_to_log = args.save_to_log
 useEnergy=args.use_energy
@@ -132,8 +137,6 @@ if save_to_log:
         strAdd = strAdd + "Norm_"
     if useNoise:
         strAdd = strAdd + "Noise_"
-    if useOneShot:
-        strAdd = strAdd + "OneShot_"
     if useOnePass:
         strAdd = strAdd + "OnePass_"
     if useHybrid:
@@ -225,7 +228,7 @@ hidden_size = int(input_size * hidden_factor) # must be multiple of train dim
 num_layers = 1
 num_classes = 4  # e.g., multiclass classification
 learning_rate = 1e-3
-num_epochs = 10
+num_epochs = 100
 
 if useOnePass:
     num_epochs = 1
@@ -315,42 +318,50 @@ if useSemiMajorAxis:
 
 dataset_label = np.concatenate((labelsChemical, labelsElectric, labelsImpBurn, labelsNoThrust), axis=0)
 
-indices = np.random.permutation(dataset.shape[0])
-
-dataset = dataset[indices]
-dataset_label = dataset_label[indices]
-
 train_ratio = 0.7
 val_ratio = 0.15
 test_ratio = 0.15
-model_mamba = MambaClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device).double()
 
-if useOneShot is not None:
-    train_ratio = 0.1
-    # split the rest into validation and test sets evenly 
-    val_ratio = 0.5 * (1 - train_ratio)
-    test_ratio = 0.5 * (1 - train_ratio)
-    model_mamba.load_state_dict(torch.load(useOneShot, weights_only=True))
-    print("Number of training samples in one-shot transfer learning:", int(train_ratio * dataset.shape[0]))
-total_samples = len(dataset)
-train_end = int(train_ratio * total_samples)
-val_end = int((train_ratio + val_ratio) * total_samples)
+n_ic = statesArrayChemical.shape[0]             # 10000
+groups = np.tile(np.arange(n_ic, dtype=np.int64), 4)   # len == 40000
 
-# Split the data
-train_data = dataset[:train_end]
-train_label = dataset_label[:train_end]
-val_data = dataset[train_end:val_end]
-val_label = dataset_label[train_end:val_end]
+# Ratios (must satisfy train+val <= 1.0; test gets the remainder)
+# example:
+# train_ratio, val_ratio = 0.7, 0.15
+n_train_ic = int(np.floor(train_ratio * n_ic))
+n_val_ic   = int(np.floor(val_ratio   * n_ic))
+n_test_ic  = n_ic - n_train_ic - n_val_ic
+assert n_test_ic > 0, "Ratios leave no ICs for test; reduce train/val."
 
-if testSet != orbitType:
+# Shuffle ICs and partition
+perm_ic = np.random.permutation(n_ic)
+train_ic = perm_ic[:n_train_ic]
+val_ic   = perm_ic[n_train_ic:n_train_ic + n_val_ic]
+test_ic  = perm_ic[n_train_ic + n_val_ic:]
+
+# Masks select ALL thrust variants for each IC
+train_mask = np.isin(groups, train_ic)
+val_mask   = np.isin(groups, val_ic)
+test_mask  = np.isin(groups, test_ic)
+
+# Apply masks
+train_data,  train_label  = dataset[train_mask], dataset_label[train_mask]
+val_data,    val_label    = dataset[val_mask],   dataset_label[val_mask]
+
+# # Sanity checks (no IC leakage)
+# assert not set(train_ic).intersection(val_ic)
+# assert not set(train_ic).intersection(test_ic)
+# assert not set(val_ic).intersection(test_ic)
+
+if testSet != orbitType or testSys != numRandSys:
     # if using a different orbit type for the test set, load the test set from the other orbit type
     # WARNING: this assumes the test set uses the 10000 random systems, just easier for testing single datsets
     # if testSet string contains combined, then load the same amount of random systems as the training set,
     # else, load the 10000 random systems
     if "combined" in testSet:
-        dataLoc = dataConfig['classification']+ testSet +"/" + str(numMinProp) + "min-" + str(numRandSys)
+        dataLoc = dataConfig['classification']+ testSet +"/" + str(numMinProp) + "min-" + str(testSys)
     else:
-        dataLoc = dataConfig['classification']+ testSet +"/" + str(numMinProp) + "min-" + str(10000)
+        dataLoc = dataConfig['classification']+ testSet +"/" + str(numMinProp) + "min-" + str(testSys)
     print("Loading test set from {}".format(dataLoc))
     # load the test set from the other orbit type
     if useOE:
@@ -438,13 +449,30 @@ if testSet != orbitType:
     labelsNoThrust = np.full((statesArrayNoThrust.shape[0],1),noThrustLabel)
 
     dataset_label_test = np.concatenate((labelsChemical, labelsElectric, labelsImpBurn, labelsNoThrust), axis=0)
+    
+    n_ic = statesArrayChemical.shape[0]             
+    groups = np.tile(np.arange(n_ic, dtype=np.int64), 4)
 
-    test_data = dataset_test
-    test_label = dataset_label_test
+    # Ratios (must satisfy train+val <= 1.0; test gets the remainder)
+    # example:
+    # train_ratio, val_ratio = 0.7, 0.15
+    n_train_ic = int(np.floor(train_ratio * n_ic))
+    n_val_ic   = int(np.floor(val_ratio   * n_ic))
+    n_test_ic  = n_ic - n_train_ic - n_val_ic
+    perm_ic = np.random.permutation(n_ic)
+    train_ic = perm_ic[:n_train_ic]
+    val_ic   = perm_ic[n_train_ic:n_train_ic + n_val_ic]
+    test_ic  = perm_ic[n_train_ic + n_val_ic:]
+
+    # Masks select ALL thrust variants for each IC
+    train_mask = np.isin(groups, train_ic)
+    val_mask   = np.isin(groups, val_ic)
+    test_mask  = np.isin(groups, test_ic)
+
+    test_data,   test_label   = dataset_test[test_mask],  dataset_label_test[test_mask]
 
 else:
-    test_data = dataset[val_end:]
-    test_label = dataset_label[val_end:]
+    test_data,   test_label   = dataset[test_mask],  dataset_label[test_mask]
 
 train_dataset = TensorDataset(torch.from_numpy(train_data), torch.from_numpy(train_label).squeeze(1).long())
 val_dataset = TensorDataset(torch.from_numpy(val_data), torch.from_numpy(val_label).squeeze(1).long())
@@ -456,6 +484,7 @@ test_loader = DataLoader(test_dataset, batch_size=batchSize, shuffle=False,pin_m
 
 criterion = torch.nn.CrossEntropyLoss()
 
+model_mamba = MambaClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device).double()
 config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
 optimizer_mamba = torch.optim.Adam(model_mamba.parameters(), lr=learning_rate)
 
@@ -719,7 +748,7 @@ if use_nearestNeighbor:
     dtwInference.tocStr("1-NN Inference Time")
 
 if use_lstm:
-    model_LSTM = LSTMClassifier(input_size, hidden_size, num_layers, num_classes).to(device).double()
+    model_LSTM = LSTMClassifier(input_size, int(hidden_size), num_layers, num_classes).to(device).double()
     optimizer_LSTM = torch.optim.Adam(model_LSTM.parameters(), lr=learning_rate)
     scheduler_LSTM = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer_LSTM,
