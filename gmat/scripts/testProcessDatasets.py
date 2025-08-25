@@ -77,49 +77,6 @@ ax.set_title('3D Trajectory of a Single Earth Orbiter')
 ax.legend(loc='lower left')
 ax.axis('equal')
 
-def plot_earth(ax, R=6378.137, color="#4c79d8", alpha=0.5):
-    """Add a WGS-84 Earth sphere to a 3D Axes.
-    R in km (use 6378137.0 for meters)."""
-    u = np.linspace(0, 2*np.pi, 240)
-    v = np.linspace(0, np.pi, 120)
-    x = R * np.outer(np.cos(u), np.sin(v))
-    y = R * np.outer(np.sin(u), np.sin(v))
-    z = R * np.outer(np.ones_like(u), np.cos(v))
-    ax.plot_surface(x, y, z, rstride=1, cstride=1, linewidth=0,
-                    antialiased=False, color=color, alpha=alpha)
-    # Equator line (optional)
-    ax.plot(R*np.cos(u), R*np.sin(u), 0*u, lw=0.8, color="k", alpha=0.3)
-def plot_earth_fast(ax, R=6378.137, u_res=60, v_res=30):
-    u = np.linspace(0, 2*np.pi, u_res)
-    v = np.linspace(0, np.pi, v_res)
-    x = R * np.outer(np.cos(u), np.sin(v))
-    y = R * np.outer(np.sin(u), np.sin(v))
-    z = R * np.outer(np.ones_like(u), np.cos(v))
-    surf = ax.plot_surface(
-        x, y, z,
-        linewidth=0, antialiased=False, shade=False,
-        color="#4c79d8", alpha=0.3,zorder=0
-    )
-    # Helpful when saving vector PDFs/SVGs; harmless on screen:
-    surf.set_rasterized(True)
-    return surf
-
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
-plot_earth_fast(ax, R=6378.137)
-for j in range(randPlots):
-    i = np.random.randint(0, len(statesArrayChemical))
-
-    ax.plot(statesArrayChemical[i,:,0],statesArrayChemical[i,:,1],statesArrayChemical[i,:,2],label='Chemical',color='C0',zorder=5)
-    ax.plot(statesArrayElectric[i,:,0],statesArrayElectric[i,:,1],statesArrayElectric[i,:,2],label='Electric',color='C1',zorder=5)
-    ax.plot(statesArrayImpBurn[i,:,0],statesArrayImpBurn[i,:,1],statesArrayImpBurn[i,:,2],label='Impulsive',color='C2',zorder=5)
-    ax.plot(statesArrayNoThrust[i,:,0],statesArrayNoThrust[i,:,1],statesArrayNoThrust[i,:,2],label='No Thrust',color='C3',zorder=5)
-ax.set_xlabel('X (km)')
-ax.set_ylabel('Y (km)')
-ax.set_zlabel('Z (km)')
-ax.set_title('3D Trajectory of '+str(randPlots)+' Earth Orbiters')
-ax.set_box_aspect((1, 1, 1))
-plt.tight_layout()
 from matplotlib.lines import Line2D
 colors = ['C0', 'C1', 'C2', 'C3']
 lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='--') for c in colors]
@@ -138,7 +95,7 @@ for j in range(randPlots):
 plt.legend(lines, labels)
 plt.grid()
 plt.xlabel('Time (s)')
-plt.title("Energy of "+str(randPlots)+" Earth Orbiters")
+plt.title("Energy of "+str(randPlots*4)+" Earth Orbiters")
 
 plt.figure()
 plt.plot(t, statesArrayChemical[0,:,0], label='Chemical X')
@@ -184,4 +141,134 @@ def plotDiffFromNoThrust(statesArray, label):
 # plotDiffFromNoThrust(statesArrayChemical, 'Chemical')
 # plotDiffFromNoThrust(statesArrayElectric, 'Electric')
 # plotDiffFromNoThrust(statesArrayImpBurn, 'Impulsive')
+
+R_E = 6378.137  # km
+
+def plot_earth_fast(ax, R=R_E, u_res=60, v_res=30):
+    u = np.linspace(0, 2*np.pi, u_res)
+    v = np.linspace(0, np.pi, v_res)
+    x = R * np.outer(np.cos(u), np.sin(v))
+    y = R * np.outer(np.sin(u), np.sin(v))
+    z = R * np.outer(np.ones_like(u), np.cos(v))
+    surf = ax.plot_surface(
+        x, y, z,
+        linewidth=0, antialiased=False, shade=False,
+        color="#A8922D", alpha=0.3, zorder=0
+    )
+    # make sure the sphere sits between back and front lines in the 3D sort
+    try: surf.set_sort_zpos(0.0)
+    except Exception: pass
+    surf.set_rasterized(True)
+    return surf
+
+def _view_vec(ax):
+    A = np.deg2rad(ax.azim); E = np.deg2rad(ax.elev)
+    v = np.array([np.cos(E)*np.cos(A), np.cos(E)*np.sin(A), np.sin(E)])
+    return v / np.linalg.norm(v)
+
+def draw_orbits_translucent(ax, orbits, R=R_E, tag="__orbit__",
+                            front_kw=None, back_kw=None):
+    # remove previously drawn segments from earlier views
+    for ln in list(ax.lines):
+        if getattr(ln, "_tag", None) == tag:
+            ln.remove()
+
+    v = _view_vec(ax)
+    for kind, (x, y, z) in orbits:
+        p_dot_v = x*v[0] + y*v[1] + z*v[2]
+        r2 = x*x + y*y + z*z
+        perp2 = r2 - p_dot_v**2
+        visible = (p_dot_v >= 0) | (perp2 >= R*R)
+
+        # split into contiguous visible/invisible segments
+        cuts = np.flatnonzero(np.diff(visible.astype(np.int8)) != 0) + 1
+        for seg in np.split(np.arange(x.size), cuts):
+            if seg.size < 2:
+                continue
+            is_front = bool(visible[seg[0]])
+            kw = (front_kw or {}).get(kind, {}) if is_front else (back_kw or {}).get(kind, {})
+            zord = 4 if is_front else 2
+            ln, = ax.plot(x[seg], y[seg], z[seg], zorder=zord, **kw)
+            ln._tag = tag
+            # hard-order in 3D painter: back ≪ sphere ≪ front
+            try: ln.set_sort_zpos(+1e9 if is_front else -1e9)
+            except Exception: pass
+
+# --- shuffle your datasets (unchanged) ---
+indices = np.random.permutation(statesArrayChemical.shape[0]) 
+statesArrayChemical = statesArrayChemical[indices] 
+indices = np.random.permutation(statesArrayElectric.shape[0]) 
+statesArrayElectric = statesArrayElectric[indices] 
+indices = np.random.permutation(statesArrayImpBurn.shape[0])
+statesArrayImpBurn = statesArrayImpBurn[indices] 
+indices = np.random.permutation(statesArrayNoThrust.shape[0])
+statesArrayNoThrust = statesArrayNoThrust[indices]
+
+# --- figure ---
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+surf = plot_earth_fast(ax, R=R_E, u_res=48, v_res=24)
+ax.set_proj_type('ortho')  # cheaper + avoids perspective ambiguity
+
+# collect random trajectories once
+orbits = []
+for _ in range(randPlots):
+    iC = np.random.randint(statesArrayChemical.shape[0])
+    iE = np.random.randint(statesArrayElectric.shape[0])
+    iI = np.random.randint(statesArrayImpBurn.shape[0])
+    iN = np.random.randint(statesArrayNoThrust.shape[0])
+
+    orbits.append(("Chemical", (statesArrayChemical[iC,:,0],
+                                statesArrayChemical[iC,:,1],
+                                statesArrayChemical[iC,:,2])))
+    orbits.append(("Electric", (statesArrayElectric[iE,:,0],
+                                statesArrayElectric[iE,:,1],
+                                statesArrayElectric[iE,:,2])))
+    orbits.append(("Impulsive", (statesArrayImpBurn[iI,:,0],
+                                 statesArrayImpBurn[iI,:,1],
+                                 statesArrayImpBurn[iI,:,2])))
+    orbits.append(("NoThrust", (statesArrayNoThrust[iN,:,0],
+                                statesArrayNoThrust[iN,:,1],
+                                statesArrayNoThrust[iN,:,2])))
+
+# styles
+front_kw = {
+    "Chemical": {"color": "C0", "lw": 1.8},
+    "Electric": {"color": "C1", "lw": 1.8},
+    "Impulsive": {"color": "C2", "lw": 1.8},
+    "NoThrust": {"color": "C3", "lw": 1.8},
+}
+# slightly faded for the hidden half (still visible through Earth)
+back_kw = {
+    "Chemical": {"color": "C0", "lw": 1.2, "alpha": 0.5},
+    "Electric": {"color": "C1", "lw": 1.2, "alpha": 0.5},
+    "Impulsive": {"color": "C2", "lw": 1.2, "alpha": 0.5},
+    "NoThrust": {"color": "C3", "lw": 1.2, "alpha": 0.5},
+}
+
+# initial draw (order: back lines, sphere, front lines) achieved via sort_zpos
+draw_orbits_translucent(ax, orbits, R=R_E, front_kw=front_kw, back_kw=back_kw)
+
+# axes, limits, labels
+ax.set_xlabel('X (km)'); ax.set_ylabel('Y (km)'); ax.set_zlabel('Z (km)')
+ax.set_title(f'Trajectories of {randPlots*4} Earth Orbiters')
+ax.set_box_aspect((1, 1, 1))
+max_r = max([np.sqrt(np.nanmax(x*x + y*y + z*z)) for _, (x, y, z) in orbits] + [R_E])
+lim = 1.05 * max_r
+ax.set(xlim=(-lim, lim), ylim=(-lim, lim), zlim=(-lim, lim))
+plt.tight_layout()
+
+# legend (manual)
+lines = [Line2D([0],[0], color=c, linewidth=3, linestyle='-')
+         for c in ['C0','C1','C2','C3']]
+labels = ['Chemical Thrust','Electrical Thrust','Impulsive Thrust','No Thrust']
+ax.legend(lines, labels, loc='upper left')
+
+# redraw orbits when camera changes
+def _redraw(_evt=None):
+    draw_orbits_translucent(ax, orbits, R=R_E, front_kw=front_kw, back_kw=back_kw)
+    fig.canvas.draw_idle()
+fig.canvas.mpl_connect('button_release_event', _redraw)
+fig.canvas.mpl_connect('key_release_event', _redraw)
+
 plt.show()

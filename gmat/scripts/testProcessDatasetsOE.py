@@ -37,10 +37,6 @@ statesArrayImpBurn = a['OEArrayImpBurn']
 a = np.load(f"{dataLoc}/OEArrayNoThrust.npz")
 statesArrayNoThrust = a['OEArrayNoThrust']
 
-print(statesArrayChemical.shape)
-print(statesArrayElectric.shape)
-print(statesArrayImpBurn.shape)
-print(statesArrayNoThrust.shape)
 
 if norm:
     R = 6378.1363 # km
@@ -49,6 +45,14 @@ if norm:
     statesArrayImpBurn[:,:,0] = statesArrayImpBurn[:,:,0] / R
     statesArrayNoThrust[:,:,0] = statesArrayNoThrust[:,:,0] / R
 
+indices = np.random.permutation(statesArrayChemical.shape[0]) 
+statesArrayChemical = statesArrayChemical[indices] 
+indices = np.random.permutation(statesArrayElectric.shape[0]) 
+statesArrayElectric = statesArrayElectric[indices] 
+indices = np.random.permutation(statesArrayImpBurn.shape[0])
+statesArrayImpBurn = statesArrayImpBurn[indices] 
+indices = np.random.permutation(statesArrayNoThrust.shape[0])
+statesArrayNoThrust = statesArrayNoThrust[indices]
 
 t = np.linspace(0,numMinProp*dt,len(statesArrayChemical[0,:,0]))
 
@@ -172,7 +176,7 @@ for j in range(randPlots):
     plt.grid()
     plt.legend(lines, labels)
     plt.xlabel('Time (s)')
-    plt.title("Semi-Major Axis of "+str(randPlots)+" Earth Orbiters")
+    plt.title("Semi-Major Axis of "+str(randPlots*4)+" Earth Orbiters")
 
 plt.figure()
 for j in range(randPlots):
@@ -185,7 +189,7 @@ for j in range(randPlots):
     plt.grid()
     plt.legend(lines, labels)
     plt.xlabel('Time (s)')
-    plt.title("Eccentricity of "+str(randPlots)+" Earth Orbiters")
+    plt.title("Eccentricity of "+str(randPlots*4)+" Earth Orbiters")
 
 plt.figure()
 for j in range(randPlots):
@@ -198,7 +202,7 @@ for j in range(randPlots):
     plt.grid()
     plt.legend(lines, labels)
     plt.xlabel('Time (s)')
-    plt.title("Inclination of "+str(randPlots)+" Earth Orbiters")
+    plt.title("Inclination of "+str(randPlots*4)+" Earth Orbiters")
 
 plt.figure()
 for j in range(randPlots):
@@ -211,7 +215,7 @@ for j in range(randPlots):
     plt.grid()
     plt.legend(lines, labels)
     plt.xlabel('Time (s)')
-    plt.title("RAAN of " +str(randPlots)+" Earth Orbiters")
+    plt.title("RAAN of " +str(randPlots*4)+" Earth Orbiters")
 
 plt.figure()
 for j in range(randPlots):
@@ -224,7 +228,7 @@ for j in range(randPlots):
     plt.grid()
     plt.legend(lines, labels)
     plt.xlabel('Time (s)')
-    plt.title("Arg of Perigee of "+str(randPlots)+" Earth Orbiters")
+    plt.title("Arg of Perigee of "+str(randPlots*4)+" Earth Orbiters")
 
 plt.figure()
 for j in range(randPlots):
@@ -237,7 +241,7 @@ for j in range(randPlots):
     plt.grid()
     plt.legend(lines, labels)
     plt.xlabel('Time (s)')
-    plt.title("Mean Anomaly of "+str(randPlots)+" Earth Orbiters")
+    plt.title("Mean Anomaly of "+str(randPlots*4)+" Earth Orbiters")
 
 plt.figure()
 for j in range(randPlots):
@@ -250,7 +254,7 @@ for j in range(randPlots):
     plt.grid()
     plt.legend(lines, labels)
     plt.xlabel('Time (s)')
-    plt.title("Period of "+str(randPlots)+" Earth Orbiters")
+    plt.title("Period of "+str(randPlots*4)+" Earth Orbiters")
 
 
 
