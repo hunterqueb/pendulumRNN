@@ -78,7 +78,6 @@ parser.add_argument("--hybrid",dest="use_hybrid",action="store_true",help="Use a
 parser.add_argument("--superweight",dest="find_SW",action="store_true",help="Superweight analysis")
 parser.add_argument("--classic",dest="use_classic",action="store_true",help="Use classic ML classification for comparison")
 parser.add_argument("--nearest",dest="use_nearestNeighbor",action="store_true",help="Use classic ML classification (1-nearest neighbor w/ DTW) for comparison")
-parser.add_argument("--SMA",dest="useSemiMajorAxis",action="store_true",help="Use semi-major axis as the only feature.")
 
 parser.set_defaults(use_lstm=True)
 parser.set_defaults(OE=False)
@@ -115,7 +114,6 @@ useHybrid=args.use_hybrid
 find_SW=args.find_SW
 use_classic = args.use_classic
 use_nearestNeighbor = args.use_nearestNeighbor
-useSemiMajorAxis = args.useSemiMajorAxis
 
 
 import yaml
@@ -130,7 +128,7 @@ if save_to_log:
 
     strAdd = ""
     if useEnergy:
-        strAdd = "Energy_"
+        strAdd = strAdd + "Energy_"
     if useOE:
         strAdd = strAdd + "OE_"
     if useNorm:
@@ -145,8 +143,6 @@ if save_to_log:
         strAdd = strAdd + "DT_"
     if use_nearestNeighbor:
         strAdd = strAdd + "1-NN_"
-    if useSemiMajorAxis:
-        strAdd = strAdd + "SMA_"
     if testSet != orbitType:
         strAdd = strAdd + "Test_" + testSet
     logFileLoc = "gmat/data/classification/"+str(orbitType)+"/"+str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log'
@@ -157,72 +153,34 @@ if save_to_log:
     # change stdout to write to file -- this allows for printing from functions to a file
     sys.stdout = f
 
-def apply_noise(data, pos_noise_std, vel_noise_std):
-    mid = data.shape[1] // 2  # Split index
-    pos_noise = np.random.normal(0, pos_noise_std, size=data[:, :mid].shape)
-    vel_noise = np.random.normal(0, vel_noise_std, size=data[:, mid:].shape)
-    noisy_data = data.copy()
-    noisy_data[:, :mid] += pos_noise
-    noisy_data[:, mid:] += vel_noise
-    return noisy_data
-
-
-# get npz files in folder and load them into script
-if useOE:
-    a = np.load(f"{dataLoc}/OEArrayChemical.npz")
-    statesArrayChemical = a['OEArrayChemical'][:,:,0:6]
-    a = np.load(f"{dataLoc}/OEArrayElectric.npz")
-    statesArrayElectric = a['OEArrayElectric'][:,:,0:6]
-    a = np.load(f"{dataLoc}/OEArrayImpBurn.npz")
-    statesArrayImpBurn = a['OEArrayImpBurn'][:,:,0:6]
-    a = np.load(f"{dataLoc}/OEArrayNoThrust.npz")
-    statesArrayNoThrust = a['OEArrayNoThrust'][:,:,0:6]
-
-    if useNoise:
-        statesArrayChemical = apply_noise(statesArrayChemical, 1e-3, 1e-3)
-        statesArrayElectric = apply_noise(statesArrayElectric, 1e-3, 1e-3)
-        statesArrayImpBurn = apply_noise(statesArrayImpBurn, 1e-3, 1e-3)
-        statesArrayNoThrust = apply_noise(statesArrayNoThrust, 1e-3, 1e-3)
-    if useNorm:
-        R = 6378.1363 # km
-        statesArrayChemical[:,:,0] = statesArrayChemical[:,:,0] / R
-        statesArrayElectric[:,:,0] = statesArrayElectric[:,:,0] / R
-        statesArrayImpBurn[:,:,0] = statesArrayImpBurn[:,:,0] / R
-        statesArrayNoThrust[:,:,0] = statesArrayNoThrust[:,:,0] / R
-
-else:
-    a = np.load(f"{dataLoc}/statesArrayChemical.npz")
-    statesArrayChemical = a['statesArrayChemical']
-
-    a = np.load(f"{dataLoc}/statesArrayElectric.npz")
-    statesArrayElectric = a['statesArrayElectric']
-
-    a = np.load(f"{dataLoc}/statesArrayImpBurn.npz")
-    statesArrayImpBurn = a['statesArrayImpBurn']
-
-    a = np.load(f"{dataLoc}/statesArrayNoThrust.npz")
-    statesArrayNoThrust = a['statesArrayNoThrust']
-
-    if useNoise:
-        statesArrayChemical = apply_noise(statesArrayChemical, 1e-3, 1e-3)
-        statesArrayElectric = apply_noise(statesArrayElectric, 1e-3, 1e-3)
-        statesArrayImpBurn = apply_noise(statesArrayImpBurn, 1e-3, 1e-3)
-        statesArrayNoThrust = apply_noise(statesArrayNoThrust, 1e-3, 1e-3)
-    if useNorm:
-        for i in range(statesArrayChemical.shape[0]):
-            statesArrayChemical[i,:,:] = dim2NonDim6(statesArrayChemical[i,:,:])
-            statesArrayElectric[i,:,:] = dim2NonDim6(statesArrayElectric[i,:,:])
-            statesArrayImpBurn[i,:,:] = dim2NonDim6(statesArrayImpBurn[i,:,:])
-            statesArrayNoThrust[i,:,:] = dim2NonDim6(statesArrayNoThrust[i,:,:])
-del a
-
 device = getDevice()
 
 batchSize = 16
 problemDim = 6
 
+# create a dictionary to hold yaml config values
+# TODO: change to pyyaml reading from a file 
+yaml_config = {}
+
+yaml_config['useOE'] = useOE
+yaml_config['useNorm'] = useNorm
+yaml_config['useNoise'] = useNoise
+yaml_config['useEnergy'] = useEnergy
+
+yaml_config['prop_time'] = numMinProp
+
+yaml_config['orbit'] = orbitType
+yaml_config['systems'] = numRandSys
+
+yaml_config['test_dataset'] = testSet
+yaml_config['test_systems'] = testSys
+
+from qutils.ml.classifer import prepareThrustClassificationDatasets
+
+train_loader, val_loader, test_loader, train_data,train_label,val_data,val_label,test_data,test_label = prepareThrustClassificationDatasets(yaml_config,dataConfig,output_np=True)
+
 # Hyperparameters
-input_size = problemDim 
+input_size = train_data.shape[2] 
 hidden_factor = 8  # hidden size is a multiple of input size
 hidden_size = int(input_size * hidden_factor) # must be multiple of train dim
 num_layers = 1
@@ -233,259 +191,10 @@ num_epochs = 100
 if useOnePass:
     num_epochs = 1
 
-if useEnergy:
-    from qutils.orbital import orbitalEnergy
-    problemDim = 1
-    input_size = 1
-
-    energyChemical = np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
-    energyElectric= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
-    energyImpBurn= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
-    energyNoThrust= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
-    for i in range(statesArrayChemical.shape[0]):
-        energyChemical[i,:,0] = orbitalEnergy(statesArrayChemical[i,:,:])
-        energyElectric[i,:,0] = orbitalEnergy(statesArrayElectric[i,:,:])
-        energyImpBurn[i,:,0] = orbitalEnergy(statesArrayImpBurn[i,:,:])
-        energyNoThrust[i,:,0] = orbitalEnergy(statesArrayNoThrust[i,:,:])
-    if useNorm:
-        normingEnergy = energyNoThrust[0,0,0]
-        energyChemical[:,:,0] = energyChemical[:,:,0] / normingEnergy
-        energyElectric[:,:,0] = energyElectric[:,:,0] / normingEnergy
-        energyImpBurn[:,:,0] = energyImpBurn[:,:,0] / normingEnergy
-        energyNoThrust[:,:,0] = energyNoThrust[:,:,0] / normingEnergy
-    # plt.figure()
-    # plt.plot(energyChemical[0,:,:],label="Chemical")
-    # plt.plot(energyElectric[0,:,:],label="Electric")
-    # plt.plot(energyImpBurn[0,:,:],label="Impulsive")
-    # plt.plot(energyNoThrust[0,:,:],label="No Thrust")
-    # plt.grid()
-    # plt.title("Normalized Energy By {:4f}".format(normingEnergy))
-    # plt.legend()
-    # plt.show()
-
-if useSemiMajorAxis:
-    a = np.load(f"{dataLoc}/OEArrayChemical.npz")
-    statesArrayChemical = a['OEArrayChemical'][:,:,0:6]
-    a = np.load(f"{dataLoc}/OEArrayElectric.npz")
-    statesArrayElectric = a['OEArrayElectric'][:,:,0:6]
-    a = np.load(f"{dataLoc}/OEArrayImpBurn.npz")
-    statesArrayImpBurn = a['OEArrayImpBurn'][:,:,0:6]
-    a = np.load(f"{dataLoc}/OEArrayNoThrust.npz")
-    statesArrayNoThrust = a['OEArrayNoThrust'][:,:,0:6]
-
-    problemDim = 1
-    input_size = 1
-    SMAChemical = np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
-    SMAElectric= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
-    SMAImpBurn= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
-    SMANoThrust= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
-    for i in range(statesArrayChemical.shape[0]):
-        SMAChemical[i,:,0] = statesArrayChemical[i,:,0]
-        SMAElectric[i,:,0] = statesArrayElectric[i,:,0]
-        SMAImpBurn[i,:,0] = statesArrayImpBurn[i,:,0]
-        SMANoThrust[i,:,0] = statesArrayNoThrust[i,:,0]
-
-
-config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
-
-noThrustLabel = 0
-chemicalLabel = 1
-electricLabel = 2
-impBurnLabel = 3
-
-
-# Create labels for each dataset
-labelsChemical = np.full((statesArrayChemical.shape[0],1),chemicalLabel)
-labelsElectric = np.full((statesArrayElectric.shape[0],1),electricLabel)
-labelsImpBurn = np.full((statesArrayImpBurn.shape[0],1),impBurnLabel)
-labelsNoThrust = np.full((statesArrayNoThrust.shape[0],1),noThrustLabel)
-# Combine datasets and labels
-dataset = np.concatenate((statesArrayChemical, statesArrayElectric, statesArrayImpBurn, statesArrayNoThrust), axis=0)
-
-if useEnergy:
-    dataset = np.concatenate((energyChemical, energyElectric, energyImpBurn, energyNoThrust), axis=0)
-if useEnergy and useOE:
-    combinedChemical = np.concatenate((statesArrayChemical,energyChemical),axis=2) 
-    combinedElectric = np.concatenate((statesArrayElectric,energyElectric),axis=2) 
-    combinedImpBurn = np.concatenate((statesArrayImpBurn,energyImpBurn),axis=2) 
-    combinedNoThrust = np.concatenate((statesArrayNoThrust,energyNoThrust),axis=2) 
-    dataset = np.concatenate((combinedChemical, combinedElectric, combinedImpBurn, combinedNoThrust), axis=0)
-    input_size = 6 + 1
-    hidden_size = int(input_size * hidden_factor) 
-    config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
-if useSemiMajorAxis:
-    dataset = np.concatenate((SMAChemical, SMAElectric, SMAImpBurn, SMANoThrust), axis=0)
-
-dataset_label = np.concatenate((labelsChemical, labelsElectric, labelsImpBurn, labelsNoThrust), axis=0)
-
-train_ratio = 0.7
-val_ratio = 0.15
-test_ratio = 0.15
-
-n_ic = statesArrayChemical.shape[0]             # 10000
-groups = np.tile(np.arange(n_ic, dtype=np.int64), 4)   # len == 40000
-
-# Ratios (must satisfy train+val <= 1.0; test gets the remainder)
-# example:
-# train_ratio, val_ratio = 0.7, 0.15
-n_train_ic = int(np.floor(train_ratio * n_ic))
-n_val_ic   = int(np.floor(val_ratio   * n_ic))
-n_test_ic  = n_ic - n_train_ic - n_val_ic
-assert n_test_ic > 0, "Ratios leave no ICs for test; reduce train/val."
-
-# Shuffle ICs and partition
-perm_ic = np.random.permutation(n_ic)
-train_ic = perm_ic[:n_train_ic]
-val_ic   = perm_ic[n_train_ic:n_train_ic + n_val_ic]
-test_ic  = perm_ic[n_train_ic + n_val_ic:]
-
-# Masks select ALL thrust variants for each IC
-train_mask = np.isin(groups, train_ic)
-val_mask   = np.isin(groups, val_ic)
-test_mask  = np.isin(groups, test_ic)
-
-# Apply masks
-train_data,  train_label  = dataset[train_mask], dataset_label[train_mask]
-val_data,    val_label    = dataset[val_mask],   dataset_label[val_mask]
-
-# # Sanity checks (no IC leakage)
-# assert not set(train_ic).intersection(val_ic)
-# assert not set(train_ic).intersection(test_ic)
-# assert not set(val_ic).intersection(test_ic)
-
-if testSet != orbitType or testSys != numRandSys:
-    # if using a different orbit type for the test set, load the test set from the other orbit type
-    # WARNING: this assumes the test set uses the 10000 random systems, just easier for testing single datsets
-    # if testSet string contains combined, then load the same amount of random systems as the training set,
-    # else, load the 10000 random systems
-    if "combined" in testSet:
-        dataLoc = dataConfig['classification']+ testSet +"/" + str(numMinProp) + "min-" + str(testSys)
-    else:
-        dataLoc = dataConfig['classification']+ testSet +"/" + str(numMinProp) + "min-" + str(testSys)
-    print("Loading test set from {}".format(dataLoc))
-    # load the test set from the other orbit type
-    if useOE:
-        a = np.load(f"{dataLoc}/OEArrayChemical.npz")
-        statesArrayChemical = a['OEArrayChemical'][:,:,0:6]
-        a = np.load(f"{dataLoc}/OEArrayElectric.npz")
-        statesArrayElectric = a['OEArrayElectric'][:,:,0:6]
-        a = np.load(f"{dataLoc}/OEArrayImpBurn.npz")
-        statesArrayImpBurn = a['OEArrayImpBurn'][:,:,0:6]
-        a = np.load(f"{dataLoc}/OEArrayNoThrust.npz")
-        statesArrayNoThrust = a['OEArrayNoThrust'][:,:,0:6]
-
-        if useNoise:
-            statesArrayChemical = apply_noise(statesArrayChemical, 1e-3, 1e-3)
-            statesArrayElectric = apply_noise(statesArrayElectric, 1e-3, 1e-3)
-            statesArrayImpBurn = apply_noise(statesArrayImpBurn, 1e-3, 1e-3)
-            statesArrayNoThrust = apply_noise(statesArrayNoThrust, 1e-3, 1e-3)
-        if useNorm:
-            R = 6378.1363 # km
-            statesArrayChemical[:,:,0] = statesArrayChemical[:,:,0] / R
-            statesArrayElectric[:,:,0] = statesArrayElectric[:,:,0] / R
-            statesArrayImpBurn[:,:,0] = statesArrayImpBurn[:,:,0] / R
-            statesArrayNoThrust[:,:,0] = statesArrayNoThrust[:,:,0] / R
-        dataset_test = np.concatenate((statesArrayChemical, statesArrayElectric, statesArrayImpBurn, statesArrayNoThrust), axis=0)
-
-    else:
-        a = np.load(f"{dataLoc}/statesArrayChemical.npz")
-        statesArrayChemical = a['statesArrayChemical']
-
-        a = np.load(f"{dataLoc}/statesArrayElectric.npz")
-        statesArrayElectric = a['statesArrayElectric']
-
-        a = np.load(f"{dataLoc}/statesArrayImpBurn.npz")
-        statesArrayImpBurn = a['statesArrayImpBurn']
-
-        a = np.load(f"{dataLoc}/statesArrayNoThrust.npz")
-        statesArrayNoThrust = a['statesArrayNoThrust']
-
-        if useNoise:
-            statesArrayChemical = apply_noise(statesArrayChemical, 1e-3, 1e-3)
-            statesArrayElectric = apply_noise(statesArrayElectric, 1e-3, 1e-3)
-            statesArrayImpBurn = apply_noise(statesArrayImpBurn, 1e-3, 1e-3)
-            statesArrayNoThrust = apply_noise(statesArrayNoThrust, 1e-3, 1e-3)
-        if useNorm:
-            for i in range(statesArrayChemical.shape[0]):
-                statesArrayChemical[i,:,:] = dim2NonDim6(statesArrayChemical[i,:,:])
-                statesArrayElectric[i,:,:] = dim2NonDim6(statesArrayElectric[i,:,:])
-                statesArrayImpBurn[i,:,:] = dim2NonDim6(statesArrayImpBurn[i,:,:])
-                statesArrayNoThrust[i,:,:] = dim2NonDim6(statesArrayNoThrust[i,:,:])
-        dataset_test = np.concatenate((statesArrayChemical, statesArrayElectric, statesArrayImpBurn, statesArrayNoThrust), axis=0)
-
-    if useEnergy:
-        from qutils.orbital import orbitalEnergy
-        problemDim = 1
-        input_size = 1
-
-        energyChemical = np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
-        energyElectric= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
-        energyImpBurn= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
-        energyNoThrust= np.zeros((statesArrayChemical.shape[0],statesArrayChemical.shape[1],1))
-        for i in range(statesArrayChemical.shape[0]):
-            energyChemical[i,:,0] = orbitalEnergy(statesArrayChemical[i,:,:])
-            energyElectric[i,:,0] = orbitalEnergy(statesArrayElectric[i,:,:])
-            energyImpBurn[i,:,0] = orbitalEnergy(statesArrayImpBurn[i,:,:])
-            energyNoThrust[i,:,0] = orbitalEnergy(statesArrayNoThrust[i,:,:])
-        if useNorm:
-            normingEnergy = energyNoThrust[0,0,0]
-            energyChemical[:,:,0] = energyChemical[:,:,0] / normingEnergy
-            energyElectric[:,:,0] = energyElectric[:,:,0] / normingEnergy
-            energyImpBurn[:,:,0] = energyImpBurn[:,:,0] / normingEnergy
-            energyNoThrust[:,:,0] = energyNoThrust[:,:,0] / normingEnergy
-        dataset_test = np.concatenate((energyChemical, energyElectric, energyImpBurn, energyNoThrust), axis=0)
-    if useEnergy and useOE:
-        combinedChemical = np.concatenate((statesArrayChemical,energyChemical),axis=2) 
-        combinedElectric = np.concatenate((statesArrayElectric,energyElectric),axis=2) 
-        combinedImpBurn = np.concatenate((statesArrayImpBurn,energyImpBurn),axis=2) 
-        combinedNoThrust = np.concatenate((statesArrayNoThrust,energyNoThrust),axis=2) 
-        dataset_test = np.concatenate((combinedChemical, combinedElectric, combinedImpBurn, combinedNoThrust), axis=0)
-        input_size = 6 + 1
-        config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
-
-    labelsChemical = np.full((statesArrayChemical.shape[0],1),chemicalLabel)
-    labelsElectric = np.full((statesArrayElectric.shape[0],1),electricLabel)
-    labelsImpBurn = np.full((statesArrayImpBurn.shape[0],1),impBurnLabel)
-    labelsNoThrust = np.full((statesArrayNoThrust.shape[0],1),noThrustLabel)
-
-    dataset_label_test = np.concatenate((labelsChemical, labelsElectric, labelsImpBurn, labelsNoThrust), axis=0)
-    
-    n_ic = statesArrayChemical.shape[0]             
-    groups = np.tile(np.arange(n_ic, dtype=np.int64), 4)
-
-    # Ratios (must satisfy train+val <= 1.0; test gets the remainder)
-    # example:
-    # train_ratio, val_ratio = 0.7, 0.15
-    n_train_ic = int(np.floor(train_ratio * n_ic))
-    n_val_ic   = int(np.floor(val_ratio   * n_ic))
-    n_test_ic  = n_ic - n_train_ic - n_val_ic
-    perm_ic = np.random.permutation(n_ic)
-    train_ic = perm_ic[:n_train_ic]
-    val_ic   = perm_ic[n_train_ic:n_train_ic + n_val_ic]
-    test_ic  = perm_ic[n_train_ic + n_val_ic:]
-
-    # Masks select ALL thrust variants for each IC
-    train_mask = np.isin(groups, train_ic)
-    val_mask   = np.isin(groups, val_ic)
-    test_mask  = np.isin(groups, test_ic)
-
-    test_data,   test_label   = dataset_test[test_mask],  dataset_label_test[test_mask]
-
-else:
-    test_data,   test_label   = dataset[test_mask],  dataset_label[test_mask]
-
-train_dataset = TensorDataset(torch.from_numpy(train_data), torch.from_numpy(train_label).squeeze(1).long())
-val_dataset = TensorDataset(torch.from_numpy(val_data), torch.from_numpy(val_label).squeeze(1).long())
-test_dataset = TensorDataset(torch.from_numpy(test_data), torch.from_numpy(test_label).squeeze(1).long())
-
-train_loader = DataLoader(train_dataset, batch_size=batchSize, shuffle=True,pin_memory=True)
-val_loader = DataLoader(val_dataset, batch_size=batchSize, shuffle=False,pin_memory=True)
-test_loader = DataLoader(test_dataset, batch_size=batchSize, shuffle=False,pin_memory=True)
-
 criterion = torch.nn.CrossEntropyLoss()
 
-model_mamba = MambaClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device).double()
 config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
+model_mamba = MambaClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device).double()
 optimizer_mamba = torch.optim.Adam(model_mamba.parameters(), lr=learning_rate)
 
 schedulerPatience = 5
@@ -496,7 +205,6 @@ scheduler_mamba = torch.optim.lr_scheduler.ReduceLROnPlateau(
     factor=0.5,             # shrink LR by 50%
     patience=schedulerPatience             # wait for 3 epochs of no improvement
 )
-
 
 classlabels = ['No Thrust','Chemical','Electric','Impulsive']
 
@@ -815,6 +523,5 @@ if find_SW:
 if save_to_log:
     sys.stdout = sys.__stdout__    # or your saved original_stdout
     f.close()
-
 
 plt.show()
