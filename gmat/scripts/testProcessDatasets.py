@@ -62,7 +62,7 @@ for i in range(statesArrayChemical.shape[0]):
     energyImpBurn[i,:,0] = orbitalEnergy(statesArrayImpBurn[i,:,:])
     energyNoThrust[i,:,0] = orbitalEnergy(statesArrayNoThrust[i,:,:])
 
-t = np.linspace(0,100*dt,len(statesArrayChemical[0,:,0]))
+t = np.linspace(0,numMinProp*dt,len(statesArrayChemical[0,:,0]))
 
 fig = plt.figure()
 ax = fig.add_subplot(projection='3d')
