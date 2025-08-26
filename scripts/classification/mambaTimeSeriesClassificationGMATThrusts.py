@@ -1,62 +1,9 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
-import torch.nn.functional as F
-import torch.utils.data as data
-from torch.utils.data import TensorDataset
-from torch.utils.data import DataLoader
-from torch import nn
-import pandas as pd
-from sklearn.metrics import log_loss, classification_report, confusion_matrix
-
+# parse at the beginning before long imports
 # script usage
 
 # call the script from the main folder directory, adding --save saves the output to a log file in the location of the datasets
 # $ python scripts/classification/mambaTimeSeriesClassificationGMATThrusts.py \
 # --systems 10000 --propMin 5 --OE --norm --orbit vleo 
-
-# display the data by calling the displayLogData.py script from its contained folder
-
-class HybridClassifier(nn.Module):
-    def __init__(self,config, input_size, hidden_size, num_layers, num_classes):
-        super(HybridClassifier, self).__init__()
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        
-        self.lstm = nn.LSTM(
-            input_size=input_size,
-            hidden_size=hidden_size,
-            num_layers=num_layers,
-            batch_first=True,
-            bidirectional=True  # Bidirectional LSTM
-        )
-        self.mamba = Mamba(config)
-        self.fc = nn.Linear(hidden_size * 2, num_classes)
-        
-    def forward(self, x):
-        """
-        x: [batch_size, seq_length, input_size]
-        """
-        # h0, c0 default to zero if not provided
-        out, (h_n, c_n) = self.lstm(x)
-        h_n = self.mamba(out) # [batch_size, seq_length, hidden_size]
-
-        # h_n is shape [num_layers, batch_size, hidden_size].
-        # We typically take the last layer's hidden state: h_n[-1]
-        last_hidden = h_n[:,-1,:]  # [batch_size, hidden_size]
-        
-        # Pass the last hidden state through a linear layer for classification
-        logits = self.fc(last_hidden)  # [batch_size, num_classes]
-        
-        return logits
-
-
-from qutils.tictoc import timer
-from qutils.ml.utils import getDevice, printModelParmSize
-from qutils.ml.classifer import trainClassifier, LSTMClassifier, validateMultiClassClassifier
-from qutils.ml.mamba import Mamba, MambaConfig, MambaClassifier
-from qutils.ml.superweight import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight, findMambaSuperActivation,plotSuperActivation
-from qutils.orbital import dim2NonDim6
 
 import argparse
 
@@ -115,14 +62,6 @@ find_SW=args.find_SW
 use_classic = args.use_classic
 use_nearestNeighbor = args.use_nearestNeighbor
 
-
-import yaml
-with open("data.yaml", 'r') as f:
-    dataConfig = yaml.safe_load(f)
-dataLoc = dataConfig['classification'] + orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
-print(f"Processing datasets for {orbitType} with {numMinProp} minutes and {numRandSys} random systems.")
-# dataLoc = "c/Users/hu650776/GMAT-Thrust-Data/data/classification/data/classification/"+ orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
-
 if save_to_log:
     import sys
 
@@ -152,6 +91,72 @@ if save_to_log:
     f = open(logFileLoc, 'w')
     # change stdout to write to file -- this allows for printing from functions to a file
     sys.stdout = f
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+import torch
+import torch.nn.functional as F
+import torch.utils.data as data
+from torch.utils.data import TensorDataset
+from torch.utils.data import DataLoader
+from torch import nn
+import pandas as pd
+from sklearn.metrics import log_loss, classification_report, confusion_matrix
+
+
+# display the data by calling the displayLogData.py script from its contained folder
+
+class HybridClassifier(nn.Module):
+    def __init__(self,config, input_size, hidden_size, num_layers, num_classes):
+        super(HybridClassifier, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        
+        self.lstm = nn.LSTM(
+            input_size=input_size,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            batch_first=True,
+            bidirectional=True  # Bidirectional LSTM
+        )
+        self.mamba = Mamba(config)
+        self.fc = nn.Linear(hidden_size * 2, num_classes)
+        
+    def forward(self, x):
+        """
+        x: [batch_size, seq_length, input_size]
+        """
+        # h0, c0 default to zero if not provided
+        out, (h_n, c_n) = self.lstm(x)
+        h_n = self.mamba(out) # [batch_size, seq_length, hidden_size]
+
+        # h_n is shape [num_layers, batch_size, hidden_size].
+        # We typically take the last layer's hidden state: h_n[-1]
+        last_hidden = h_n[:,-1,:]  # [batch_size, hidden_size]
+        
+        # Pass the last hidden state through a linear layer for classification
+        logits = self.fc(last_hidden)  # [batch_size, num_classes]
+        
+        return logits
+
+
+from qutils.tictoc import timer
+from qutils.ml.utils import getDevice, printModelParmSize
+from qutils.ml.classifer import trainClassifier, LSTMClassifier, validateMultiClassClassifier
+from qutils.ml.mamba import Mamba, MambaConfig, MambaClassifier
+from qutils.ml.superweight import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight, findMambaSuperActivation,plotSuperActivation
+from qutils.orbital import dim2NonDim6
+
+
+
+import yaml
+with open("data.yaml", 'r') as f:
+    dataConfig = yaml.safe_load(f)
+dataLoc = dataConfig['classification'] + orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
+print(f"Processing datasets for {orbitType} with {numMinProp} minutes and {numRandSys} random systems.")
+# dataLoc = "c/Users/hu650776/GMAT-Thrust-Data/data/classification/data/classification/"+ orbitType +"/" + str(numMinProp) + "min-" + str(numRandSys)
+
 
 device = getDevice()
 
