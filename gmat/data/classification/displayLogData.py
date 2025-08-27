@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-"""Smart training-log parser (v3.5)
-• **Fixes confusion-matrix extraction** – works with headers like  
-  ‘Confusion Matrix (rows = true, cols = predicted):’ and with row/column labels
-  (`P_0 …`, `T_0 …`). The last confusion matrix in the block is plotted.
-• No other functionality changed.
+"""Smart training-log parser (v3.6)
+• Adds a Validation-Loss plot over epochs (one line per model).
+• Extends epoch parsing to capture Training Loss and Validation Loss.
+• Keeps existing outputs/back-compat; epochs CSV now includes loss columns.
 """
 
 from pathlib import Path
@@ -20,6 +19,7 @@ import numpy as np
 # ───── Regexes ─────
 RE_MODEL_SPLIT = re.compile(r"Entering\s+(.+?)\s+Training Loop", re.S)
 RE_EPOCH_LINE  = re.compile(r"^Epoch\s*\[(\d+)/(\d+)\]")
+RE_TRAIN_LOSS  = re.compile(r"Training Loss:\s*([\d.]+)")
 RE_VAL_ACC     = re.compile(r"Validation Accuracy:\s*([\d.]+)%")
 RE_VAL_LOSS    = re.compile(r"Validation Loss:\s*([\d.]+)")
 RE_PARAMS      = re.compile(r"Total parameters:\s*(\d+)")
@@ -56,7 +56,6 @@ class Summary:
 
 # ───── Helpers ─────
 def parse_confusion_matrix(block: str) -> np.ndarray | None:
-    """Return the last confusion-matrix in `block` as a 2-D int array."""
     matches = RE_CONF_MATRIX.findall(block)
     if not matches:
         return None
@@ -67,10 +66,10 @@ def parse_confusion_matrix(block: str) -> np.ndarray | None:
         ln = ln.strip()
         if not ln:
             continue
-        if ln.lower().startswith("p_"):          # header row
+        if ln.lower().startswith("p_"):
             continue
         tokens = re.split(r"\s+", ln)
-        if tokens and re.match(r"^[tT]_\d+", tokens[0]):  # leading row label
+        if tokens and re.match(r"^[tT]_\d+", tokens[0]):
             tokens = tokens[1:]
         nums = [int(tok) for tok in tokens if re.fullmatch(r"-?\d+", tok)]
         if nums:
@@ -80,10 +79,9 @@ def parse_confusion_matrix(block: str) -> np.ndarray | None:
 
 
 def save_confusion_matrix(cm: np.ndarray, png: Path, title: str) -> None:
-    """Plot row-normalised confusion matrix (each row sums to 1)."""
     with np.errstate(divide="ignore", invalid="ignore"):
         cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
-        cm_norm[np.isnan(cm_norm)] = 0.0           # rows with zero support
+        cm_norm[np.isnan(cm_norm)] = 0.0
 
     plt.figure(figsize=(6, 5))
     im = plt.imshow(cm_norm, interpolation="nearest", cmap="Blues", vmin=0, vmax=1)
@@ -91,8 +89,9 @@ def save_confusion_matrix(cm: np.ndarray, png: Path, title: str) -> None:
 
     n = cm.shape[0]
     ticks = range(n)
-    plt.xticks(ticks, ticks)
-    plt.yticks(ticks, ticks)
+    label = ["Chemical", "Electric", "Impulsive", "No Thrust"]
+    plt.xticks(ticks, label)
+    plt.yticks(ticks, label)
 
     for i in range(n):
         for j in range(n):
@@ -136,19 +135,50 @@ def iter_models(text: str) -> Iterator[tuple[str, str]]:
 
 
 def epoch_trace(block: str) -> pd.DataFrame:
+    """Extract per-epoch metrics. Captures Training Loss, Validation Loss, and Validation Accuracy."""
     rows: List[Dict[str, Any]] = []
-    current: int | None = None
-    for ln in block.splitlines():
-        m_ep = RE_EPOCH_LINE.match(ln.strip())
+    current_epoch: int | None = None
+    train_loss: float | None = None
+    for raw_ln in block.splitlines():
+        ln = raw_ln.strip()
+
+        m_ep = RE_EPOCH_LINE.match(ln)
         if m_ep:
-            current = int(m_ep.group(1))
+            current_epoch = int(m_ep.group(1))
+            train_loss = None
             continue
-        if current is None:
+
+        if current_epoch is None:
             continue
-        m_acc = RE_VAL_ACC.search(ln)
-        if m_acc:
-            rows.append({"Epoch": current, "Validation Accuracy": float(m_acc.group(1))})
-            current = None
+
+        m_tr = RE_TRAIN_LOSS.search(ln)
+        if m_tr:
+            try:
+                train_loss = float(m_tr.group(1))
+            except ValueError:
+                train_loss = None
+            continue
+
+        m_val_loss = RE_VAL_LOSS.search(ln)
+        m_acc      = RE_VAL_ACC.search(ln)
+        if m_val_loss or m_acc:
+            row: Dict[str, Any] = {"Epoch": current_epoch}
+            if train_loss is not None:
+                row["Training Loss"] = train_loss
+            if m_val_loss:
+                try:
+                    row["Validation Loss"] = float(m_val_loss.group(1))
+                except ValueError:
+                    pass
+            if m_acc:
+                try:
+                    row["Validation Accuracy"] = float(m_acc.group(1))
+                except ValueError:
+                    pass
+            rows.append(row)
+            current_epoch = None
+            train_loss = None
+
     return pd.DataFrame(rows)
 
 
@@ -198,32 +228,49 @@ def save_acc_plot(df: pd.DataFrame, png: Path) -> None:
     plt.savefig(png)
     plt.close()
 
+
+def save_loss_plot(df: pd.DataFrame, png: Path) -> None:
+    """Plot Validation Loss vs. Epoch for all models."""
+    plt.figure(figsize=(8, 5))
+    for model, grp in df.groupby("Model"):
+        gg = grp.dropna(subset=["Validation Loss"])
+        if gg.empty:
+            continue
+        plt.plot(gg["Epoch"], gg["Validation Loss"], marker="o", label=model)
+    plt.xlabel("Epoch")
+    plt.ylabel("Validation Loss")
+    plt.title("Validation Loss vs. Epoch")
+    plt.legend()
+    plt.grid(alpha=0.4)
+    plt.tight_layout()
+    plt.savefig(png)
+    plt.close()
+
 # ───── I/O ─────
-# ─── helper ─────────────────────────────────────────────────────────────────
-_SUFFIX_RE = re.compile(r"([A-Za-z]+)$")        # trailing alpha token in log-stem
+_SUFFIX_RE = re.compile(r"([A-Za-z]+(?:_[A-Za-z]+)*)$")
 def _suffix(stem: str) -> str:
     m = _SUFFIX_RE.search(stem)
     return m.group(1) if m else "unsuffixed"
 
-# ─── main per-log routine ───────────────────────────────────────────────────
 def process_log(path: Path, root: Path, force: bool = False) -> None:
     """
     parsed_data/
-        <orbit-dir>/          # e.g. vleo
-            <run-dir>/        # e.g. 3min-10000
-                <suffix>/     # e.g. EnergyOENorm
+        <orbit-dir>/
+            <run-dir>/
+                <suffix>/
                     csv/
                         summary_<stem>.csv
                         epochs_<stem>.csv
                         class_report_<stem>.csv
                     plots/
                         acc_plot_<stem>.png
+                        loss_plot_<stem>.png
                         confmats/
                             confmat_<stem>_<model>.png
     """
     stem      = path.stem
-    suffix    = _suffix(stem)                       # ← new level
-    rel_dir   = path.parent.relative_to(root)       # e.g. vleo/3min-10000
+    suffix    = _suffix(stem)
+    rel_dir   = path.parent.relative_to(root)
     base_dir  = Path("parsed_data") / rel_dir / suffix
     csv_dir   = base_dir / "csv"
     plot_dir  = base_dir / "plots"
@@ -235,9 +282,10 @@ def process_log(path: Path, root: Path, force: bool = False) -> None:
     epochs_csv  = csv_dir / f"epochs_{stem}.csv"
     class_csv   = csv_dir / f"class_report_{stem}.csv"
     acc_png     = plot_dir / f"acc_plot_{stem}.png"
+    loss_png    = plot_dir / f"loss_plot_{stem}.png"
 
     if (not force and summary_csv.exists() and epochs_csv.exists()
-            and class_csv.exists() and acc_png.exists()):
+            and class_csv.exists() and acc_png.exists() and loss_png.exists()):
         print(f"skip {path}")
         return
 
@@ -252,8 +300,9 @@ def process_log(path: Path, root: Path, force: bool = False) -> None:
             class_dfs.append(cls_df)
 
         ep_df = epoch_trace(blk)
-        ep_df.insert(0, "Model", model)
-        epochs_dfs.append(ep_df)
+        if not ep_df.empty:
+            ep_df.insert(0, "Model", model)
+            epochs_dfs.append(ep_df)
 
         cm = parse_confusion_matrix(blk)
         if cm is not None:
@@ -261,14 +310,19 @@ def process_log(path: Path, root: Path, force: bool = False) -> None:
             save_confusion_matrix(cm, cm_png, f"{model} – Confusion Matrix")
 
     pd.DataFrame([s.to_flat() for s in summaries]).to_csv(summary_csv, index=False)
+
     if epochs_dfs:
-        pd.concat(epochs_dfs, ignore_index=True).to_csv(epochs_csv, index=False)
+        ep_all = pd.concat(epochs_dfs, ignore_index=True)
+        cols = ["Model", "Epoch", "Training Loss", "Validation Loss", "Validation Accuracy"]
+        present = [c for c in cols if c in ep_all.columns]
+        ep_all = ep_all[present]
+        ep_all.to_csv(epochs_csv, index=False)
     else:
-        # write an empty CSV so downstream code keeps working
         pd.DataFrame(columns=["Model", "Epoch", "Validation Accuracy"])\
         .to_csv(epochs_csv, index=False)
         print(f"{path} → no epoch data; wrote empty epochs.csv")
-        return          # optional: skip the rest of this log
+        return
+
     if class_dfs:
         pd.concat(class_dfs, ignore_index=True).to_csv(class_csv, index=False)
     else:
@@ -276,10 +330,10 @@ def process_log(path: Path, root: Path, force: bool = False) -> None:
             class_csv, index=False
         )
 
-    save_acc_plot(pd.concat(epochs_dfs, ignore_index=True), acc_png)
+    save_acc_plot(ep_all, acc_png)
+    save_loss_plot(ep_all, loss_png)
     print(f"processed → {summary_csv}")
 
-# ───── CLI ─────
 def main() -> None:
     ap = argparse.ArgumentParser(description="Parse training logs → CSV + plots")
     ap.add_argument("root", type=Path)
