@@ -62,6 +62,19 @@ find_SW=args.find_SW
 use_classic = args.use_classic
 use_nearestNeighbor = args.use_nearestNeighbor
 
+import numpy as np
+import matplotlib.pyplot as plt
+import torch
+from torch import nn
+import pandas as pd
+from sklearn.metrics import log_loss, classification_report, confusion_matrix
+
+from qutils.tictoc import timer
+from qutils.ml.utils import getDevice, printModelParmSize
+from qutils.ml.classifer import trainClassifier, LSTMClassifier, validateMultiClassClassifier
+from qutils.ml.mamba import Mamba, MambaConfig, MambaClassifier
+from qutils.ml.superweight import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight, findMambaSuperActivation,plotSuperActivation
+
 if save_to_log:
     import sys
 
@@ -84,25 +97,17 @@ if save_to_log:
         strAdd = strAdd + "1-NN_"
     if testSet != orbitType:
         strAdd = strAdd + "Test_" + testSet
-    logFileLoc = "gmat/data/classification/"+str(orbitType)+"/"+str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log'
+    # if location does not exist, create it
+    import os
+    if not os.path.exists("gmat/data/classification/"+str(orbitType)+"/" + str(numMinProp) + "min-" + str(numRandSys)):
+        os.makedirs("gmat/data/classification/"+str(orbitType)+"/" + str(numMinProp) + "min-" + str(numRandSys))
+    logFileLoc = "gmat/data/classification/"+str(orbitType)+"/" + str(numMinProp) + "min-" + str(numRandSys) + "/" + str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log'
     print("saving log output to {}".format(logFileLoc))
 
     # file to open
     f = open(logFileLoc, 'w')
     # change stdout to write to file -- this allows for printing from functions to a file
     sys.stdout = f
-
-
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
-import torch.nn.functional as F
-import torch.utils.data as data
-from torch.utils.data import TensorDataset
-from torch.utils.data import DataLoader
-from torch import nn
-import pandas as pd
-from sklearn.metrics import log_loss, classification_report, confusion_matrix
 
 
 # display the data by calling the displayLogData.py script from its contained folder
@@ -139,15 +144,6 @@ class HybridClassifier(nn.Module):
         logits = self.fc(last_hidden)  # [batch_size, num_classes]
         
         return logits
-
-
-from qutils.tictoc import timer
-from qutils.ml.utils import getDevice, printModelParmSize
-from qutils.ml.classifer import trainClassifier, LSTMClassifier, validateMultiClassClassifier
-from qutils.ml.mamba import Mamba, MambaConfig, MambaClassifier
-from qutils.ml.superweight import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight, findMambaSuperActivation,plotSuperActivation
-from qutils.orbital import dim2NonDim6
-
 
 
 import yaml
@@ -473,7 +469,6 @@ if use_lstm:
     print('\nEntering LSTM Training Loop')
     trainClassifier(model_LSTM,optimizer_LSTM,scheduler_LSTM,[train_loader,test_loader,val_loader],criterion,num_epochs,device,classLabels=classlabels)
     printModelParmSize(model_LSTM)
-    validateMultiClassClassifier(model_LSTM,val_loader,criterion,num_classes,device,classlabels,printReport=True)
     print("\nLSTM Validation")
     LSTMInference = timer()
     if testSet != orbitType:
