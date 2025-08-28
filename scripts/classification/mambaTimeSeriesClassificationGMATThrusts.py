@@ -17,14 +17,15 @@ parser.add_argument("--testSys", type=int, default=10000, help="Number of system
 parser.add_argument("--OE", action='store_true', help="Use OE elements instead of ECI states")
 parser.add_argument("--noise", action='store_true', help="Add noise to the data")
 parser.add_argument("--norm", action='store_true', help="Normalize the semi-major axis by Earth's radius")
-parser.add_argument("--one-shot",type=str, default=None, help="Use one shot transfer learning. Takes in a path to a saved pt model")
 parser.add_argument("--one-pass",dest="one_pass",action='store_true', help="Use one pass learning.")
 parser.add_argument("--save",dest="save_to_log",action="store_true",help="output console printout to log file in the same location as datasets")
 parser.add_argument("--energy",dest="use_energy",action="store_true",help="Use energy as a feature.")
 parser.add_argument("--hybrid",dest="use_hybrid",action="store_true",help="Use a hybrid network.")
 parser.add_argument("--superweight",dest="find_SW",action="store_true",help="Superweight analysis")
-parser.add_argument("--classic",dest="use_classic",action="store_true",help="Use classic ML classification for comparison")
+parser.add_argument("--no-classic",dest="use_classic",action="store_false",help="Use classic ML classification for comparison")
 parser.add_argument("--nearest",dest="use_nearestNeighbor",action="store_true",help="Use classic ML classification (1-nearest neighbor w/ DTW) for comparison")
+parser.add_argument('--saveNets', dest="saveNets",action='store_true', help='Save the trained networks. Saves to the same location as a saved log file.')
+parser.add_argument('--classic', dest="old_classic",action='store_true', help='DO NOT USE. DUMMY ARGUMENT TO AVOID BREAKING OLD SCRIPTS.')
 
 parser.set_defaults(use_lstm=True)
 parser.set_defaults(OE=False)
@@ -35,8 +36,9 @@ parser.set_defaults(save_to_log=False)
 parser.set_defaults(use_energy=False)
 parser.set_defaults(use_hybrid=False)
 parser.set_defaults(find_SW=False)
-parser.set_defaults(use_classic=False)
+parser.set_defaults(use_classic=True)
 parser.set_defaults(use_nearestNeighbor=False)
+parser.set_defaults(saveNets=False)
 
 args = parser.parse_args()
 use_lstm = args.use_lstm
@@ -61,6 +63,7 @@ useHybrid=args.use_hybrid
 find_SW=args.find_SW
 use_classic = args.use_classic
 use_nearestNeighbor = args.use_nearestNeighbor
+saveNets = args.saveNets
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -75,6 +78,28 @@ from qutils.ml.classifer import trainClassifier, LSTMClassifier, validateMultiCl
 from qutils.ml.mamba import Mamba, MambaConfig, MambaClassifier
 from qutils.ml.superweight import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight, findMambaSuperActivation,plotSuperActivation
 
+strAdd = ""
+if useEnergy:
+    strAdd = strAdd + "Energy_"
+if useOE:
+    strAdd = strAdd + "OE_"
+if useNorm:
+    strAdd = strAdd + "Norm_"
+if useNoise:
+    strAdd = strAdd + "Noise_"
+if useOnePass:
+    strAdd = strAdd + "OnePass_"
+if useHybrid:
+    strAdd = strAdd + "Hybrid_"
+# if use_classic:
+#     strAdd = strAdd + "DT_"
+if use_nearestNeighbor:
+    strAdd = strAdd + "1-NN_"
+if testSet != orbitType:
+    strAdd = strAdd + "Test_" + testSet
+
+logLoc = "gmat/data/classification/"+str(orbitType)+"/" + str(numMinProp) + "min-" + str(numRandSys) + "/"
+logFileLoc = logLoc + str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log'
 if save_to_log:
     import sys
     from contextlib import redirect_stdout, redirect_stderr
@@ -91,30 +116,10 @@ if save_to_log:
     # Nuke everything (blunt):
     warnings.filterwarnings("ignore")
 
-    strAdd = ""
-    if useEnergy:
-        strAdd = strAdd + "Energy_"
-    if useOE:
-        strAdd = strAdd + "OE_"
-    if useNorm:
-        strAdd = strAdd + "Norm_"
-    if useNoise:
-        strAdd = strAdd + "Noise_"
-    if useOnePass:
-        strAdd = strAdd + "OnePass_"
-    if useHybrid:
-        strAdd = strAdd + "Hybrid_"
-    if use_classic:
-        strAdd = strAdd + "DT_"
-    if use_nearestNeighbor:
-        strAdd = strAdd + "1-NN_"
-    if testSet != orbitType:
-        strAdd = strAdd + "Test_" + testSet
     # if location does not exist, create it
     import os
     if not os.path.exists("gmat/data/classification/"+str(orbitType)+"/" + str(numMinProp) + "min-" + str(numRandSys)):
         os.makedirs("gmat/data/classification/"+str(orbitType)+"/" + str(numMinProp) + "min-" + str(numRandSys))
-    logFileLoc = "gmat/data/classification/"+str(orbitType)+"/" + str(numMinProp) + "min-" + str(numRandSys) + "/" + str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log'
     print("saving log output to {}".format(logFileLoc))
 
 # display the data by calling the displayLogData.py script from its contained folder
@@ -330,7 +335,7 @@ def main():
                 )
 
             return val_loss, accuracy
-        classicModel = LGBMClassifier(objective="multiclass",num_classes=num_classes,n_estimators=100,max_depth=-1,learning_rate=0.05,subsample=0.8,colsample_bytree=0.8,verbosity=-1)   # or 'verbose' for older builds)
+        classicModel = LGBMClassifier(objective="multiclass",num_classes=num_classes,n_estimators=4,max_depth=-1,learning_rate=0.05,subsample=0.8,colsample_bytree=0.8,verbosity=-1)   # or 'verbose' for older builds)
         
         # flatten features
         X_train = train_data.reshape(train_data.shape[0], -1).astype(np.float32)    # (number of systems to train on, network features * length of time series)    
@@ -464,7 +469,7 @@ def main():
         dtwInference.tocStr("1-NN Inference Time")
 
     if use_lstm:
-        model_LSTM = LSTMClassifier(input_size, int(hidden_size), num_layers, num_classes).to(device).double()
+        model_LSTM = LSTMClassifier(input_size, int(3*hidden_size//4), num_layers, num_classes).to(device).double()
         optimizer_LSTM = torch.optim.Adam(model_LSTM.parameters(), lr=learning_rate)
         scheduler_LSTM = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer_LSTM,
@@ -494,7 +499,17 @@ def main():
     else:
         validateMultiClassClassifier(model_mamba,val_loader,criterion,num_classes,device,classlabels,printReport=True)
     mambaInference.tocStr("Mamba Inference Time")
-    # torch.save(model_mamba.state_dict(), f"{dataLoc}/mambaTimeSeriesClassificationGMATThrusts"+ orbitType +".pt")
+
+    if saveNets:
+        import os
+        if not os.path.exists("gmat/data/classification/"+str(orbitType)+"/" + str(numMinProp) + "min-" + str(numRandSys)):
+            os.makedirs("gmat/data/classification/"+str(orbitType)+"/" + str(numMinProp) + "min-" + str(numRandSys))
+        print(f"Saving networks to gmat/data/classification/{orbitType}/{numMinProp}min-{numRandSys}/")
+        if use_lstm:
+            torch.save(model_LSTM.state_dict(), f"{logLoc}lstm_"+ orbitType +"_"+strAdd+".pt")
+        if useHybrid:
+            torch.save(model_hybrid.state_dict(), f"{logLoc}hybrid_"+ orbitType +"_"+strAdd+".pt")
+        torch.save(model_mamba.state_dict(), f"{logLoc}mamba_"+ orbitType +"_"+strAdd+".pt")
 
     if find_SW:
         magnitude, index = findMambaSuperActivation(model_mamba,torch.tensor(test_data).to(device))
