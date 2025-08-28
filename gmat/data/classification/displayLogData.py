@@ -39,6 +39,7 @@ RE_CONF_MATRIX = re.compile(
 class Summary:
     model: str
     max_val_accuracy: float
+    final_val_accuracy: float
     best_epoch: int
     epochs_trained: int
     final_val_loss: float
@@ -188,6 +189,7 @@ def summarize(model: str, block: str) -> tuple[Summary, pd.DataFrame]:
         raise ValueError(f"No validation accuracy for {model}")
     max_acc    = max(accs)
     best_epoch = accs.index(max_acc) + 1
+    final_acc  = accs[-1]   
 
     losses     = [float(x) for x in RE_VAL_LOSS.findall(block)]
     final_loss = losses[-1] if losses else float("nan")
@@ -208,9 +210,16 @@ def summarize(model: str, block: str) -> tuple[Summary, pd.DataFrame]:
                     class_metrics[f"{r['label']}_{m}"] = r[m]
 
     summary = Summary(
-        model, max_acc, best_epoch, len(accs), final_loss,
-        params, mem, time_s, "Early stopping" in block,
-        block.lower().count("reducing learning rate"), class_metrics,
+        model,
+        max_acc,
+        final_acc,
+        best_epoch,
+        len(accs),
+        final_loss,
+        params, mem, time_s,
+        "Early stopping" in block,
+        block.lower().count("reducing learning rate"),
+        class_metrics,
     )
     return summary, class_df
 
@@ -307,7 +316,8 @@ def process_log(path: Path, root: Path, force: bool = False) -> None:
         cm = parse_confusion_matrix(blk)
         if cm is not None:
             cm_png = cm_dir / f"confmat_{stem}_{model.replace(' ', '_')}.png"
-            save_confusion_matrix(cm, cm_png, f"{model} – Confusion Matrix")
+            title = f"{model} – Confusion Matrix (Final Val Acc: {summ.final_val_accuracy:.2f}%)"
+            save_confusion_matrix(cm, cm_png, title)
 
     pd.DataFrame([s.to_flat() for s in summaries]).to_csv(summary_csv, index=False)
 
