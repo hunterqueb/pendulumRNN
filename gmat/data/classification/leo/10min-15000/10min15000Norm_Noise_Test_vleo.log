@@ -1,0 +1,303 @@
+Processing datasets for leo with 10 minutes and 15000 random systems.
+GPU is available
+Training data location: /home/hunter/git/GMAT-Thrust-Data/data/classification/leo/10min-15000
+Test data location: /home/hunter/git/GMAT-Thrust-Data/data/classification/vleo/10min-15000
+
+Entering Decision Trees Training Loop
+
+	Elapsed time is 0.2288 seconds.
+
+==========================================================================================
+Total parameters: NaN
+Total memory (bytes): 60189
+Total memory (MB): 0.05740070343017578
+==========================================================================================
+
+Decision Trees Validation
+Validation Loss: 1.3227, Validation Accuracy: 44.63%
+
+Per-Class Validation Accuracy:
+  No Thrust: 93.82% (2111/2250)
+  Chemical: 46.09% (1037/2250)
+  Electric: 17.91% (403/2250)
+  Impulsive: 20.71% (466/2250)
+
+Classification Report:
+              precision    recall  f1-score   support
+
+   No Thrust     0.3668    0.9382    0.5274      2250
+    Chemical     0.7809    0.4609    0.5797      2250
+    Electric     0.6532    0.1791    0.2811      2250
+   Impulsive     0.3585    0.2071    0.2625      2250
+
+    accuracy                         0.4463      9000
+   macro avg     0.5398    0.4463    0.4127      9000
+weighted avg     0.5398    0.4463    0.4127      9000
+
+
+Confusion Matrix (rows = true, cols = predicted):
+             P_No Thrust  P_Chemical  P_Electric  P_Impulsive
+T_No Thrust         2111          13           5          121
+T_Chemical           781        1037         117          315
+T_Electric          1233         216         403          398
+T_Impulsive         1630          62          92          466
+
+Decision Trees Inference Time	Elapsed time is 0.1174 seconds.
+
+Entering LSTM Training Loop
+Epoch [1/10], Training Loss: 1.3845
+Validation Loss: 1.3707, Validation Accuracy: 30.41%
+
+Per-Class Validation Accuracy:
+  No Thrust: 42.80% (963/2250)
+  Chemical: 49.29% (1109/2250)
+  Electric: 4.58% (103/2250)
+  Impulsive: 24.98% (562/2250)
+Epoch [2/10], Training Loss: 1.1614
+Validation Loss: 0.8558, Validation Accuracy: 61.80%
+
+Per-Class Validation Accuracy:
+  No Thrust: 65.87% (1482/2250)
+  Chemical: 99.02% (2228/2250)
+  Electric: 60.00% (1350/2250)
+  Impulsive: 22.31% (502/2250)
+Epoch [3/10], Training Loss: 0.7040
+Validation Loss: 0.5898, Validation Accuracy: 73.17%
+
+Per-Class Validation Accuracy:
+  No Thrust: 74.98% (1687/2250)
+  Chemical: 98.04% (2206/2250)
+  Electric: 80.84% (1819/2250)
+  Impulsive: 38.80% (873/2250)
+Epoch [4/10], Training Loss: 0.5346
+Validation Loss: 0.4978, Validation Accuracy: 76.38%
+
+Per-Class Validation Accuracy:
+  No Thrust: 63.02% (1418/2250)
+  Chemical: 100.00% (2250/2250)
+  Electric: 94.84% (2134/2250)
+  Impulsive: 47.64% (1072/2250)
+Epoch [5/10], Training Loss: 0.4528
+Validation Loss: 0.3575, Validation Accuracy: 86.01%
+
+Per-Class Validation Accuracy:
+  No Thrust: 95.29% (2144/2250)
+  Chemical: 100.00% (2250/2250)
+  Electric: 96.58% (2173/2250)
+  Impulsive: 52.18% (1174/2250)
+Epoch [6/10], Training Loss: 0.3979
+Validation Loss: 0.3304, Validation Accuracy: 87.44%
+
+Per-Class Validation Accuracy:
+  No Thrust: 95.64% (2152/2250)
+  Chemical: 100.00% (2250/2250)
+  Electric: 92.31% (2077/2250)
+  Impulsive: 61.82% (1391/2250)
+Epoch [7/10], Training Loss: 0.3512
+Validation Loss: 0.2816, Validation Accuracy: 90.70%
+
+Per-Class Validation Accuracy:
+  No Thrust: 99.96% (2249/2250)
+  Chemical: 100.00% (2250/2250)
+  Electric: 90.62% (2039/2250)
+  Impulsive: 72.22% (1625/2250)
+Epoch [8/10], Training Loss: 0.3224
+Validation Loss: 0.2463, Validation Accuracy: 90.47%
+
+Per-Class Validation Accuracy:
+  No Thrust: 96.71% (2176/2250)
+  Chemical: 100.00% (2250/2250)
+  Electric: 97.87% (2202/2250)
+  Impulsive: 67.29% (1514/2250)
+Epoch [9/10], Training Loss: 0.2895
+Validation Loss: 0.2614, Validation Accuracy: 90.16%
+
+Per-Class Validation Accuracy:
+  No Thrust: 99.51% (2239/2250)
+  Chemical: 100.00% (2250/2250)
+  Electric: 80.40% (1809/2250)
+  Impulsive: 80.71% (1816/2250)
+Epoch [10/10], Training Loss: 0.2567
+Validation Loss: 0.1861, Validation Accuracy: 93.91%
+
+Per-Class Validation Accuracy:
+  No Thrust: 96.31% (2167/2250)
+  Chemical: 100.00% (2250/2250)
+  Electric: 99.47% (2238/2250)
+  Impulsive: 79.87% (1797/2250)
+
+	Elapsed time is 77.4428 seconds.
+
+==========================================================================================
+Total parameters: 6484
+Total memory (bytes): 51872
+Total memory (MB): 0.049468994140625
+==========================================================================================
+
+LSTM Validation
+Validation Loss: 0.1825, Validation Accuracy: 94.09%
+
+Per-Class Validation Accuracy:
+  No Thrust: 96.44% (2170/2250)
+  Chemical: 100.00% (2250/2250)
+  Electric: 99.20% (2232/2250)
+  Impulsive: 80.71% (1816/2250)
+
+Classification Report:
+              precision    recall  f1-score   support
+
+   No Thrust     0.9079    0.9644    0.9353      2250
+    Chemical     1.0000    1.0000    1.0000      2250
+    Electric     0.9125    0.9920    0.9506      2250
+   Impulsive     0.9488    0.8071    0.8722      2250
+
+    accuracy                         0.9409      9000
+   macro avg     0.9423    0.9409    0.9395      9000
+weighted avg     0.9423    0.9409    0.9395      9000
+
+
+Confusion Matrix (rows = true, cols = predicted):
+             P_No Thrust  P_Chemical  P_Electric  P_Impulsive
+T_No Thrust         2170           0           0           80
+T_Chemical             0        2250           0            0
+T_Electric             0           0        2232           18
+T_Impulsive          220           0         214         1816
+
+LSTM Inference Time	Elapsed time is 1.2229 seconds.
+[SHAP]           vy: 3.16681
+[SHAP]           vx: 3.08026
+[SHAP]           vz: 2.32171
+[SHAP]            x: 1.09883
+[SHAP]            y: 1.04227
+[SHAP]            z: 0.645252
+[SHAP] N_eval=9000, T=10, D=6 -> gmat/data/classification/leo/10min-15000/shap/lstm_leo_eval_cart_test
+[SHAP] CSVs written to: gmat/data/classification/leo/10min-15000/shap/lstm_leo_eval_cart_test
+
+Entering Mamba Training Loop
+Epoch [1/10], Training Loss: 1.3502
+Validation Loss: 1.1155, Validation Accuracy: 53.43%
+
+Per-Class Validation Accuracy:
+  No Thrust: 67.64% (1522/2250)
+  Chemical: 81.20% (1827/2250)
+  Electric: 40.27% (906/2250)
+  Impulsive: 24.62% (554/2250)
+Epoch [2/10], Training Loss: 1.0702
+Validation Loss: 0.7808, Validation Accuracy: 69.31%
+
+Per-Class Validation Accuracy:
+  No Thrust: 79.24% (1783/2250)
+  Chemical: 95.24% (2143/2250)
+  Electric: 68.76% (1547/2250)
+  Impulsive: 34.00% (765/2250)
+Epoch [3/10], Training Loss: 0.9024
+Validation Loss: 0.6711, Validation Accuracy: 79.10%
+
+Per-Class Validation Accuracy:
+  No Thrust: 68.98% (1552/2250)
+  Chemical: 95.87% (2157/2250)
+  Electric: 85.20% (1917/2250)
+  Impulsive: 66.36% (1493/2250)
+Epoch [4/10], Training Loss: 0.7964
+Validation Loss: 0.5557, Validation Accuracy: 84.76%
+
+Per-Class Validation Accuracy:
+  No Thrust: 83.11% (1870/2250)
+  Chemical: 97.29% (2189/2250)
+  Electric: 88.31% (1987/2250)
+  Impulsive: 70.31% (1582/2250)
+Epoch [5/10], Training Loss: 0.7269
+Validation Loss: 0.4881, Validation Accuracy: 86.67%
+
+Per-Class Validation Accuracy:
+  No Thrust: 90.40% (2034/2250)
+  Chemical: 99.16% (2231/2250)
+  Electric: 82.04% (1846/2250)
+  Impulsive: 75.07% (1689/2250)
+Epoch [6/10], Training Loss: 0.6949
+Validation Loss: 0.4788, Validation Accuracy: 86.76%
+
+Per-Class Validation Accuracy:
+  No Thrust: 84.09% (1892/2250)
+  Chemical: 98.89% (2225/2250)
+  Electric: 90.27% (2031/2250)
+  Impulsive: 73.78% (1660/2250)
+Epoch [7/10], Training Loss: 0.6607
+Validation Loss: 0.4197, Validation Accuracy: 87.16%
+
+Per-Class Validation Accuracy:
+  No Thrust: 85.82% (1931/2250)
+  Chemical: 99.33% (2235/2250)
+  Electric: 88.04% (1981/2250)
+  Impulsive: 75.42% (1697/2250)
+Epoch [8/10], Training Loss: 0.6356
+Validation Loss: 0.4069, Validation Accuracy: 91.24%
+
+Per-Class Validation Accuracy:
+  No Thrust: 87.69% (1973/2250)
+  Chemical: 99.38% (2236/2250)
+  Electric: 93.38% (2101/2250)
+  Impulsive: 84.53% (1902/2250)
+Epoch [9/10], Training Loss: 0.6053
+Validation Loss: 0.3907, Validation Accuracy: 90.43%
+
+Per-Class Validation Accuracy:
+  No Thrust: 96.71% (2176/2250)
+  Chemical: 95.78% (2155/2250)
+  Electric: 85.60% (1926/2250)
+  Impulsive: 83.64% (1882/2250)
+Epoch [10/10], Training Loss: 0.5876
+Validation Loss: 0.3857, Validation Accuracy: 90.22%
+
+Per-Class Validation Accuracy:
+  No Thrust: 94.93% (2136/2250)
+  Chemical: 98.31% (2212/2250)
+  Electric: 84.00% (1890/2250)
+  Impulsive: 83.64% (1882/2250)
+
+	Elapsed time is 278.6295 seconds.
+
+==========================================================================================
+Total parameters: 6682
+Total memory (bytes): 53456
+Total memory (MB): 0.0509796142578125
+==========================================================================================
+
+Mamba Validation
+Validation Loss: 0.3809, Validation Accuracy: 90.72%
+
+Per-Class Validation Accuracy:
+  No Thrust: 94.98% (2137/2250)
+  Chemical: 98.44% (2215/2250)
+  Electric: 84.80% (1908/2250)
+  Impulsive: 84.67% (1905/2250)
+
+Classification Report:
+              precision    recall  f1-score   support
+
+   No Thrust     0.8801    0.9498    0.9136      2250
+    Chemical     1.0000    0.9844    0.9922      2250
+    Electric     0.9554    0.8480    0.8985      2250
+   Impulsive     0.8072    0.8467    0.8265      2250
+
+    accuracy                         0.9072      9000
+   macro avg     0.9107    0.9072    0.9077      9000
+weighted avg     0.9107    0.9072    0.9077      9000
+
+
+Confusion Matrix (rows = true, cols = predicted):
+             P_No Thrust  P_Chemical  P_Electric  P_Impulsive
+T_No Thrust         2137           0           0          113
+T_Chemical             0        2215          35            0
+T_Electric             0           0        1908          342
+T_Impulsive          291           0          54         1905
+
+Mamba Inference Time	Elapsed time is 1.7600 seconds.
+[SHAP]           vy: 5.19182
+[SHAP]            x: 5.12048
+[SHAP]            y: 4.95738
+[SHAP]           vx: 4.46309
+[SHAP]            z: 2.90511
+[SHAP]           vz: 2.67656
+[SHAP] N_eval=9000, T=10, D=6 -> gmat/data/classification/leo/10min-15000/shap/mamba_leo_eval_cart_test
+[SHAP] CSVs written to: gmat/data/classification/leo/10min-15000/shap/mamba_leo_eval_cart_test
