@@ -77,6 +77,7 @@ from qutils.ml.utils import getDevice, printModelParmSize
 from qutils.ml.classifer import trainClassifier, LSTMClassifier, validateMultiClassClassifier
 from qutils.ml.mamba import Mamba, MambaConfig, MambaClassifier
 from qutils.ml.superweight import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight, findMambaSuperActivation,plotSuperActivation
+from qutils.ml.shap import run_shap_analysis
 
 strAdd = ""
 if useEnergy:
@@ -100,6 +101,9 @@ if testSet != orbitType:
 
 logLoc = "gmat/data/classification/"+str(orbitType)+"/" + str(numMinProp) + "min-" + str(numRandSys) + "/"
 logFileLoc = logLoc + str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log'
+shap_dir_mamba = logLoc+ f"shap/mamba_{orbitType}_eval_{'OE' if useOE else 'cart'}_{'test' if testSet!=orbitType else 'val'}"
+shap_dir_lstm = logLoc+ f"shap/lstm_{orbitType}_eval_{'OE' if useOE else 'cart'}_{'test' if testSet!=orbitType else 'val'}"
+
 if save_to_log:
     import sys
     from contextlib import redirect_stdout, redirect_stderr
@@ -199,7 +203,7 @@ def main():
     num_layers = 1
     num_classes = 4  # e.g., multiclass classification
     learning_rate = 1e-3
-    num_epochs = 100
+    num_epochs = 10
 
     if useOnePass:
         num_epochs = 1
@@ -483,22 +487,62 @@ def main():
         printModelParmSize(model_LSTM)
         print("\nLSTM Validation")
         LSTMInference = timer()
-        if testSet != orbitType:
-            validateMultiClassClassifier(model_LSTM,test_loader,criterion,num_classes,device,classlabels,printReport=True)
-        else:
-            validateMultiClassClassifier(model_LSTM,val_loader,criterion,num_classes,device,classlabels,printReport=True)
+        _eval_loader = test_loader if (testSet != orbitType) else val_loader
+        validateMultiClassClassifier(model_LSTM,_eval_loader,criterion,num_classes,device,classlabels,printReport=True)
         LSTMInference.tocStr("LSTM Inference Time")
+        if useOE:
+            feat_names = ['a','ecc','inc','RAAN','argp','nu']
+        else:
+            feat_names = ['x','y','z','vx','vy','vz']
+        _ = run_shap_analysis(
+            model=model_LSTM,
+            train_loader=train_loader,
+            eval_loader=_eval_loader,
+            device=device,                        # e.g., "cuda" or "cpu"
+            classlabels=classlabels,
+            feature_names=feat_names,  # or None
+            out_dir=shap_dir_lstm,
+            method="gradshap",
+            baseline_nsamples=32,
+            gs_samples=8,
+            n_eval=None,
+            internal_batch_size=32,
+            use_cpu=False,
+            group_by="true"     # <<— important
+        )
+        print(f"[SHAP] CSVs written to: {shap_dir_lstm}")
 
     print('\nEntering Mamba Training Loop')
     trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba,[train_loader,test_loader,val_loader],criterion,num_epochs,device,classLabels=classlabels)
     printModelParmSize(model_mamba)
+
     print("\nMamba Validation")
     mambaInference = timer()
-    if testSet != orbitType:
-        validateMultiClassClassifier(model_mamba,test_loader,criterion,num_classes,device,classlabels,printReport=True)
-    else:
-        validateMultiClassClassifier(model_mamba,val_loader,criterion,num_classes,device,classlabels,printReport=True)
+    _eval_loader = test_loader if (testSet != orbitType) else val_loader
+    validateMultiClassClassifier(model_mamba, _eval_loader, criterion, num_classes, device, classlabels, printReport=True)
     mambaInference.tocStr("Mamba Inference Time")
+
+    if useOE:
+        feat_names = ['a','ecc','inc','RAAN','argp','nu']
+    else:
+        feat_names = ['x','y','z','vx','vy','vz']
+    _ = run_shap_analysis(
+        model=model_mamba,
+        train_loader=train_loader,
+        eval_loader=_eval_loader,
+        device=device,                        # e.g., "cuda" or "cpu"
+        classlabels=classlabels,
+        feature_names=feat_names,  # or None
+        out_dir=shap_dir_mamba,
+        method="gradshap",
+        baseline_nsamples=32,
+        gs_samples=8,
+        n_eval=None,
+        internal_batch_size=32,
+        use_cpu=False,
+        group_by="true"     # <<— important
+)
+    print(f"[SHAP] CSVs written to: {shap_dir_mamba}")
 
     if saveNets:
         import os
@@ -550,4 +594,18 @@ if __name__ == "__main__":
             main()
     else:
         main()
-    plt.show()
+    
+    from qutils.ml.shap import plot_global_feature_importance, plot_global_time_importance, plot_all_per_class_heatmaps,plot_feature_time_importance_heatmap
+    plot_global_feature_importance(shap_dir_mamba, topk=20, save=True)
+    plot_global_time_importance(shap_dir_mamba, save=True)
+    # One heatmap per class CSV; lock_vmax=True to use the same color scale across classes
+    plot_all_per_class_heatmaps(shap_dir_mamba, topk_features=None, lock_vmax=True)
+    plot_feature_time_importance_heatmap(shap_dir_mamba, topk=None, save=True)
+
+    plot_global_feature_importance(shap_dir_lstm, topk=20, save=True)
+    plot_global_time_importance(shap_dir_lstm, save=True)
+    # One heatmap per class CSV; lock_vmax=True to use the same color scale across classes
+    plot_all_per_class_heatmaps(shap_dir_lstm, topk_features=None, lock_vmax=True)
+    plot_feature_time_importance_heatmap(shap_dir_lstm, topk=None, save=True)
+
+    # plt.show()
