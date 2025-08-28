@@ -1,0 +1,31 @@
+Model,label,precision,recall,f1,support
+Decision Trees,no_thrust,1.0,1.0,1.0,2250
+Decision Trees,chemical,1.0,1.0,1.0,2250
+Decision Trees,electric,1.0,1.0,1.0,2250
+Decision Trees,impulsive,1.0,1.0,1.0,2250
+Decision Trees,macro_avg,1.0,1.0,1.0,9000
+Decision Trees,weighted_avg,1.0,1.0,1.0,9000
+Decision Trees,t_no_thrust,2250.0,0.0,0.0,0
+Decision Trees,t_chemical,0.0,2250.0,0.0,0
+Decision Trees,t_electric,0.0,0.0,2250.0,0
+Decision Trees,t_impulsive,0.0,0.0,0.0,2250
+LSTM,no_thrust,1.0,1.0,1.0,2250
+LSTM,chemical,1.0,1.0,1.0,2250
+LSTM,electric,1.0,1.0,1.0,2250
+LSTM,impulsive,1.0,1.0,1.0,2250
+LSTM,macro_avg,1.0,1.0,1.0,9000
+LSTM,weighted_avg,1.0,1.0,1.0,9000
+LSTM,t_no_thrust,2250.0,0.0,0.0,0
+LSTM,t_chemical,0.0,2250.0,0.0,0
+LSTM,t_electric,0.0,0.0,2250.0,0
+LSTM,t_impulsive,0.0,0.0,0.0,2250
+Mamba,no_thrust,1.0,1.0,1.0,2250
+Mamba,chemical,1.0,1.0,1.0,2250
+Mamba,electric,1.0,1.0,1.0,2250
+Mamba,impulsive,1.0,1.0,1.0,2250
+Mamba,macro_avg,1.0,1.0,1.0,9000
+Mamba,weighted_avg,1.0,1.0,1.0,9000
+Mamba,t_no_thrust,2250.0,0.0,0.0,0
+Mamba,t_chemical,0.0,2250.0,0.0,0
+Mamba,t_electric,0.0,0.0,2250.0,0
+Mamba,t_impulsive,0.0,0.0,0.0,2250
