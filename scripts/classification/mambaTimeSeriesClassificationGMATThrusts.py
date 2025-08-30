@@ -104,8 +104,8 @@ if velNoise != 1e-3:
 
 logLoc = "gmat/data/classification/"+str(orbitType)+"/" + str(numMinProp) + "min-" + str(numRandSys) + "/"
 logFileLoc = logLoc + str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log'
-shap_dir_mamba = logLoc+ f"shap/mamba_{orbitType}_eval_{'OE' if useOE else 'cart'}_{'test' if testSet!=orbitType else 'val'}"
-shap_dir_lstm = logLoc+ f"shap/lstm_{orbitType}_eval_{'OE' if useOE else 'cart'}_{'test' if testSet!=orbitType else 'val'}"
+shap_dir_mamba = logLoc+ f"shap/mamba_{orbitType}_eval_{'OE' if useOE else 'cart'}_"+str(strAdd)
+shap_dir_lstm = logLoc+ f"shap/lstm_{orbitType}_eval_{'OE' if useOE else 'cart'}_"+str(strAdd)
 
 if save_to_log:
     import sys
@@ -599,13 +599,13 @@ if __name__ == "__main__":
         main()
     
     from qutils.ml.shap import plot_global_feature_importance, plot_global_time_importance, plot_all_per_class_heatmaps,plot_feature_time_importance_heatmap
-    plot_global_feature_importance(shap_dir_mamba, topk=20, save=True)
+    plot_global_feature_importance(shap_dir_mamba, topk=20, save=True,as_percent=True)
     plot_global_time_importance(shap_dir_mamba, save=True)
     # One heatmap per class CSV; lock_vmax=True to use the same color scale across classes
     plot_all_per_class_heatmaps(shap_dir_mamba, topk_features=None, lock_vmax=True)
     plot_feature_time_importance_heatmap(shap_dir_mamba, topk=None, save=True)
 
-    plot_global_feature_importance(shap_dir_lstm, topk=20, save=True)
+    plot_global_feature_importance(shap_dir_lstm, topk=20, save=True,as_percent=True)
     plot_global_time_importance(shap_dir_lstm, save=True)
     # One heatmap per class CSV; lock_vmax=True to use the same color scale across classes
     plot_all_per_class_heatmaps(shap_dir_lstm, topk_features=None, lock_vmax=True)
