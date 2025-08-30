@@ -99,6 +99,8 @@ if use_nearestNeighbor:
     strAdd = strAdd + "1-NN_"
 if testSet != orbitType:
     strAdd = strAdd + "Test_" + testSet
+if velNoise != 1e-3:
+    strAdd = strAdd + f"VelNoise{velNoise}_"
 
 logLoc = "gmat/data/classification/"+str(orbitType)+"/" + str(numMinProp) + "min-" + str(numRandSys) + "/"
 logFileLoc = logLoc + str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log'
