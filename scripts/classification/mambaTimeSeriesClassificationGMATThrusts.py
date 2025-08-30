@@ -204,7 +204,7 @@ def main():
     num_layers = 1
     num_classes = 4  # e.g., multiclass classification
     learning_rate = 1e-3
-    num_epochs = 10
+    num_epochs = 100
 
     if useOnePass:
         num_epochs = 1
