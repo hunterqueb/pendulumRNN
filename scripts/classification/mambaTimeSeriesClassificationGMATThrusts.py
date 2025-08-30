@@ -16,6 +16,7 @@ parser.add_argument("--test", type=str, default=None, help="Orbit type for test 
 parser.add_argument("--testSys", type=int, default=10000, help="Number of systems to use for testing if --test is a different string than --orbit")
 parser.add_argument("--OE", action='store_true', help="Use OE elements instead of ECI states")
 parser.add_argument("--noise", action='store_true', help="Add noise to the data")
+parser.add_argument("--velNoise",type=float,default=1e-3,help="std of noise to add to velocity terms")
 parser.add_argument("--norm", action='store_true', help="Normalize the semi-major axis by Earth's radius")
 parser.add_argument("--one-pass",dest="one_pass",action='store_true', help="Use one pass learning.")
 parser.add_argument("--save",dest="save_to_log",action="store_true",help="output console printout to log file in the same location as datasets")
@@ -64,7 +65,7 @@ find_SW=args.find_SW
 use_classic = args.use_classic
 use_nearestNeighbor = args.use_nearestNeighbor
 saveNets = args.saveNets
-
+velNoise = args.velNoise
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -194,7 +195,7 @@ def main():
 
     from qutils.ml.classifer import prepareThrustClassificationDatasets
 
-    train_loader, val_loader, test_loader, train_data,train_label,val_data,val_label,test_data,test_label = prepareThrustClassificationDatasets(yaml_config,dataConfig,output_np=True)
+    train_loader, val_loader, test_loader, train_data,train_label,val_data,val_label,test_data,test_label = prepareThrustClassificationDatasets(yaml_config,dataConfig,output_np=True,vel_noise_std=velNoise)
 
     # Hyperparameters
     input_size = train_data.shape[2] 
@@ -210,7 +211,7 @@ def main():
 
     criterion = torch.nn.CrossEntropyLoss()
 
-    config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=16,classifer=True)
+    config = MambaConfig(d_model=input_size,n_layers = num_layers,expand_factor=hidden_size//input_size,d_state=32,d_conv=4,classifer=True)
     model_mamba = MambaClassifier(config,input_size, hidden_size, num_layers, num_classes).to(device).double()
     optimizer_mamba = torch.optim.Adam(model_mamba.parameters(), lr=learning_rate)
 
