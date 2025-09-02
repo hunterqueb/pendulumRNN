@@ -27,6 +27,7 @@ parser.add_argument("--no-classic",dest="use_classic",action="store_false",help=
 parser.add_argument("--nearest",dest="use_nearestNeighbor",action="store_true",help="Use classic ML classification (1-nearest neighbor w/ DTW) for comparison")
 parser.add_argument('--saveNets', dest="saveNets",action='store_true', help='Save the trained networks. Saves to the same location as a saved log file.')
 parser.add_argument('--classic', dest="old_classic",action='store_true', help='DO NOT USE. DUMMY ARGUMENT TO AVOID BREAKING OLD SCRIPTS.')
+parser.add_argument('--shap',dest="run_shap",action='store_true', help='run shap analysis for interpretation of feature importance.')
 
 parser.set_defaults(use_lstm=True)
 parser.set_defaults(OE=False)
@@ -40,6 +41,7 @@ parser.set_defaults(find_SW=False)
 parser.set_defaults(use_classic=True)
 parser.set_defaults(use_nearestNeighbor=False)
 parser.set_defaults(saveNets=False)
+parser.set_defaults(run_shap=False)
 
 args = parser.parse_args()
 use_lstm = args.use_lstm
@@ -66,12 +68,14 @@ use_classic = args.use_classic
 use_nearestNeighbor = args.use_nearestNeighbor
 saveNets = args.saveNets
 velNoise = args.velNoise
+run_shap = args.run_shap
+
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
 from torch import nn
 import pandas as pd
-from sklearn.metrics import log_loss, classification_report, confusion_matrix
+from sklearn.metrics import classification_report, confusion_matrix
 
 from qutils.tictoc import timer
 from qutils.ml.utils import getDevice, printModelParmSize
@@ -251,105 +255,17 @@ def main():
 
     if use_classic:
         from lightgbm import LGBMClassifier
+        from qutils.ml.classic.classifier import printDTModelSize, validate_lightgbm
 
         print("\nEntering Decision Trees Training Loop")
-        DTTimer = timer()
-        def printClassicModelSize(model):
-            import tempfile, pathlib
-
-            with tempfile.TemporaryDirectory() as tmp:
-                path = pathlib.Path(tmp) / "model.bin"   # any extension is fine
-                model.booster_.save_model(str(path))     # binary dump by default
-                size_bytes = path.stat().st_size
-            print("\n==========================================================================================")
-            print(f"Total parameters: NaN")
-            print(f"Total memory (bytes): {size_bytes}")
-            print(f"Total memory (MB): {size_bytes / (1024 ** 2)}")
-            print("==========================================================================================")
-
-        def validate_lightgbm(model, val_loader, num_classes, classlabels=None, print_report=True):
-            """Evaluate a trained LightGBM multiclass classifier on a PyTorch‑style DataLoader.
-
-            * model          - fitted lightgbm.LGBMClassifier (objective='multiclass')
-            * val_loader     - yields (seq_batch, label_batch); seq_batch can be torch.Tensor or np.ndarray
-                            Shape per sample must match training: (7, L).  Flatten before predict.
-            * num_classes    - integer (4 in your case)
-            """
-            # --------------------------------------------------------------------- #
-            # Aggregate validation data                                             #
-            # --------------------------------------------------------------------- #
-            X_list, y_list = [], []
-            for seq, lab in val_loader:
-                # → ndarray, shape (batch, 7*L)
-                xb = (seq if isinstance(seq, np.ndarray) else seq.cpu().numpy()).reshape(seq.shape[0], -1)
-                yb = (lab if isinstance(lab, np.ndarray) else lab.cpu().numpy())
-                X_list.append(xb)
-                y_list.append(yb)
-
-            X_val = np.concatenate(X_list, axis=0)
-            y_true = np.concatenate(y_list, axis=0)
-
-            # --------------------------------------------------------------------- #
-            # Predict                                                               #
-            # --------------------------------------------------------------------- #
-            proba = model.predict_proba(X_val, num_iteration=model.best_iteration_)
-            y_pred = proba.argmax(axis=1)
-
-            # --------------------------------------------------------------------- #
-            # Metrics                                                               #
-            # --------------------------------------------------------------------- #
-            val_loss = log_loss(y_true, proba, labels=np.arange(num_classes))
-            accuracy = 100.0 * (y_pred == y_true).mean()
-
-            # Per‑class accuracy
-            class_tot = np.bincount(y_true, minlength=num_classes)
-            class_corr = np.bincount(y_true[y_true == y_pred], minlength=num_classes)
-            per_class_acc = 100.0 * class_corr / np.maximum(class_tot, 1)
-
-            # --------------------------------------------------------------------- #
-            # Reporting                                                             #
-            # --------------------------------------------------------------------- #
-            print(f"Validation Loss: {val_loss:.4f}, Validation Accuracy: {accuracy:.2f}%\n")
-
-            print("Per-Class Validation Accuracy:")
-            for i in range(num_classes):
-                label = classlabels[i] if classlabels else f"Class {i}"
-                if class_tot[i]:
-                    print(f"  {label}: {per_class_acc[i]:.2f}% ({class_corr[i]}/{class_tot[i]})")
-                else:
-                    print(f"  {label}: No samples")
-
-            if print_report:
-                print("\nClassification Report:")
-                print(
-                    classification_report(
-                        y_true, y_pred,
-                        labels=list(range(num_classes)),
-                        target_names=(classlabels if classlabels else None),
-                        digits=4,
-                        zero_division=0,
-                    )
-                )
-
-                cm = confusion_matrix(y_true, y_pred, labels=list(range(num_classes)))
-                print("\nConfusion Matrix (rows = true, cols = predicted):")
-                print(
-                    pd.DataFrame(
-                        cm,
-                        index=[f"T_{cls}" for cls in (classlabels if classlabels else range(num_classes))],
-                        columns=[f"P_{cls}" for cls in (classlabels if classlabels else range(num_classes))]
-                    )
-                )
-
-            return val_loss, accuracy
-        classicModel = LGBMClassifier(objective="multiclass",num_classes=num_classes,n_estimators=4,max_depth=-1,learning_rate=0.05,subsample=0.8,colsample_bytree=0.8,verbosity=-1)   # or 'verbose' for older builds)
-        
         # flatten features
         X_train = train_data.reshape(train_data.shape[0], -1).astype(np.float32)    # (number of systems to train on, network features * length of time series)    
         y_train = train_label.reshape(-1).astype(np.int32)             # (number of systems to train on,)
+        classicModel = LGBMClassifier(objective="multiclass",num_classes=num_classes,n_estimators=4,max_depth=-1,learning_rate=0.05,subsample=0.8,colsample_bytree=0.8,verbosity=-1)   # or 'verbose' for older builds)       
+        DTTimer = timer()
         classicModel.fit(X_train, y_train)
         DTTimer.toc()
-        printClassicModelSize(classicModel)
+        printDTModelSize(classicModel)
         print("\nDecision Trees Validation")
         DTTimerInference = timer()
         if testSet != orbitType:
@@ -358,102 +274,10 @@ def main():
             validate_lightgbm(classicModel, val_loader, num_classes, classlabels=classlabels, print_report=True)
         DTTimerInference.tocStr("Decision Trees Inference Time")
     if use_nearestNeighbor:
-        def z_normalize(ts, eps=1e-8):
-            # ts: [T] or [T,C]
-            mean = ts.mean(axis=0, keepdims=True)
-            std = ts.std(axis=0, keepdims=True)
-            return (ts - mean) / (std + eps)
-
-        def train_data_z_normalize(train_data):
-            """Z-normalize training data along the time axis."""
-            return np.array([z_normalize(ts) for ts in train_data])
-
-        def print1_NNModelSize(model):
-            import tempfile, pathlib
-            import pickle
-
-            with tempfile.TemporaryDirectory() as tmp:
-                path = pathlib.Path(tmp) / "model.pkl"
-                with open(path, "wb") as f:
-                    pickle.dump(model, f)
-                size_bytes = path.stat().st_size
-
-            print("\n" + "=" * 90)
-            print(f"Total parameters: NaN (non-parametric model)")
-            print(f"Total memory (bytes): {size_bytes}")
-            print(f"Total memory (MB): {size_bytes / (1024 ** 2):.4f}")
-            print("=" * 90)
-
-        def validate_1NN(clf, val_loader, num_classes, classlabels=None):
-            """Evaluate a 1-NN classifier (e.g., sktime KNeighborsTimeSeriesClassifier) on a PyTorch DataLoader."""
-            X_val_list, y_val_list = [], []
-
-            for seq, lab in val_loader:
-                xb = seq.cpu().numpy()  # preserve time-series shape
-                yb = lab.cpu().numpy()
-                X_val_list.append(xb) #z-normalize each time series
-                y_val_list.append(yb)
-
-            # Merge batches
-            X_val_np = np.concatenate(X_val_list, axis=0)
-            y_true = np.concatenate(y_val_list)
-
-            # Adapt shape for sktime: [N,C,T]
-            # [N,T,C] → [N,C,T]
-            X_val_np = np.transpose(X_val_np, (0, 2, 1))
-
-            # Predict
-            y_pred = clf.predict(X_val_np)
-
-            # Accuracy
-            correct = (y_pred == y_true).sum()
-            total = len(y_true)
-            accuracy = 100.0 * correct / total
-
-            print(f"Validation Loss: NaN, Validation Accuracy: {accuracy:.2f}%\n")
-
-            # Per-class accuracy
-            class_corr = np.zeros(num_classes, dtype=int)
-            class_tot = np.zeros(num_classes, dtype=int)
-            for yt, yp in zip(y_true, y_pred):
-                class_tot[yt] += 1
-                if yt == yp:
-                    class_corr[yt] += 1
-            per_class_acc = 100.0 * class_corr / np.maximum(class_tot, 1)
-
-            print("Per-Class Validation Accuracy:")
-            for i in range(num_classes):
-                label = classlabels[i] if classlabels else f"Class {i}"
-                if class_tot[i]:
-                    print(f"  {label}: {per_class_acc[i]:.2f}% ({class_corr[i]}/{class_tot[i]})")
-                else:
-                    print(f"  {label}: No samples")
-
-            print("\nClassification Report:")
-            print(
-                classification_report(
-                    y_true, y_pred,
-                    labels=list(range(num_classes)),
-                    target_names=(classlabels if classlabels else None),
-                    digits=4,
-                    zero_division=0,
-                )
-            )
-
-            cm = confusion_matrix(y_true, y_pred, labels=list(range(num_classes)))
-            print("\nConfusion Matrix (rows = true, cols = predicted):")
-            print(
-                pd.DataFrame(
-                    cm,
-                    index=[f"T_{cls}" for cls in (classlabels if classlabels else range(num_classes))],
-                    columns=[f"P_{cls}" for cls in (classlabels if classlabels else range(num_classes))]
-                )
-            )
-
+        from qutils.ml.classic.classifier import validate_1NN, print1_NNModelSize
         from sktime.classification.distance_based import KNeighborsTimeSeriesClassifier
 
         print("\nEntering Nearest Neighbor Training Loop")
-        dtw = timer()
         # [N,T,C] -> [N,C,T]
         train_data_NN = np.transpose(train_data, (0, 2, 1))
 
@@ -464,6 +288,7 @@ def main():
             distance="dtw",
             distance_params={"sakoe_chiba_radius": 10}
     )
+        dtw = timer()
         clf.fit(train_data_NN, train_label)
         dtw.toc()
         print1_NNModelSize(clf)
@@ -497,23 +322,24 @@ def main():
             feat_names = ['a','ecc','inc','RAAN','argp','nu']
         else:
             feat_names = ['x','y','z','vx','vy','vz']
-        _ = run_shap_analysis(
-            model=model_LSTM,
-            train_loader=train_loader,
-            eval_loader=_eval_loader,
-            device=device,                        # e.g., "cuda" or "cpu"
-            classlabels=classlabels,
-            feature_names=feat_names,  # or None
-            out_dir=shap_dir_lstm,
-            method="gradshap",
-            baseline_nsamples=32,
-            gs_samples=8,
-            n_eval=None,
-            internal_batch_size=32,
-            use_cpu=False,
-            group_by="true"     # <<— important
-        )
-        print(f"[SHAP] CSVs written to: {shap_dir_lstm}")
+        if run_shap:
+            _ = run_shap_analysis(
+                model=model_LSTM,
+                train_loader=train_loader,
+                eval_loader=_eval_loader,
+                device=device,                        # e.g., "cuda" or "cpu"
+                classlabels=classlabels,
+                feature_names=feat_names,  # or None
+                out_dir=shap_dir_lstm,
+                method="gradshap",
+                baseline_nsamples=32,
+                gs_samples=8,
+                n_eval=None,
+                internal_batch_size=32,
+                use_cpu=False,
+                group_by="true"     # <<— important
+            )
+            print(f"[SHAP] CSVs written to: {shap_dir_lstm}")
 
     print('\nEntering Mamba Training Loop')
     trainClassifier(model_mamba,optimizer_mamba,scheduler_mamba,[train_loader,test_loader,val_loader],criterion,num_epochs,device,classLabels=classlabels)
@@ -529,23 +355,24 @@ def main():
         feat_names = ['a','ecc','inc','RAAN','argp','nu']
     else:
         feat_names = ['x','y','z','vx','vy','vz']
-    _ = run_shap_analysis(
-        model=model_mamba,
-        train_loader=train_loader,
-        eval_loader=_eval_loader,
-        device=device,                        # e.g., "cuda" or "cpu"
-        classlabels=classlabels,
-        feature_names=feat_names,  # or None
-        out_dir=shap_dir_mamba,
-        method="gradshap",
-        baseline_nsamples=32,
-        gs_samples=8,
-        n_eval=None,
-        internal_batch_size=32,
-        use_cpu=False,
-        group_by="true"     # <<— important
-)
-    print(f"[SHAP] CSVs written to: {shap_dir_mamba}")
+    if run_shap:
+        _ = run_shap_analysis(
+            model=model_mamba,
+            train_loader=train_loader,
+            eval_loader=_eval_loader,
+            device=device,                        # e.g., "cuda" or "cpu"
+            classlabels=classlabels,
+            feature_names=feat_names,  # or None
+            out_dir=shap_dir_mamba,
+            method="gradshap",
+            baseline_nsamples=32,
+            gs_samples=8,
+            n_eval=None,
+            internal_batch_size=32,
+            use_cpu=False,
+            group_by="true"     # <<— important
+    )
+        print(f"[SHAP] CSVs written to: {shap_dir_mamba}")
 
     if saveNets:
         import os
@@ -567,7 +394,6 @@ def main():
         # also drop the x_proj layer, no longer needed as well
         magnitude.pop(2)
         index.pop(2)
-
 
         normedMagsMRP = np.zeros((len(magnitude),))
         for i in range(len(magnitude)):
@@ -597,18 +423,18 @@ if __name__ == "__main__":
             main()
     else:
         main()
-    
-    from qutils.ml.shap import plot_global_feature_importance, plot_global_time_importance, plot_all_per_class_heatmaps,plot_feature_time_importance_heatmap
-    plot_global_feature_importance(shap_dir_mamba, topk=20, save=True,as_percent=True)
-    plot_global_time_importance(shap_dir_mamba, save=True)
-    # One heatmap per class CSV; lock_vmax=True to use the same color scale across classes
-    plot_all_per_class_heatmaps(shap_dir_mamba, topk_features=None, lock_vmax=True)
-    plot_feature_time_importance_heatmap(shap_dir_mamba, topk=None, save=True)
+    if run_shap: 
+        from qutils.ml.shap import plot_global_feature_importance, plot_global_time_importance, plot_all_per_class_heatmaps,plot_feature_time_importance_heatmap
+        plot_global_feature_importance(shap_dir_mamba, topk=20, save=True,as_percent=True)
+        plot_global_time_importance(shap_dir_mamba, save=True)
+        # One heatmap per class CSV; lock_vmax=True to use the same color scale across classes
+        plot_all_per_class_heatmaps(shap_dir_mamba, topk_features=None, lock_vmax=True)
+        plot_feature_time_importance_heatmap(shap_dir_mamba, topk=None, save=True)
 
-    plot_global_feature_importance(shap_dir_lstm, topk=20, save=True,as_percent=True)
-    plot_global_time_importance(shap_dir_lstm, save=True)
-    # One heatmap per class CSV; lock_vmax=True to use the same color scale across classes
-    plot_all_per_class_heatmaps(shap_dir_lstm, topk_features=None, lock_vmax=True)
-    plot_feature_time_importance_heatmap(shap_dir_lstm, topk=None, save=True)
+        plot_global_feature_importance(shap_dir_lstm, topk=20, save=True,as_percent=True)
+        plot_global_time_importance(shap_dir_lstm, save=True)
+        # One heatmap per class CSV; lock_vmax=True to use the same color scale across classes
+        plot_all_per_class_heatmaps(shap_dir_lstm, topk_features=None, lock_vmax=True)
+        plot_feature_time_importance_heatmap(shap_dir_lstm, topk=None, save=True)
 
     # plt.show()
