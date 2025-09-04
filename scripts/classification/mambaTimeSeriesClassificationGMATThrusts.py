@@ -51,9 +51,6 @@ orbitType = args.orbit
 if args.test is None:
     args.test = args.orbit
     args.testSys = numRandSys
-elif args.test.isdigit():
-    args.testSys = int(args.test)
-    args.test = args.orbit
 testSet = args.test
 testSys = args.testSys
 useOE = args.OE
@@ -201,7 +198,7 @@ def main():
 
     from qutils.ml.classifer import prepareThrustClassificationDatasets
 
-    train_loader, val_loader, test_loader, train_data,train_label,val_data,val_label,test_data,test_label = prepareThrustClassificationDatasets(yaml_config,dataConfig,output_np=True,vel_noise_std=velNoise)
+    train_loader, val_loader, test_loader, train_data,train_label,val_data,val_label,test_data,test_label = prepareThrustClassificationDatasets(yaml_config,dataConfig,output_np=True,vel_noise_std=velNoise,pos_noise_std=1e3*velNoise)
 
     # Hyperparameters
     input_size = train_data.shape[2] 
