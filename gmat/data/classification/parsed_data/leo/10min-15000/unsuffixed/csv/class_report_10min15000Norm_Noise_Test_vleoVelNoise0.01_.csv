@@ -1,21 +1,31 @@
 Model,label,precision,recall,f1,support
-Decision Trees,no_thrust,0.36,0.9409,0.5207,2250
-Decision Trees,chemical,0.7795,0.5027,0.6112,2250
-Decision Trees,electric,0.685,0.1991,0.3085,2250
-Decision Trees,impulsive,0.426,0.192,0.2647,2250
-Decision Trees,macro_avg,0.5626,0.4587,0.4263,9000
-Decision Trees,weighted_avg,0.5626,0.4587,0.4263,9000
-Decision Trees,t_no_thrust,2117.0,16.0,10.0,107
-Decision Trees,t_chemical,805.0,1131.0,108.0,206
-Decision Trees,t_electric,1297.0,236.0,448.0,269
-Decision Trees,t_impulsive,1662.0,68.0,88.0,432
-LSTM,no_thrust,0.9996,1.0,0.9998,2250
+Decision Trees,no_thrust,0.3805,0.8764,0.5307,2250
+Decision Trees,chemical,0.8035,0.476,0.5978,2250
+Decision Trees,electric,0.6403,0.1724,0.2717,2250
+Decision Trees,impulsive,0.3151,0.2631,0.2868,2250
+Decision Trees,macro_avg,0.5348,0.447,0.4217,9000
+Decision Trees,weighted_avg,0.5348,0.447,0.4217,9000
+Decision Trees,t_no_thrust,1972.0,6.0,5.0,267
+Decision Trees,t_chemical,615.0,1071.0,121.0,443
+Decision Trees,t_electric,1088.0,197.0,388.0,577
+Decision Trees,t_impulsive,1507.0,59.0,92.0,592
+LSTM,no_thrust,1.0,1.0,1.0,2250
 LSTM,chemical,1.0,1.0,1.0,2250
 LSTM,electric,1.0,1.0,1.0,2250
-LSTM,impulsive,1.0,0.9996,0.9998,2250
-LSTM,macro_avg,0.9999,0.9999,0.9999,9000
-LSTM,weighted_avg,0.9999,0.9999,0.9999,9000
+LSTM,impulsive,1.0,1.0,1.0,2250
+LSTM,macro_avg,1.0,1.0,1.0,9000
+LSTM,weighted_avg,1.0,1.0,1.0,9000
 LSTM,t_no_thrust,2250.0,0.0,0.0,0
 LSTM,t_chemical,0.0,2250.0,0.0,0
 LSTM,t_electric,0.0,0.0,2250.0,0
-LSTM,t_impulsive,1.0,0.0,0.0,2249
+LSTM,t_impulsive,0.0,0.0,0.0,2250
+Mamba,no_thrust,1.0,1.0,1.0,2250
+Mamba,chemical,1.0,1.0,1.0,2250
+Mamba,electric,0.9996,1.0,0.9998,2250
+Mamba,impulsive,1.0,0.9996,0.9998,2250
+Mamba,macro_avg,0.9999,0.9999,0.9999,9000
+Mamba,weighted_avg,0.9999,0.9999,0.9999,9000
+Mamba,t_no_thrust,2250.0,0.0,0.0,0
+Mamba,t_chemical,0.0,2250.0,0.0,0
+Mamba,t_electric,0.0,0.0,2250.0,0
+Mamba,t_impulsive,0.0,0.0,1.0,2249
