@@ -28,6 +28,7 @@ parser.add_argument("--nearest",dest="use_nearestNeighbor",action="store_true",h
 parser.add_argument('--saveNets', dest="saveNets",action='store_true', help='Save the trained networks. Saves to the same location as a saved log file.')
 parser.add_argument('--classic', dest="old_classic",action='store_true', help='DO NOT USE. DUMMY ARGUMENT TO AVOID BREAKING OLD SCRIPTS.')
 parser.add_argument('--shap',dest="run_shap",action='store_true', help='run shap analysis for interpretation of feature importance.')
+parser.add_argument("--train_ratio", type=float, default=0.7, help="Ratio of data to use for training")
 
 parser.set_defaults(use_lstm=True)
 parser.set_defaults(OE=False)
@@ -66,6 +67,7 @@ use_nearestNeighbor = args.use_nearestNeighbor
 saveNets = args.saveNets
 velNoise = args.velNoise
 run_shap = args.run_shap
+train_ratio = args.train_ratio
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -98,10 +100,14 @@ if useHybrid:
 #     strAdd = strAdd + "DT_"
 if use_nearestNeighbor:
     strAdd = strAdd + "1-NN_"
+if train_ratio != 0.7:
+    strAdd = strAdd + f"Train{int(4*train_ratio*numRandSys)}_"
 if testSet != orbitType:
     strAdd = strAdd + "Test_" + testSet
 if velNoise != 1e-3:
     strAdd = strAdd + f"VelNoise{velNoise}_"
+
+print(f"Training with {int(4*train_ratio*numRandSys)} systems")
 
 logLoc = "gmat/data/classification/"+str(orbitType)+"/" + str(numMinProp) + "min-" + str(numRandSys) + "/"
 logFileLoc = logLoc + str(numMinProp) + "min" + str(numRandSys)+ strAdd +'.log'
@@ -198,7 +204,14 @@ def main():
 
     from qutils.ml.classifer import prepareThrustClassificationDatasets
 
-    train_loader, val_loader, test_loader, train_data,train_label,val_data,val_label,test_data,test_label = prepareThrustClassificationDatasets(yaml_config,dataConfig,output_np=True,vel_noise_std=velNoise,pos_noise_std=1e3*velNoise)
+    if train_ratio == 0.7:
+        val_ratio = 0.15
+        test_ratio = 0.15
+    else:
+        val_ratio = train_ratio  
+        test_ratio = (1.0 - train_ratio - val_ratio) # not used in network training, only for splitting the data and final evaluation
+
+    train_loader, val_loader, test_loader, train_data,train_label,val_data,val_label,test_data,test_label = prepareThrustClassificationDatasets(yaml_config,dataConfig,output_np=True,vel_noise_std=velNoise,pos_noise_std=1e3*velNoise,train_ratio=train_ratio,test_ratio=test_ratio,val_ratio=val_ratio)
 
     # Hyperparameters
     input_size = train_data.shape[2] 
