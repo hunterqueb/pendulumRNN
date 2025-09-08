@@ -101,7 +101,7 @@ if useHybrid:
 if use_nearestNeighbor:
     strAdd = strAdd + "1-NN_"
 if train_ratio != 0.7:
-    strAdd = strAdd + f"Train{int(4*train_ratio*numRandSys)}_"
+    strAdd = strAdd + f"Train_{int(4*train_ratio*numRandSys)}_"
 if testSet != orbitType:
     strAdd = strAdd + "Test_" + testSet
 if velNoise != 1e-3:
