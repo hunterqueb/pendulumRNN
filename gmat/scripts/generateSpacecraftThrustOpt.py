@@ -15,7 +15,7 @@ parser.add_argument('--deltaV', type=float, default=1.0, help='Delta V for impul
 parser.add_argument('--numRandSys', type=int, default=1000, help='Number of random systems to generate')
 parser.add_argument('--numMinProp', type=int, default=100, help='Number of minutes to propagate')
 parser.add_argument('--chemThrust',type=float, default=10, help='Chemical thrust coefficent')
-parser.add_argument('--elecThrust',type=float, default=-5.19082, help='Electric thrust coefficent')
+parser.add_argument('--elecThrust',type=float, default=1, help='Electric thrust coefficent')
 parser.add_argument('--no-plot', dest="plotOn", action='store_false', help='Plot the results')
 parser.set_defaults(plotOn=True)
 parser.add_argument('--log', dest='echoLogFile', action='store_true', help='Log the GMAT output to console')
@@ -25,8 +25,8 @@ parser.set_defaults(saveOn=True)
 parser.add_argument('--slurm', dest='slurm', action='store_true', help='Run in slurm mode')
 parser.set_defaults(slurm=False)
 parser.add_argument('--propType', type=str, default='chem', help='Type of propagation to perform: chem, elec, imp, none')
-parser.add_argument("--lowerAlt", type=float, default=200, help="Lower altitude bound in km")
-parser.add_argument("--upperAlt", type=float, default=250, help="Upper altitude bound in km")
+parser.add_argument("--lowerAlt", type=float, default=150, help="Lower altitude bound in km")
+parser.add_argument("--upperAlt", type=float, default=200, help="Upper altitude bound in km")
 parser.add_argument("--folder", type=str, default="", help="Folder to save the data in, if applicable")
 
 args = parser.parse_args()
@@ -124,14 +124,27 @@ AOP = np.zeros(numRandSys)
 TA = np.zeros(numRandSys)
 
 for i in range(numRandSys):
-    SMA[i] = rng.uniform(26335, 26500)  # km, typical HEO altitudes
-    ECC[i] = 0.05 * rng.random() + 0.7
-    # SMA[i] = rng.uniform(R + lowerAlt,R + upperAlt) # km
-    # ECC[i] = 0.01 * rng.random()
+    # SMA[i] = rng.uniform(26335, 26500)  # km, typical HEO altitudes
+    # ECC[i] = 0.05 * rng.random() + 0.7
+    SMA[i] = rng.uniform(R + lowerAlt,R + upperAlt) # km
     INC[i] = 10 * rng.random() # deg
     RAAN[i] = 0 # deg
     AOP[i] = 0 # deg
     TA[i] = rng.uniform(-2, 2) # deg
+
+    ECC[i] = 0.01 * rng.random()
+    
+    r_p_min = R + lowerAlt
+    r_p_max = R + upperAlt
+    a_min = r_p_min/(1 - ECC[i])
+    a_max = r_p_max/(1 - ECC[i])
+
+    SMA[i] = rng.uniform(a_min, a_max)
+    INC[i] = 180 * rng.random() # deg
+    RAAN[i] = 180 * rng.random() # deg
+    AOP[i] = 180 * rng.random() # deg
+    nu = 180
+    TA[i] = rng.uniform(nu-180, nu+180) # deg
 
 # construct the burn force model
 def setThrust(s, b):
@@ -243,9 +256,8 @@ elif propType == 'elec':
     EThruster = gmat.Construct("ElectricThruster", "EThruster") # create an electric thruster with the name "Thruster"
     powerSystem = gmat.Construct("SolarPowerSystem", "EPS") # create a power system with the name "EPS"
     EThruster.SetField("ThrustModel", "ThrustMassPolynomial") # set the thrust coefficient for the "EThruster" to use the elecThrust value
-    EThruster.SetField("ThrustCoeff1", elecThrust) # set the thrust coefficient for the "EThruster" to use the elecThrust value
     EThruster.SetField("DecrementMass", True)
-    EThruster.SetField("ThrustScaleFactor", 0.15) # scale the thrust 
+    EThruster.SetField("ThrustScaleFactor", elecThrust) # scale the thrust 
     EThruster.SetField("Tank", "EFuel") # set the tank for the "EThruster" to use the "EFuel" object
     earthorb.SetField("Tanks", "EFuel") # set possible tanks for the "EThruster" to use the "EFuel" object
     earthorb.SetField("Thrusters", "EThruster") # set possible thrusters to use the "EThruster" object
@@ -292,22 +304,47 @@ elif propType == 'elec':
         # -----------------------------
         # Turn on the thruster
         # theThruster.SetField("IsFiring", True)
-        earthorb.IsManeuvering(True)
-        burn.SetSpacecraftToManeuver(earthorb)
-        # # Add the thrust to the force model
-        pdprop.AddForce(burnForce)
-        psm = pdprop.GetPropStateManager()
-        psm.SetProperty("MassFlow")
         # -----------------------------
         pdprop.PrepareInternals()
         gator = pdprop.GetPropagator()
+        counter = 0
+        isFiring = False
+        randThrustTime = np.random.randint(1, numMinProp-10) # randomly select a time to apply the impulsive burn, must be before 5 minutes of end of manuever
 
         for j in range(numMinProp):
-            gator.Step(dt)
-            elapsed = elapsed + dt
-            state = gator.GetState()
-            statesArrayElectric[i,j,:] = state[0:6]
-            gator.UpdateSpaceObject()
+            if j == randThrustTime or (isFiring and counter < 10):  
+                isFiring = True
+                earthorb.IsManeuvering(True)
+                burn.SetSpacecraftToManeuver(earthorb)
+                # # Add the thrust to the force model
+                pdprop.AddForce(burnForce)
+                psm = pdprop.GetPropStateManager()
+                psm.SetProperty("MassFlow")
+
+                pdprop.PrepareInternals()
+                gator = pdprop.GetPropagator()
+                print("firing")
+
+                gator.Step(dt)
+                elapsed = elapsed + dt
+                state = gator.GetState()
+                statesArrayElectric[i,j,:] = state[0:6]
+                gator.UpdateSpaceObject()
+                counter = counter + 1
+            else:
+                fm = pdprop.GetODEModel()
+                fm.DeleteForce(burnForce)
+                earthorb.IsManeuvering(False)
+                # # Add the thrust to the force model
+                psm = pdprop.GetPropStateManager()
+                pdprop.PrepareInternals()
+                gator = pdprop.GetPropagator()
+
+                gator.Step(dt)
+                elapsed = elapsed + dt
+                state = gator.GetState()
+                statesArrayElectric[i,j,:] = state[0:6]
+                gator.UpdateSpaceObject()
 
         fm = pdprop.GetODEModel()
         fm.DeleteForce(burnForce)
@@ -328,6 +365,80 @@ elif propType == 'elec':
             saveDest = 'gmat/data/classification/' + folder + "/"
 
         np.savez(saveDest+'statesArrayElectric.npz', statesArrayElectric=statesArrayElectric)
+
+    OEArrayElecThrust = np.zeros((numRandSys,numMinProp,7))
+
+    from qutils.orbital import ECI2OE
+    for i in range(numRandSys):
+        for j in range(numMinProp):
+            OEArrayElecThrust[i,j,:] = ECI2OE(statesArrayElectric[i,j,0:3],statesArrayElectric[i,j,3:6])
+
+
+    t = np.linspace(0,numMinProp*dt,len(statesArrayElectric[0,:,0]))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.plot(statesArrayElectric[0,:,0],statesArrayElectric[0,:,1],statesArrayElectric[0,:,2],label='No Thrust')
+    ax.set_xlabel('X (km)')
+    ax.set_ylabel('Y (km)')
+    ax.set_zlabel('Z (km)')
+    ax.set_title('3D Trajectory of Earth Orbiter')
+    ax.legend()
+    ax.axis('equal')
+
+    plt.figure()
+    plt.plot(t, statesArrayElectric[0,:,0], label='No Thrust X')
+    plt.plot(t, statesArrayElectric[0,:,1], label='No Thrust Y')
+    plt.plot(t, statesArrayElectric[0,:,2], label='No Thrust Z')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Position (km)')
+    plt.title('Position vs Time for Different Thruster Profiles')
+    plt.legend()
+    plt.grid()
+
+
+    plt.figure()
+    plt.plot(t, OEArrayElecThrust[0,:,0], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("a")
+
+    plt.figure()
+    plt.plot(t, OEArrayElecThrust[0,:,1], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("e")
+
+    plt.figure()
+    plt.plot(t, OEArrayElecThrust[0,:,2], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("i")
+
+    plt.figure()
+    plt.plot(t, OEArrayElecThrust[0,:,3], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("OMEGA")
+
+    plt.figure()
+    plt.plot(t, OEArrayElecThrust[0,:,4], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("omega")
+
+    plt.figure()
+    plt.plot(t, OEArrayElecThrust[0,:,5], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("nu")
+
+    plt.figure()
+    plt.plot(t, OEArrayElecThrust[0,:,6], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("Period")
+
 
 elif propType == 'imp':
     statesArrayImpBurn = np.zeros((numRandSys,numMinProp,problemDim))
@@ -427,3 +538,84 @@ elif propType == 'none':
             saveDest = 'gmat/data/classification/'
 
         np.savez(saveDest+'statesArrayNoThrust.npz', statesArrayNoThrust=statesArrayNoThrust)
+
+
+
+    OEArrayNoThrust = np.zeros((numRandSys,numMinProp,7))
+
+    from qutils.orbital import ECI2OE
+    for i in range(numRandSys):
+        for j in range(numMinProp):
+            OEArrayNoThrust[i,j,:] = ECI2OE(statesArrayNoThrust[i,j,0:3],statesArrayNoThrust[i,j,3:6])
+
+
+    t = np.linspace(0,numMinProp*dt,len(statesArrayNoThrust[0,:,0]))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.plot(statesArrayNoThrust[0,:,0],statesArrayNoThrust[0,:,1],statesArrayNoThrust[0,:,2],label='No Thrust')
+    ax.set_xlabel('X (km)')
+    ax.set_ylabel('Y (km)')
+    ax.set_zlabel('Z (km)')
+    ax.set_title('3D Trajectory of Earth Orbiter')
+    ax.legend()
+    ax.axis('equal')
+
+    plt.figure()
+    plt.plot(t, statesArrayNoThrust[0,:,0], label='No Thrust X')
+    plt.plot(t, statesArrayNoThrust[0,:,1], label='No Thrust Y')
+    plt.plot(t, statesArrayNoThrust[0,:,2], label='No Thrust Z')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Position (km)')
+    plt.title('Position vs Time for Different Thruster Profiles')
+    plt.legend()
+    plt.grid()
+
+
+    plt.figure()
+    plt.plot(t, OEArrayNoThrust[0,:,0], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("a")
+
+    plt.figure()
+    plt.plot(t, OEArrayNoThrust[0,:,1], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("e")
+
+    plt.figure()
+    plt.plot(t, OEArrayNoThrust[0,:,2], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("i")
+
+    plt.figure()
+    plt.plot(t, OEArrayNoThrust[0,:,3], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("OMEGA")
+
+    plt.figure()
+    plt.plot(t, OEArrayNoThrust[0,:,4], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("omega")
+
+    plt.figure()
+    plt.plot(t, OEArrayNoThrust[0,:,5], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("nu")
+
+    plt.figure()
+    plt.plot(t, OEArrayNoThrust[0,:,6], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("Period")
+
+
+
+
+if plotOn:
+    plt.show()
