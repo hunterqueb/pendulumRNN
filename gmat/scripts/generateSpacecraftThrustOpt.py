@@ -160,7 +160,8 @@ if propType == 'chem':
 
     tank = gmat.Construct("ChemicalTank", "Fuel") # create a chemical tank with the name "Fuel"
     thruster = gmat.Construct("ChemicalThruster", "Thruster") # create a chemical thruster with the name "Thruster"
-    thruster.SetField("C1", chemThrust) # set the thrust coefficient for the "Thruster" to use the chemThrust value
+    # thruster.SetField("C1", chemThrust) # set the thrust coefficient for the "Thruster" to use the chemThrust value
+    thruster.SetField("ThrustScaleFactor",chemThrust)
     thruster.SetField("DecrementMass", True)
     thruster.SetField("Tank", "Fuel") # set the tank for the "Thruster" to use the "Fuel" object
     earthorb.SetField("Tanks", "Fuel") # set possible tanks for the "Thruster" to use the "Fuel" object
@@ -209,34 +210,48 @@ if propType == 'chem':
         # -----------------------------
         # Turn on the thruster
         # theThruster.SetField("IsFiring", True)
-        earthorb.IsManeuvering(True)
-        burn.SetSpacecraftToManeuver(earthorb)
-        # # Add the thrust to the force model
-        pdprop.AddForce(burnForce)
-        psm = pdprop.GetPropStateManager()
-        psm.SetProperty("MassFlow")
-        # -----------------------------
         pdprop.PrepareInternals()
         gator = pdprop.GetPropagator()
-
+        counter = 0
+        isFiring = False
+        randThrustTime = np.random.randint(1, numMinProp-2) # randomly select a time to apply the chemical burn, must be before chemThrustMin minutes of end of manuever
+        thrustingTime = np.zeros((numRandSys,numMinProp,1))
         for j in range(numMinProp):
-            gator.Step(dt)
-            elapsed = elapsed + dt
-            state = gator.GetState()
-            statesArrayChemical[i,j,:] = state[0:6]
-            gator.UpdateSpaceObject()
+            if j == randThrustTime or (isFiring and counter < 2):  
+                isFiring = True
+                earthorb.IsManeuvering(True)
+                burn.SetSpacecraftToManeuver(earthorb)
+                # # Add the thrust to the force model
+                pdprop.AddForce(burnForce)
+                psm = pdprop.GetPropStateManager()
+                psm.SetProperty("MassFlow")
 
-        fm = pdprop.GetODEModel()
-        fm.DeleteForce(burnForce)
-        # theThruster.SetField("IsFiring", False)
-        earthorb.IsManeuvering(False)
-        pdprop.PrepareInternals()
-        gator = pdprop.GetPropagator()
+                pdprop.PrepareInternals()
+                gator = pdprop.GetPropagator()
 
-        del(theThruster)
-        del(gator)
-        del(fm)
-        del(psm)
+                gator.Step(dt)
+                elapsed = elapsed + dt
+                state = gator.GetState()
+                statesArrayChemical[i,j,:] = state[0:6]
+                gator.UpdateSpaceObject()
+                counter = counter + 1
+                thrustingTime[i,j,0] = 1
+
+            else:
+                fm = pdprop.GetODEModel()
+                fm.DeleteForce(burnForce)
+                earthorb.IsManeuvering(False)
+                # # Add the thrust to the force model
+                psm = pdprop.GetPropStateManager()
+                pdprop.PrepareInternals()
+                gator = pdprop.GetPropagator()
+
+                gator.Step(dt)
+                elapsed = elapsed + dt
+                state = gator.GetState()
+                statesArrayChemical[i,j,:] = state[0:6]
+                gator.UpdateSpaceObject()
+                thrustingTime[i,j,0] = 0
 
     print("Chemical Thruster Data Generation Complete.")
 
@@ -247,6 +262,79 @@ if propType == 'chem':
             saveDest = 'gmat/data/classification/' + folder + "/"
 
         np.savez(saveDest+'statesArrayChemical.npz', statesArrayChemical=statesArrayChemical)
+
+    OEArrayChemThrust = np.zeros((numRandSys,numMinProp,7))
+
+    from qutils.orbital import ECI2OE
+    for i in range(numRandSys):
+        for j in range(numMinProp):
+            OEArrayChemThrust[i,j,:] = ECI2OE(statesArrayChemical[i,j,0:3],statesArrayChemical[i,j,3:6])
+
+
+    t = np.linspace(0,numMinProp*dt,len(statesArrayChemical[0,:,0]))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.plot(statesArrayChemical[0,:,0],statesArrayChemical[0,:,1],statesArrayChemical[0,:,2],label='No Thrust')
+    ax.set_xlabel('X (km)')
+    ax.set_ylabel('Y (km)')
+    ax.set_zlabel('Z (km)')
+    ax.set_title('3D Trajectory of Earth Orbiter')
+    ax.legend()
+    ax.axis('equal')
+
+    plt.figure()
+    plt.plot(t, statesArrayChemical[0,:,0], label='No Thrust X')
+    plt.plot(t, statesArrayChemical[0,:,1], label='No Thrust Y')
+    plt.plot(t, statesArrayChemical[0,:,2], label='No Thrust Z')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Position (km)')
+    plt.title('Position vs Time for Different Thruster Profiles')
+    plt.legend()
+    plt.grid()
+
+
+    plt.figure()
+    plt.plot(t, OEArrayChemThrust[0,:,0], label='No Thrust',color='C1')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("a")
+
+    plt.figure()
+    plt.plot(t, OEArrayChemThrust[0,:,1], label='No Thrust',color='C1')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("e")
+
+    plt.figure()
+    plt.plot(t, OEArrayChemThrust[0,:,2], label='No Thrust',color='C1')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("i")
+
+    plt.figure()
+    plt.plot(t, OEArrayChemThrust[0,:,3], label='No Thrust',color='C1')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("OMEGA")
+
+    plt.figure()
+    plt.plot(t, OEArrayChemThrust[0,:,4], label='No Thrust',color='C1')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("omega")
+
+    plt.figure()
+    plt.plot(t, OEArrayChemThrust[0,:,5], label='No Thrust',color='C1')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("nu")
+
+    plt.figure()
+    plt.plot(t, OEArrayChemThrust[0,:,6], label='No Thrust',color='C1')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("Period")
 
 elif propType == 'elec':
     statesArrayElectric = np.zeros((numRandSys,numMinProp,problemDim))
@@ -398,43 +486,43 @@ elif propType == 'elec':
 
 
     plt.figure()
-    plt.plot(t, OEArrayElecThrust[0,:,0], label='No Thrust',color='C3')
+    plt.plot(t, OEArrayElecThrust[0,:,0], label='No Thrust',color='C2')
     plt.grid()
     plt.xlabel('Time (s)')
     plt.title("a")
 
     plt.figure()
-    plt.plot(t, OEArrayElecThrust[0,:,1], label='No Thrust',color='C3')
+    plt.plot(t, OEArrayElecThrust[0,:,1], label='No Thrust',color='C2')
     plt.grid()
     plt.xlabel('Time (s)')
     plt.title("e")
 
     plt.figure()
-    plt.plot(t, OEArrayElecThrust[0,:,2], label='No Thrust',color='C3')
+    plt.plot(t, OEArrayElecThrust[0,:,2], label='No Thrust',color='C2')
     plt.grid()
     plt.xlabel('Time (s)')
     plt.title("i")
 
     plt.figure()
-    plt.plot(t, OEArrayElecThrust[0,:,3], label='No Thrust',color='C3')
+    plt.plot(t, OEArrayElecThrust[0,:,3], label='No Thrust',color='C2')
     plt.grid()
     plt.xlabel('Time (s)')
     plt.title("OMEGA")
 
     plt.figure()
-    plt.plot(t, OEArrayElecThrust[0,:,4], label='No Thrust',color='C3')
+    plt.plot(t, OEArrayElecThrust[0,:,4], label='No Thrust',color='C2')
     plt.grid()
     plt.xlabel('Time (s)')
     plt.title("omega")
 
     plt.figure()
-    plt.plot(t, OEArrayElecThrust[0,:,5], label='No Thrust',color='C3')
+    plt.plot(t, OEArrayElecThrust[0,:,5], label='No Thrust',color='C2')
     plt.grid()
     plt.xlabel('Time (s)')
     plt.title("nu")
 
     plt.figure()
-    plt.plot(t, OEArrayElecThrust[0,:,6], label='No Thrust',color='C3')
+    plt.plot(t, OEArrayElecThrust[0,:,6], label='No Thrust',color='C2')
     plt.grid()
     plt.xlabel('Time (s)')
     plt.title("Period")
@@ -496,6 +584,79 @@ elif propType == 'imp':
             saveDest = 'gmat/data/classification/'
 
         np.savez(saveDest+'statesArrayImpBurn.npz', statesArrayImpBurn=statesArrayImpBurn)
+
+    OEArrayImpBurn = np.zeros((numRandSys,numMinProp,7))
+
+    from qutils.orbital import ECI2OE
+    for i in range(numRandSys):
+        for j in range(numMinProp):
+            OEArrayImpBurn[i,j,:] = ECI2OE(statesArrayImpBurn[i,j,0:3],statesArrayImpBurn[i,j,3:6])
+
+
+    t = np.linspace(0,numMinProp*dt,len(statesArrayImpBurn[0,:,0]))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.plot(statesArrayImpBurn[0,:,0],statesArrayImpBurn[0,:,1],statesArrayImpBurn[0,:,2],label='No Thrust')
+    ax.set_xlabel('X (km)')
+    ax.set_ylabel('Y (km)')
+    ax.set_zlabel('Z (km)')
+    ax.set_title('3D Trajectory of Earth Orbiter')
+    ax.legend()
+    ax.axis('equal')
+
+    plt.figure()
+    plt.plot(t, statesArrayImpBurn[0,:,0], label='No Thrust X')
+    plt.plot(t, statesArrayImpBurn[0,:,1], label='No Thrust Y')
+    plt.plot(t, statesArrayImpBurn[0,:,2], label='No Thrust Z')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Position (km)')
+    plt.title('Position vs Time for Different Thruster Profiles')
+    plt.legend()
+    plt.grid()
+
+
+    plt.figure()
+    plt.plot(t, OEArrayImpBurn[0,:,0], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("a")
+
+    plt.figure()
+    plt.plot(t, OEArrayImpBurn[0,:,1], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("e")
+
+    plt.figure()
+    plt.plot(t, OEArrayImpBurn[0,:,2], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("i")
+
+    plt.figure()
+    plt.plot(t, OEArrayImpBurn[0,:,3], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("OMEGA")
+
+    plt.figure()
+    plt.plot(t, OEArrayImpBurn[0,:,4], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("omega")
+
+    plt.figure()
+    plt.plot(t, OEArrayImpBurn[0,:,5], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("nu")
+
+    plt.figure()
+    plt.plot(t, OEArrayImpBurn[0,:,6], label='No Thrust',color='C3')
+    plt.grid()
+    plt.xlabel('Time (s)')
+    plt.title("Period")
 
 elif propType == 'none':
     statesArrayNoThrust = np.zeros((numRandSys,numMinProp,problemDim))
