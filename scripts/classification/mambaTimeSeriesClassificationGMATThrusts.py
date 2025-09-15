@@ -107,6 +107,9 @@ if testSet != orbitType:
 if velNoise != 1e-3:
     strAdd = strAdd + f"VelNoise{velNoise}_"
 
+# remove trailing _
+strAdd = strAdd[:-1]
+
 print(f"Training with {int(4*train_ratio*numRandSys)} systems")
 
 logLoc = "gmat/data/classification/"+str(orbitType)+"/" + str(numMinProp) + "min-" + str(numRandSys) + "/"
