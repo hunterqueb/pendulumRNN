@@ -314,7 +314,7 @@ def main():
         dtwInference.tocStr("1-NN Inference Time")
 
     if use_lstm:
-        model_LSTM = LSTMClassifier(input_size, int(3*hidden_size//4), num_layers, num_classes).to(device).double()
+        model_LSTM = LSTMClassifier(input_size, int(3*hidden_size//4), num_layers, num_classes,SA=True).to(device).double()
         optimizer_LSTM = torch.optim.Adam(model_LSTM.parameters(), lr=learning_rate)
         scheduler_LSTM = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer_LSTM,
