@@ -274,7 +274,7 @@ def main():
         # flatten features
         X_train = train_data.reshape(train_data.shape[0], -1).astype(np.float32)    # (number of systems to train on, network features * length of time series)    
         y_train = train_label.reshape(-1).astype(np.int32)             # (number of systems to train on,)
-        classicModel = LGBMClassifier(objective="multiclass",num_classes=num_classes,n_estimators=4,max_depth=-1,learning_rate=0.05,subsample=0.8,colsample_bytree=0.8,verbosity=-1)   # or 'verbose' for older builds)       
+        classicModel = LGBMClassifier(objective="multiclass",num_classes=num_classes,n_estimators=30,max_depth=-1,learning_rate=0.05,subsample=0.8,colsample_bytree=0.8,verbosity=-1)   # or 'verbose' for older builds)       
         DTTimer = timer()
         classicModel.fit(X_train, y_train)
         DTTimer.toc()
@@ -314,7 +314,7 @@ def main():
         dtwInference.tocStr("1-NN Inference Time")
 
     if use_lstm:
-        model_LSTM = LSTMClassifier(input_size, int(3*hidden_size//4), num_layers, num_classes,SA=True).to(device).double()
+        model_LSTM = LSTMClassifier(input_size, hidden_size, num_layers, num_classes,SA=True).to(device).double()
         optimizer_LSTM = torch.optim.Adam(model_LSTM.parameters(), lr=learning_rate)
         scheduler_LSTM = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer_LSTM,
