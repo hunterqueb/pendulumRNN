@@ -4,7 +4,6 @@
 # call the script from the main folder directory, adding --save saves the output to a log file in the location of the datasets
 # $ python scripts/classification/mambaTimeSeriesClassificationGMATThrusts.py \
 # --systems 10000 --propMin 5 --OE --norm --orbit vleo 
-
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -29,6 +28,8 @@ parser.add_argument('--saveNets', dest="saveNets",action='store_true', help='Sav
 parser.add_argument('--classic', dest="old_classic",action='store_true', help='DO NOT USE. DUMMY ARGUMENT TO AVOID BREAKING OLD SCRIPTS.')
 parser.add_argument('--shap',dest="run_shap",action='store_true', help='run shap analysis for interpretation of feature importance.')
 parser.add_argument("--train_ratio", type=float, default=0.7, help="Ratio of data to use for training")
+parser.add_argument("--pca", type=int, default=None, help="If set to an integer, use PCA to reduce the input features to this number of components.")
+parser.add_argument('--mlp', dest="useMLP", action='store_true', help='Use a simple MLP on Hankel+PCA pooled data for comparison.')
 
 parser.set_defaults(use_lstm=True)
 parser.set_defaults(OE=False)
@@ -68,6 +69,13 @@ saveNets = args.saveNets
 velNoise = args.velNoise
 run_shap = args.run_shap
 train_ratio = args.train_ratio
+if args.pca is not None and args.pca > 0:
+    pca_enabled = True
+    pca_n_components = args.pca
+else:
+    pca_enabled = False
+    pca_n_components = None
+useMLP = args.useMLP
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -82,6 +90,115 @@ from qutils.ml.classifer import trainClassifier, LSTMClassifier, validateMultiCl
 from qutils.ml.mamba import Mamba, MambaConfig, MambaClassifier
 from qutils.ml.superweight import printoutMaxLayerWeight,getSuperWeight,plotSuperWeight, findMambaSuperActivation,plotSuperActivation
 from qutils.ml.shap import run_shap_analysis
+
+class MLP(nn.Module):
+    def __init__(self, d_in, n_classes=4, width=256, depth=2, p_drop=0.1):
+        super().__init__()
+        layers = []
+        d = d_in
+        for _ in range(depth):
+            layers += [nn.Linear(d, width), nn.ReLU(inplace=True), nn.Dropout(p_drop)]
+            d = width
+        layers += [nn.Linear(d, n_classes)]
+        self.net = nn.Sequential(*layers)
+    def forward(self, x):  # x: (B, d_in)
+        return self.net(x)
+
+def trainMLP(model, train_loader, val_loader, opt, scheduler, device, class_weights=None,num_epochs=100):
+    timeToTrain = timer()
+
+    ESpatience = 10
+    model.train()
+    ce = nn.CrossEntropyLoss(weight=class_weights)
+    total, correct, loss_sum = 0, 0, 0.0
+    best_loss = float('inf')
+
+    for epoch in range(num_epochs):
+        for xb, yb in train_loader:
+            loss_sum = 0.0
+            # xb: (B, 1, d) from your dataset → squeeze
+            xb = xb.squeeze(1).to(device)  # (B, d)
+            yb = yb.view(-1).long().to(device)
+            opt.zero_grad()
+            logits = model(xb)
+            loss = ce(logits, yb)
+            loss.backward()
+            opt.step()
+            loss_sum += loss.item()*xb.size(0)
+            pred = logits.argmax(dim=1)
+            correct += (pred == yb).sum().item()
+            total += xb.size(0)
+        va_loss, va_acc = eval_epoch(model, val_loader, device)
+        scheduler.step()
+        print(f"Epoch [{epoch+1}/{num_epochs}], Training Loss: {loss_sum/total:.4f}")
+        
+        # Early stopping logic
+        if va_loss < best_loss:
+            best_loss = va_loss
+            counter = 0
+            # Optional: save model checkpoint here
+        else:
+            counter += 1
+            if counter >= ESpatience:
+                print("Early stopping triggered.")
+                break
+
+    return timeToTrain.toc()
+
+@torch.no_grad()
+def eval_epoch(model, loader, device):
+    model.eval()
+    total, correct, loss_sum = 0, 0, 0.0
+    ce = nn.CrossEntropyLoss()
+    num_classes = 4  
+
+    class_correct = torch.zeros(num_classes, dtype=torch.int32)
+    class_total = torch.zeros(num_classes, dtype=torch.int32)
+
+    # Collect predictions and labels for scikit-learn metrics
+    y_true = []
+    y_pred = []
+
+    for xb, yb in loader:
+        xb = xb.squeeze(1).to(device)
+        yb = yb.view(-1).long().to(device)
+        logits = model(xb)
+        loss = ce(logits, yb)
+        loss_sum += loss.item()*xb.size(0)
+        predicted = logits.argmax(dim=1)
+        correct += (predicted == yb).sum().item()
+        total += xb.size(0)
+
+        # Per-class accuracy calculation
+        for i in range(yb.size(0)):
+            label = yb[i]
+            pred = predicted[i]
+            class_total[label] += 1
+            if pred == label:
+                class_correct[label] += 1
+
+    avg_val_loss = loss / len(loader)
+    val_accuracy = 100.0 * correct / total
+
+    print(f"Validation Loss: {avg_val_loss:.4f}, Validation Accuracy: {val_accuracy:.2f}%\n")
+    classlabels = ['No Thrust','Chemical','Electric','Impulsive']
+
+    print("Per-Class Validation Accuracy:")
+    for i in range(4):
+        if class_total[i] > 0:
+            acc = 100.0 * class_correct[i].item() / class_total[i].item()
+            if classlabels is not None:
+                print(f"  {classlabels[i]}: {acc:.2f}% ({class_correct[i]}/{class_total[i]})")
+            else:
+                print(f"  Class {i}: {acc:.2f}% ({class_correct[i]}/{class_total[i]})")
+        else:
+            if classlabels is not None:
+                print(f"  {classlabels[i]}: No samples")
+            else:
+                print(f"  Class {i}: No samples")
+
+    return loss_sum/total, correct/total
+
 
 strAdd = ""
 if useEnergy:
@@ -106,6 +223,10 @@ if testSet != orbitType:
     strAdd = strAdd + "Test_" + testSet + "_"
 if velNoise != 1e-3:
     strAdd = strAdd + f"VelNoise{velNoise}_"
+if pca_enabled:
+    strAdd = strAdd + f"PCA{pca_n_components}_"
+if useMLP:
+    strAdd = strAdd + "MLP_"
 
 # remove trailing _
 if strAdd.endswith("_"):
@@ -159,7 +280,7 @@ class HybridClassifier(nn.Module):
         self.fc = nn.Linear(hidden_size * 2, num_classes)
         
     def forward(self, x):
-        """
+        """""
         x: [batch_size, seq_length, input_size]
         """
         # h0, c0 default to zero if not provided
@@ -215,7 +336,7 @@ def main():
         val_ratio = train_ratio  
         test_ratio = (1.0 - train_ratio - val_ratio) # not used in network training, only for splitting the data and final evaluation
 
-    train_loader, val_loader, test_loader, train_data,train_label,val_data,val_label,test_data,test_label = prepareThrustClassificationDatasets(yaml_config,dataConfig,output_np=True,vel_noise_std=velNoise,pos_noise_std=1e3*velNoise,train_ratio=train_ratio,test_ratio=test_ratio,val_ratio=val_ratio)
+    train_loader, val_loader, test_loader, train_data,train_label,val_data,val_label,test_data,test_label = prepareThrustClassificationDatasets(yaml_config,dataConfig,output_np=True,vel_noise_std=velNoise,pos_noise_std=1e3*velNoise,train_ratio=train_ratio,test_ratio=test_ratio,val_ratio=val_ratio,pca_enabled=pca_enabled,pca_mode="hankel",hankel_pool="mean")
 
     # Hyperparameters
     input_size = train_data.shape[2] 
@@ -418,6 +539,81 @@ def main():
         plotSuperWeight(model_mamba)
         plotSuperActivation(magnitude, index,printOutValues=True,mambaLayerAttributes = ["in_proj","conv1d","dt_proj"])
         plt.title("Mamba Classifier Super Activations")
+
+    if useMLP is True:
+        print("\nEntering MLP Training Loop")
+        train_loader, val_loader, test_loader, train_data,train_label,val_data,val_label,test_data,test_label, pca_state = prepareThrustClassificationDatasets(
+        yaml_config,
+        dataConfig,
+        train_ratio=train_ratio, val_ratio=val_ratio, test_ratio=test_ratio,
+        pos_noise_std=1e3*velNoise, vel_noise_std=velNoise,
+        batch_size=128,                     
+        output_np=True,
+        pca_enabled=True,
+        pca_mode="hankel",
+        pca_n_components=0.95,
+        pca_whiten=False,
+        pca_standardize=True,
+        hankel_L=1,
+        hankel_step=1,
+        hankel_pool="mean",
+        return_pca=True
+        )
+
+        # Infer input dim d from one batch
+        xb0, yb0 = next(iter(train_loader))
+        d_in = xb0.squeeze(1).shape[-1]
+        num_classes = 4
+
+        # === Model, optimizer, scheduler ===
+        model_mlp = MLP(d_in=d_in, n_classes=num_classes, width=64, depth=1, p_drop=0.1).to(device).double()
+        from torch.optim import AdamW
+        optimizer = AdamW(model_mlp.parameters(), lr=1e-3, weight_decay=1e-4)
+        from torch.optim.lr_scheduler import CosineAnnealingLR
+        scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs)
+
+        # === Train ===
+        print('\nEntering MLP Training Loop')
+        trainMLP(model_mlp, train_loader, val_loader, optimizer, scheduler,device, class_weights=None, num_epochs=num_epochs)
+        printModelParmSize(model_mlp)
+
+        # === Validation ===
+        print("\nMLP Validation")
+        MLPInference = timer()
+        _eval_loader = test_loader if (testSet != orbitType) else val_loader
+        eval_epoch(model_mlp, _eval_loader, device)
+        MLPInference.tocStr("MLP Inference Time")
+
+
+        model_mlp.eval()
+        all_y, all_p = [], []
+        with torch.no_grad():
+            for xb, yb in _eval_loader:
+                logits = model_mlp(xb.squeeze(1).to(device))
+                pred = logits.argmax(dim=1).cpu().numpy()
+                all_p.append(pred)
+                all_y.append(yb.view(-1).cpu().numpy())
+        all_p = np.concatenate(all_p); all_y = np.concatenate(all_y)
+
+
+        print("\nClassification Report:")
+        print(
+            classification_report(
+                all_y,
+                all_p,
+                labels=list(range(num_classes)),
+                digits=4,
+                zero_division=0,
+            )
+        )
+                # Confusion-matrix -----------------------------------------------------
+        cm = confusion_matrix(all_y, all_p, labels=list(range(num_classes)))
+        print("\nConfusion Matrix (rows = true, cols = predicted):")
+        print(pd.DataFrame(cm,
+                            index=[f"T_{cls}" for cls in (classlabels if classlabels else range(num_classes))],
+                            columns=[f"P_{cls}" for cls in (classlabels if classlabels else range(num_classes))]))
+
+
 
 
 # # example onnx export
