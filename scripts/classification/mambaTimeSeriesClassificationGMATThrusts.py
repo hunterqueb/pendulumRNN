@@ -647,4 +647,5 @@ if __name__ == "__main__":
         plot_all_per_class_heatmaps(shap_dir_lstm, topk_features=None, lock_vmax=True)
         plot_feature_time_importance_heatmap(shap_dir_lstm, topk=None, save=True)
 
-    # plt.show()
+    if not save_to_log:
+        plt.show()
