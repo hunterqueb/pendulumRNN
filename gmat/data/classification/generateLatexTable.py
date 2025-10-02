@@ -23,12 +23,10 @@ Selection rule:
 Model normalization:
 - "Decision Trees" -> "DT", "Mamba" -> "S4", "LSTM" -> "LSTM"
 
-Usage:
-  python make_dual_tables.py \
-    --vleo /path/to/summary_vleo-high.csv \
-    --leo  /path/to/summary_leo-high.csv \
-    --out-prefix class_sum_macro \
-    --select-by macro_f1
+Usage: from /gmat/data/classification
+python generateLatexTable.py --vleo parsed_data/vleo/_group/csv/summary_vleo-low.csv --leo parsed_data/leo/_group/csv/summary_leo-low.csv --out-prefix class_sum_macro_low
+python generateLatexTable.py --vleo parsed_data/vleo/_group/csv/summary_vleo-high.csv --leo parsed_data/leo/_group/csv/summary_leo-high.csv --out-prefix class_sum_macro_high
+
 """
 
 from __future__ import annotations

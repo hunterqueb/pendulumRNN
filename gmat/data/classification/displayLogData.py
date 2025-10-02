@@ -5,6 +5,13 @@ from __future__ import annotations
 • Extends epoch parsing to capture Training Loss and Validation Loss.
 • Keeps existing outputs/back-compat; epochs CSV now includes loss columns.
 • NEW: --group-dir mode to aggregate a single directory of logs into ONE summary CSV.
+
+
+
+Usage:
+python displayLogData.py . --force
+python displayLogData.py . --group-dir vleo/ --group-name vleo-low
+python displayLogData.py . --group-dir vleo/ --group-name vleo-low --emit-per-log
 """
 
 from pathlib import Path
